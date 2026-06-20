@@ -1,5 +1,5 @@
-# ad-campaign-agent
-Ad Campaign Agent with Google ADK
+# video-ad-optimization-agent
+Ad Campaign Agent with Google ADK (Agent Development Kit), VEO3 video synthesis, BlueZoo audience measurement.
 
 <p align="center">
   <a href="./assets/use-case-poster.jpeg">
