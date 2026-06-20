@@ -14,5 +14,5 @@ Multi-agent platform for retail video advertising.
 - **Analytics Dashboard** - In-store metrics with AI-generated charts
 
 ```bash
-cd ad-campaign-agent && make install && make dev
+cd video-ad-optimization-agent && make install && make dev
 ```
