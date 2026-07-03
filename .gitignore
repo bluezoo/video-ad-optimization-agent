@@ -1,0 +1,25 @@
+# Claude Code
+.claude/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.venv-deploy/
+*.egg-info/
+
+# Env files
+.env
+app/.env
+
+# Local databases
+campaigns.db
+app/campaigns.db
+
+# Test / coverage
+.pytest_cache/
+htmlcov/
+.coverage
+
+# OS
+.DS_Store

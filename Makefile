@@ -1,7 +1,7 @@
 # Makefile for Ad Campaign Agent
 # Compatible with agent-starter-pack deployment
 
-.PHONY: install dev playground deploy deploy-ae deploy-ae-global clean help test test-unit test-integration test-e2e test-all test-coverage setup-ae-permissions
+.PHONY: install dev playground deploy deploy-ae deploy-ae-global clean help test test-unit test-integration test-e2e test-all test-coverage setup-ae-permissions lint format
 
 # ============================================================================
 # LOCAL DEVELOPMENT
@@ -184,6 +184,28 @@ test-coverage:
 	@echo "Coverage report generated: htmlcov/index.html"
 
 # ============================================================================
+# LINT/FORMAT
+# ============================================================================
+
+## Check code with ruff (lint only, no changes)
+lint:
+	@if [ -d ".venv" ]; then \
+		.venv/bin/ruff check app tests; \
+	else \
+		ruff check app tests; \
+	fi
+
+## Auto-fix lint issues and format code with ruff
+format:
+	@if [ -d ".venv" ]; then \
+		.venv/bin/ruff check --fix app tests; \
+		.venv/bin/ruff format app tests; \
+	else \
+		ruff check --fix app tests; \
+		ruff format app tests; \
+	fi
+
+# ============================================================================
 # UTILITIES
 # ============================================================================
 
@@ -239,6 +261,10 @@ help:
 	@echo "  make test-e2e       - Run end-to-end workflow tests"
 	@echo "  make test-all       - Run ALL tests including slow Veo tests"
 	@echo "  make test-coverage  - Run tests with coverage report"
+	@echo ""
+	@echo "LINT/FORMAT:"
+	@echo "  make lint        - Check code with ruff (no changes)"
+	@echo "  make format      - Auto-fix lint issues and format with ruff"
 	@echo ""
 	@echo "UTILITIES:"
 	@echo "  make clean       - Clean build artifacts"
