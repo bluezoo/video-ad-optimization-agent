@@ -4,6 +4,10 @@
 # Local planning docs / notes (not for team distribution by default)
 .docs/*
 !.docs/2026-07-12-version2-review-and-plan.md
+!.docs/version2-plan/
+!.docs/.context/
+.docs/.context/*
+!.docs/.context/project_context.md
 
 # Python
 __pycache__/
