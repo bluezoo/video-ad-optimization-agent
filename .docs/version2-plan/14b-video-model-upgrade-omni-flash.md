@@ -51,5 +51,5 @@ Phase 0 (GA Veo baseline in place as the safety net). Not blocked on Phase 13a, 
 
 ## Open questions
 
-1. Given that both the Interactions API and the Omni Flash model are currently labeled experimental/preview by Google's own sources, is it worth investing in this integration now, or should this phase wait for either surface to reach GA? Worth an explicit decision rather than proceeding on the assumption (from the first draft of this plan) that it's already a stable, default-worthy path. [global #15 in `99-open-questions-for-bill.md`, reframed]
+1. Given that both the Interactions API and the Omni Flash model are currently labeled experimental/preview by Google's own sources, is it worth investing in this integration now, or should this phase wait for either surface to reach GA? Worth an explicit decision rather than proceeding on the assumption (from the first draft of this plan) that it's already a stable, default-worthy path. [global #15 in `99-open-questions.md`, reframed]
 2. Once (if) Omni Flash reaches GA, should it become the default `VIDEO_MODEL_BACKEND`, or does this app's specific needs (duration/resolution constraints — 3-10s/720p is more constrained than Veo's typical output) argue for keeping Veo as default regardless? Decide after both a side-by-side comparison and a GA status change, not before either.

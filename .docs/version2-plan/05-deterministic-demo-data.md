@@ -11,7 +11,7 @@ Two separate functions named `_generate_mock_video_metrics()` exist and disagree
 - `app/database/mock_data.py:168-235` — impressions range 800-2000, `revenue_per_impression = random.uniform(0.02, 0.08) * multiplier`. Called from `populate_mock_data()` at line 382. **Its date window runs backward from today** (`mock_data.py:188`) — i.e., "the last N days."
 - `app/tools/review_tools.py:454-513` — a **completely separate implementation**, impressions range 800-1500, RPI range $0.08-$0.15. Called from two places: `activate_video()` at `review_tools.py:166`, **and** `generate_additional_metrics()` at `review_tools.py:550` (this second call site was missed in the first draft of this phase). **Its date window runs forward from a supplied start date** (`review_tools.py:484`) — the opposite direction from the seed-time generator.
 
-Result: two videos activated in the same demo session, seeded from the same "mock data," can show RPI figures that differ by nearly 2x purely because of which function happened to generate them — a visible inconsistency in a live demo, and a correctness problem for the RPI-across-creatives comparison Bill specifically asked about (Phase 6 depends on this being fixed first). **A single shared seed alone does not fix this** — the two generators don't just disagree on RNG ranges, they disagree on which direction time runs, so unifying them requires deciding on one anchor-date-and-direction model, not just one RNG.
+Result: two videos activated in the same demo session, seeded from the same "mock data," can show RPI figures that differ by nearly 2x purely because of which function happened to generate them — a visible inconsistency in a live demo, and a correctness problem for the RPI-across-creatives comparison the client specifically asked about (Phase 6 depends on this being fixed first). **A single shared seed alone does not fix this** — the two generators don't just disagree on RNG ranges, they disagree on which direction time runs, so unifying them requires deciding on one anchor-date-and-direction model, not just one RNG.
 
 ## Steps
 
@@ -41,4 +41,4 @@ Phase 3 (needs `compute_rpi()` to exist).
 
 ## Open questions
 
-Which RPI range is the "right" one for demo realism — `mock_data.py`'s $0.02-$0.08 or `review_tools.py`'s $0.08-$0.15? This is a product decision (what looks credible in front of Bill/prospects), not a technical one. Flagging rather than picking arbitrarily.
+Which RPI range is the "right" one for demo realism — `mock_data.py`'s $0.02-$0.08 or `review_tools.py`'s $0.08-$0.15? This is a product decision (what looks credible in front of the client/prospects), not a technical one. Flagging rather than picking arbitrarily.

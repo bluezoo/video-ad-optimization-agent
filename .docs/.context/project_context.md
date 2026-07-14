@@ -43,7 +43,7 @@ Verbatim (word-for-word) transcription of four email screenshots (stored, gitign
 > Thanks!
 > **
 > --
-> **, CEO, BlueZoo Inc.
+> **, .
 > ** **
 
 ## Email 4 — 2:12 PM (`IMG_2808.PNG`)

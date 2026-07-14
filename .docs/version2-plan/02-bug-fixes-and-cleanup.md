@@ -2,7 +2,7 @@
 
 ## Goal
 
-Fix the live bugs and stale facts already sitting in the codebase, before building anything new on top of them. Everything in this phase is mechanical, independently testable, and carries zero architectural risk — it's confidence-building groundwork, not part of Bill's two requests, but doing it now avoids compounding these bugs into the generalization/live-mode work later.
+Fix the live bugs and stale facts already sitting in the codebase, before building anything new on top of them. Everything in this phase is mechanical, independently testable, and carries zero architectural risk — it's confidence-building groundwork, not part of the client's two requests, but doing it now avoids compounding these bugs into the generalization/live-mode work later.
 
 ## Current state and steps
 

@@ -1,6 +1,6 @@
 # Phase 0 — Emergency Model Currency Fix
 
-**Do this before anything else in this plan.** It has nothing to do with Bill's two requests and everything to do with the app continuing to function at all.
+**Do this before anything else in this plan.** It has nothing to do with the client's two requests and everything to do with the app continuing to function at all.
 
 ## Goal
 

@@ -26,7 +26,7 @@ This phase is split into two tiers. **Tier A is the actual connected-mode launch
 
 ## Tier B — governance/operability enhancements (important, but not a launch blocker)
 
-5. Enforce (not just document) whatever OTel message-content-capture policy is decided for connected mode, once that policy conversation with Bill/legal actually concludes (see open questions) — either set it explicitly in the deployment scripts or explicitly disable it. Don't block Tier A on this conversation finishing.
+5. Enforce (not just document) whatever OTel message-content-capture policy is decided for connected mode, once that policy conversation with the client/legal actually concludes (see open questions) — either set it explicitly in the deployment scripts or explicitly disable it. Don't block Tier A on this conversation finishing.
 6. Spike ADK's Secret Manager integration and/or Tool Confirmation primitive (`require_confirmation=True`/`request_confirmation()`) against a specific pinned `google-adk` version before adopting either — both are real ADK features, but neither has been verified against this repo's actual dependency floor, and Tool Confirmation is explicitly experimental. Don't let an unverified or experimental primitive block Tier A's simpler, explicit-parameter approach to activation confirmation if the spike doesn't land cleanly.
 7. Richer audit-log querying (beyond "does an entry exist") — a UI or tool for reviewing activation history — is a nice-to-have on top of Tier A's append-only log, not required for launch.
 
@@ -50,4 +50,4 @@ Phases 10, 11 (this phase hardens the connected-mode paths those phases build).
 ## Open questions
 
 1. What does authenticated-user identity actually look like on this app's deployment target (Cloud Run vs. Agent Engine) — is there an existing platform-level identity/session mechanism to build on, or does one need to be added?
-2. Does BlueZoo/legal have a specific data-governance requirement around OTel message-content capture that should drive Tier B step 5's decision, rather than this plan guessing at a default? [global #13 in `99-open-questions-for-bill.md`]
+2. Does BlueZoo/legal have a specific data-governance requirement around OTel message-content capture that should drive Tier B step 5's decision, rather than this plan guessing at a default? [global #13 in `99-open-questions.md`]

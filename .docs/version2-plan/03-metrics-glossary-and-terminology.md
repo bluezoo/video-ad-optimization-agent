@@ -31,7 +31,7 @@ BlueZoo's own definitions (from `api.bluezoo.io` docs, fetched directly):
 | `group_flow_transition/correlation/duration/segmentation` | Cross-zone traffic-flow journeys | Has a `campaign_id` field — **this is BlueZoo's own "flow campaign" concept, unrelated to this app's ad-campaign concept.** Do not reuse the name `campaign_id` for this app's ad campaigns when mapping to/from BlueZoo data; pick a distinct field name to avoid collision. |
 | `sensor_pulses` | Sensor telemetry/health (uptime, connectivity) | Not audience data — do not include in any impressions/revenue rollup |
 
-BlueZoo's RPI (revenue-per-impression) is confirmed (via a direct Bill Evans quote in BlueZoo's own marketing materials) to be BlueZoo's own coined, marketed metric — `revenue / impressions`. This app already computes the same ratio; the glossary just needs to make the formula canonical and consistent everywhere.
+BlueZoo's RPI (revenue-per-impression) is confirmed (via a direct the client quote in BlueZoo's own marketing materials) to be BlueZoo's own coined, marketed metric — `revenue / impressions`. This app already computes the same ratio; the glossary just needs to make the formula canonical and consistent everywhere.
 
 ## Steps
 
@@ -61,5 +61,5 @@ None — pure documentation/constants, safe to do any time. Sequenced here becau
 
 ## Open questions
 
-1. **What does `circulation` mean in this app's schema, and does it map to a specific BlueZoo table?** Candidate mapping (unconfirmed): `circulation` = broader foot-traffic/opportunity-to-see count near a screen (possibly BlueZoo `sensor_visitors` occupancy, or an outer-zone visit count), as distinct from `impressions` = inner-zone attention count (BlueZoo `sensor_visits`). This is a plausible retail-signage-industry pattern (circulation = OTS, impressions = actual attention) but is **not confirmed** against BlueZoo's docs or Bill's own usage — needs a direct check with Bill/Cid before being written into the glossary as fact.
-2. Does BlueZoo have a canonical definition of "unique reach" (via `group_uv_*`) that this app should surface as a distinct metric from impressions, or is impressions-only sufficient for the RPI use case Bill cares about?
+1. **What does `circulation` mean in this app's schema, and does it map to a specific BlueZoo table?** Candidate mapping (unconfirmed): `circulation` = broader foot-traffic/opportunity-to-see count near a screen (possibly BlueZoo `sensor_visitors` occupancy, or an outer-zone visit count), as distinct from `impressions` = inner-zone attention count (BlueZoo `sensor_visits`). This is a plausible retail-signage-industry pattern (circulation = OTS, impressions = actual attention) but is **not confirmed** against BlueZoo's docs or the client's own usage — needs a direct check with BlueZoo before being written into the glossary as fact.
+2. Does BlueZoo have a canonical definition of "unique reach" (via `group_uv_*`) that this app should surface as a distinct metric from impressions, or is impressions-only sufficient for the RPI use case the client cares about?

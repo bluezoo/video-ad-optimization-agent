@@ -1,12 +1,12 @@
-# Open Questions for Bill / Cid
+# Open Questions for BlueZoo
 
 Consolidated from every phase doc, so this can be sent as a single list without digging through 14 files. Ordered roughly by how much they block downstream work — the first two are the ones most worth resolving soonest.
 
-**Update:** Bill's ad-play-tracking email (full text, names redacted, in `.docs/.context/project_context.md`) substantially resolves or narrows questions 4 and 17 below — see each for details. It also confirms the design is an end-of-day batch job (not real-time) and introduces a third external system, the retailer's CMS, whose exact delivery mechanism is still unknown (see Phase 9's open questions). Note: that email references "your list of 5 architectural changes," but the only such list captured across the three reviewed screenshots is a 2-item list (Phase 0/overview's original source) — the fuller 5-item list, if it exists as a separate email, was not among the material reviewed.
+**Update:** the client's ad-play-tracking email (full text, names redacted, in `.docs/.context/project_context.md`) substantially resolves or narrows questions 4 and 17 below — see each for details. It also confirms the design is an end-of-day batch job (not real-time) and introduces a third external system, the retailer's CMS, whose exact delivery mechanism is still unknown (see Phase 9's open questions). Note: that email references "your list of 5 architectural changes," but the only such list captured across the three reviewed screenshots is a 2-item list (Phase 0/overview's original source) — the fuller 5-item list, if it exists as a separate email, was not among the material reviewed.
 
 ## 1. Repo relationship to `github.com/bluezoo/ad-campaign-agent` (blocks Phase 10, shapes Phase 12)
 
-BlueZoo has already publicly announced and open-sourced a project at `github.com/bluezoo/ad-campaign-agent` (press release dated 2026-06-17), naming both Bill Evans and Lavi Nigam, referencing "Gemini Omni" and BigQuery. Is this repo (`video-ad-optimization-agent`) the same effort, a predecessor to it, or a separate/private instance meant to integrate with BlueZoo's public API independently? This directly affects:
+BlueZoo has already publicly announced and open-sourced a project at `github.com/bluezoo/ad-campaign-agent` (press release dated 2026-06-17), naming both the client and this repo's other maintainer, referencing "Gemini Omni" and BigQuery. Is this repo (`video-ad-optimization-agent`) the same effort, a predecessor to it, or a separate/private instance meant to integrate with BlueZoo's public API independently? This directly affects:
 - Whether "production launch" (Phase 12) means shipping into that public repo or hardening a separate private deployment.
 - Whether the intended live-data integration path is the REST Data Warehouse API (`api.bluezoo.io`, documented and already fetched/verified for this plan) or a BigQuery dataset-share (mentioned in the press release and this repo's own README).
 
@@ -20,15 +20,15 @@ Which point-of-sale or e-commerce system should the first real revenue integrati
 
 ## 4. Sale-to-exposure attribution methodology (blocks Phase 11's core value, not just its plumbing)
 
-**Substantially resolved by Bill's ad-play-tracking email** (see `.docs/.context/project_context.md`): his `AdPlayRecord` schema specifies attribution by product identifier + time window, looked up directly against the retailer's PoS system — not time-window proximity, beacon correlation, or self-reported codes. What remains open is narrower: can the specific PoS system chosen in question 3 actually resolve sales by product identifier, or does the first live demo need the coarser store-day fallback (Phase 11, step 3)?
+**Substantially resolved by the client's ad-play-tracking email** (see `.docs/.context/project_context.md`): the client's `AdPlayRecord` schema specifies attribution by product identifier + time window, looked up directly against the retailer's PoS system — not time-window proximity, beacon correlation, or self-reported codes. What remains open is narrower: can the specific PoS system chosen in question 3 actually resolve sales by product identifier, or does the first live demo need the coarser store-day fallback (Phase 11, step 3)?
 
 ## 5. `circulation` metric definition (Phase 2 glossary — does not block Phase 2 itself)
 
-This app's `video_metrics.circulation` column has a candidate mapping (broader foot-traffic/opportunity-to-see, possibly BlueZoo's `sensor_visitors` occupancy or an outer-zone visit count, as distinct from `impressions` = inner-zone `sensor_visits`) — but this is **not confirmed** against BlueZoo's docs or Bill's own usage. Phase 2's glossary handles this by writing the definition down as "app-local synthetic, BlueZoo mapping unresolved" rather than waiting on this answer — so this question doesn't block Phase 2, only the eventual real-data alignment in Phase 10.
+This app's `video_metrics.circulation` column has a candidate mapping (broader foot-traffic/opportunity-to-see, possibly BlueZoo's `sensor_visitors` occupancy or an outer-zone visit count, as distinct from `impressions` = inner-zone `sensor_visits`) — but this is **not confirmed** against BlueZoo's docs or the client's own usage. Phase 2's glossary handles this by writing the definition down as "app-local synthetic, BlueZoo mapping unresolved" rather than waiting on this answer — so this question doesn't block Phase 2, only the eventual real-data alignment in Phase 10.
 
 ## 6. Unique-reach metric (Phase 2 glossary)
 
-Does BlueZoo's `group_uv_*` (unique visitor) concept need to be surfaced as a distinct metric in this app, separate from raw impressions, or is impressions-only sufficient for the RPI use case Bill cares about?
+Does BlueZoo's `group_uv_*` (unique visitor) concept need to be surfaced as a distinct metric in this app, separate from raw impressions, or is impressions-only sufficient for the RPI use case the client cares about?
 
 ## 7. Non-fashion proof vertical (Phase 7)
 
@@ -40,11 +40,11 @@ Is a full product-CRUD tool actually needed now, or is seeded-fixture-only suffi
 
 ## 9. RPI demo range realism (Phase 4)
 
-The two existing (soon-to-be-unified) mock generators use different RPI ranges ($0.02-$0.08 vs. $0.08-$0.15) — which looks more credible for demo purposes in front of Bill/prospects?
+The two existing (soon-to-be-unified) mock generators use different RPI ranges ($0.02-$0.08 vs. $0.08-$0.15) — which looks more credible for demo purposes in front of the client/prospects?
 
 ## 10. Demo screen count (Phase 9)
 
-How many screens should the synthetic playout/attribution demo simulate — does Bill have a preferred number/layout matching a specific prospect walkthrough?
+How many screens should the synthetic playout/attribution demo simulate — does the client have a preferred number/layout matching a specific prospect walkthrough?
 
 ## 11. Screen-to-BlueZoo-sensor mapping convention (Phase 10)
 
@@ -72,7 +72,7 @@ This plan's philosophy states demo mode should work with zero external accounts,
 
 ## 17. Cross-creative attribution rule when multiple videos share one BlueZoo sensor window (blocks Phase 9's join logic, shapes Phase 6's credibility once real data lands)
 
-**Narrowed, not eliminated, by Bill's ad-play-tracking email** (see `.docs/.context/project_context.md`): his design calls BlueZoo's API per `AdPlayRecord`'s own start/end window directly, rather than pre-aggregating a shared 15-minute bucket and splitting it after the fact — so this is no longer a fundamental attribution-methodology question needing a proportional-allocation formula. What's still open is a narrower, technical question (tracked in Phase 9/10): does BlueZoo's API actually return accurate, non-duplicated counts for a query window shorter than its confirmed 15-minute historical grain — likely meaning the Real-time API (`get_occupancy_count`/`get_visits`) needs to be used for per-ad-play queries, rather than the Data Warehouse `run_query` path. This needs a direct technical check against BlueZoo's API (Phase 10), not a design decision.
+**Narrowed, not eliminated, by the client's ad-play-tracking email** (see `.docs/.context/project_context.md`): the client's design calls BlueZoo's API per `AdPlayRecord`'s own start/end window directly, rather than pre-aggregating a shared 15-minute bucket and splitting it after the fact — so this is no longer a fundamental attribution-methodology question needing a proportional-allocation formula. What's still open is a narrower, technical question (tracked in Phase 9/10): does BlueZoo's API actually return accurate, non-duplicated counts for a query window shorter than its confirmed 15-minute historical grain — likely meaning the Real-time API (`get_occupancy_count`/`get_visits`) needs to be used for per-ad-play queries, rather than the Data Warehouse `run_query` path. This needs a direct technical check against BlueZoo's API (Phase 10), not a design decision.
 
 ---
 

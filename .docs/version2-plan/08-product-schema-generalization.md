@@ -2,7 +2,7 @@
 
 ## Goal
 
-Make the `products` table and its Python-side handling vertical-agnostic, so a non-fashion product (e.g., a beverage, an electronics SKU, a QSR menu item) can be created and run through the full pipeline without touching fashion-specific columns. This is the data-layer half of Bill's first request; Phase 8 does the prompt/agent-instruction half.
+Make the `products` table and its Python-side handling vertical-agnostic, so a non-fashion product (e.g., a beverage, an electronics SKU, a QSR menu item) can be created and run through the full pipeline without touching fashion-specific columns. This is the data-layer half of the client's first request; Phase 8 does the prompt/agent-instruction half.
 
 ## Why this is smaller than it looks
 
@@ -25,9 +25,9 @@ Make the `products` table and its Python-side handling vertical-agnostic, so a n
 1. Define a `Product` Pydantic model (new file, e.g. `app/models/product.py`, matching the pattern already used for `CreativeVariation` in `app/models/variation.py`) with a small set of **required, generic** fields (id, name, category, primary image reference, short description) and one `attributes: dict` field backed by the existing `metadata` JSON column for anything vertical-specific (style/color/fabric/occasion for fashion, or whatever fields a different vertical needs — no fixed schema for this field, by design).
 2. Add the row↔model adapter this phase actually needs: update `get_product()` (`app/database/db.py:375`) to parse `metadata` and return (or be wrapped by a function that returns) a `Product` instance, and migrate `app/tools/video_tools.py:476` to consume the typed model instead of the raw dict. This is the concrete piece of "wiring up" the schema — not a config toggle, an actual data-flow change with its own test.
 3. Migrate the DB additively: keep `style`/`color`/`fabric`/`occasion` as nullable columns (do not drop them — the 22 existing fashion products keep working unchanged). No destructive migration, no data loss, no forced rewrite of `products_data.py`'s existing entries.
-4. Add a second seed dataset — a small (5-10 item) **non-fashion** product catalog (pick one concrete vertical to prove genericity with; this is a product/business call worth a quick check with Bill rather than an arbitrary technical choice — see open questions) using the `attributes` JSON path instead of the fashion-typed columns. This becomes the test fixture proving the schema is actually generic, not just theoretically capable of being.
+4. Add a second seed dataset — a small (5-10 item) **non-fashion** product catalog (pick one concrete vertical to prove genericity with; this is a product/business call worth a quick check with the client rather than an arbitrary technical choice — see open questions) using the `attributes` JSON path instead of the fashion-typed columns. This becomes the test fixture proving the schema is actually generic, not just theoretically capable of being.
 5. Decide and implement the product-category vs. campaign-category resolution from "Current state" above, then fix `create_campaign()`'s hardcoded `category_mapping` (`app/tools/campaign_tools.py:64`) accordingly — using the corrected `CAMPAIGN_CATEGORIES` from Phase 1, item 5, and replacing the silent `"essentials"` fallback with an explicit, deliberate behavior (error, or a genuine "uncategorized" bucket — a conscious choice either way, not an accident).
-6. **Do not build product CRUD tools in this phase** (removed from committed scope per review — see open questions). Products remain seeded via `products_data.py` and the new non-fashion fixture file; nothing in Bill's actual request requires a create/update tool surface today, and building one that nothing calls yet is the premature-abstraction pattern this plan's philosophy warns against.
+6. **Do not build product CRUD tools in this phase** (removed from committed scope per review — see open questions). Products remain seeded via `products_data.py` and the new non-fashion fixture file; nothing in the client's actual request requires a create/update tool surface today, and building one that nothing calls yet is the premature-abstraction pattern this plan's philosophy warns against.
 
 ## Validation
 
@@ -47,6 +47,6 @@ Phase 1 (corrected `CAMPAIGN_CATEGORIES`).
 
 ## Open questions
 
-1. **Which non-fashion vertical should the proof-of-genericity fixture use?** This should match whatever BlueZoo customer/vertical is most relevant to show next (BlueZoo's own marketed verticals are out-of-home advertising, retail, hospitality, and smart cities — none of which are fashion-specific) — worth a quick confirmation with Bill rather than picking arbitrarily.
+1. **Which non-fashion vertical should the proof-of-genericity fixture use?** This should match whatever BlueZoo customer/vertical is most relevant to show next (BlueZoo's own marketed verticals are out-of-home advertising, retail, hospitality, and smart cities — none of which are fashion-specific) — worth a quick confirmation with the client rather than picking arbitrarily.
 2. **Is campaign category a controlled taxonomy independent of product category, or should it become free-form?** This determines whether step 5's fix is "add a small campaign-theme enum separate from product category" or "loosen the DB CHECK constraint" — a real design decision, not a mechanical mapping fix.
 3. Product CRUD is intentionally out of scope for this phase (see step 6) — flag only as backlog if a future demo genuinely needs to create products live rather than via seed fixtures.

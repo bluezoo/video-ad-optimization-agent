@@ -2,15 +2,15 @@
 
 ## Goal
 
-Ship the specific comparison view Bill is most likely to want to see live: RPI, side by side, across the different video creatives/variations in a campaign. This is BlueZoo's own flagship metric (RPI), applied to the thing this app's whole loop exists to produce (multiple creative variations competing on performance).
+Ship the specific comparison view the client is most likely to want to see live: RPI, side by side, across the different video creatives/variations in a campaign. This is BlueZoo's own flagship metric (RPI), applied to the thing this app's whole loop exists to produce (multiple creative variations competing on performance).
 
 ## Why this is pulled forward, and why it needs Phases 3-4 first
 
-RPI-across-creatives is only trustworthy once (a) RPI is computed the same way everywhere (Phase 3) and (b) demo data isn't internally inconsistent (Phase 4). Building this comparison view before those two phases would mean showing Bill a chart whose numbers might not even agree with each other depending on which code path generated them — worse than not showing it at all.
+RPI-across-creatives is only trustworthy once (a) RPI is computed the same way everywhere (Phase 3) and (b) demo data isn't internally inconsistent (Phase 4). Building this comparison view before those two phases would mean showing the client a chart whose numbers might not even agree with each other depending on which code path generated them — worse than not showing it at all.
 
 ## Current state
 
-- `compare_campaigns()` (`app/tools/metrics_tools.py:608-717`) compares at the campaign level, not the creative/variation level within a campaign — the granularity Bill actually wants ("which of these video variations won") isn't directly exposed today.
+- `compare_campaigns()` (`app/tools/metrics_tools.py:608-717`) compares at the campaign level, not the creative/variation level within a campaign — the granularity the client actually wants ("which of these video variations won") isn't directly exposed today.
 - `generate_metrics_visualization()` (`app/tools/metrics_tools.py:720-1061`) renders charts by prompting an **image-generation model** to draw them (`CHART_TEMPLATES`, lines 35-166), rather than using a deterministic charting library. This means the visual representation of the numbers is not guaranteed to match the numbers — an LLM drawing "a bar chart with these values" can visually misrepresent proportions, labels, or ordering. This was correctly flagged as a concern in the original plan and is carried forward here.
 
 ## Steps
@@ -29,7 +29,7 @@ RPI-across-creatives is only trustworthy once (a) RPI is computed the same way e
 
 ## Exit criteria
 
-Bill (or anyone) can ask the Analytics Agent "which of these creatives is winning" and get a correct, deterministically-rendered RPI comparison across the campaign's video variations.
+The client (or anyone) can ask the Analytics Agent "which of these creatives is winning" and get a correct, deterministically-rendered RPI comparison across the campaign's video variations.
 
 ## Dependencies
 
@@ -37,4 +37,4 @@ Phase 3 (shared `compute_rpi()`), Phase 4 (deterministic demo data so the compar
 
 ## Open questions
 
-None functionally — this is a new read-only reporting feature built on already-established groundwork. If a specific visual chart style/branding is expected for demos in front of Bill, confirm that separately; it doesn't block building the correct underlying data path.
+None functionally — this is a new read-only reporting feature built on already-established groundwork. If a specific visual chart style/branding is expected for demos in front of the client, confirm that separately; it doesn't block building the correct underlying data path.

@@ -42,4 +42,4 @@ None.
 
 ## Open questions
 
-None — this is a well-understood config pattern, not a design decision requiring Bill's input.
+None — this is a well-understood config pattern, not a design decision requiring the client's input.
