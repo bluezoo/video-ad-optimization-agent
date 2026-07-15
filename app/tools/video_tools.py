@@ -215,8 +215,8 @@ async def generate_scene_image(
 
     client = genai.Client()
 
-    # Use Gemini 2.0 Flash Exp for image generation (imagen-3.0-generate-002 alternative)
-    # For now, using native image generation via Gemini
+    # Native image generation via the configured Gemini image model
+    # (config.IMAGE_GENERATION — GA default gemini-3-pro-image, env-overridable)
     try:
         contents = [scene_prompt]
 
@@ -963,7 +963,7 @@ async def generate_video_ad(
             config=types.GenerateVideosConfig(
                 number_of_videos=1,
                 duration_seconds=duration_seconds,
-                # Note: enhance_prompt is NOT supported by veo-3.1-generate-preview
+                # Note: enhance_prompt is NOT supported by the Veo 3.1 models
             ),
         )
         print(f"[DEBUG generate_video_ad] Video generation started, operation: {operation}")

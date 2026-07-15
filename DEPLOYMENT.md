@@ -462,9 +462,9 @@ open "https://console.cloud.google.com/run/detail/us-central1/ad-campaign-agent/
 | Purpose | Model | Region Required |
 |---------|-------|-----------------|
 | Agent Reasoning | `gemini-3-flash-preview` | `global` |
-| Scene Image Generation | `gemini-3-pro-image-preview` | `global` |
-| Video Animation | `veo-3.1-generate-preview` | `global` |
-| Charts & Maps | `gemini-3-pro-image-preview` | `global` |
+| Scene Image Generation | `gemini-3-pro-image` (default; `IMAGE_GENERATION_MODEL` env override) | `global` |
+| Video Animation | `veo-3.1-generate-001` (default; `VIDEO_GEN_MODEL` env override) | `global` |
+| Charts & Maps | `gemini-3-pro-image` (default; `IMAGE_GENERATION_MODEL` env override) | `global` |
 
 > **Important:** All Gemini 3 models require `global` region. Use `make deploy-ae-global` for Agent Engine deployment.
 

@@ -50,6 +50,8 @@ These are drop-in replacements at the config level — no call-site changes to `
 ## Validation
 
 - [ ] `grep -n 'IMAGE_GENERATION\s*=\|VEO_MODEL\s*=' app/config.py` shows the two GA IDs, not the old preview IDs. (Do not grep for the bare word "preview" in `config.py` — it will also match the unrelated main orchestration model, `MODEL = "gemini-3-flash-preview"` at `app/config.py:24`, which is intentionally out of scope for this phase per the open question below, and a broad grep would produce a false failure.)
+
+  > **Amended (workstream 01, 2026-07-14):** at plan approval the owner renamed the constant/env var `VEO_MODEL` → `VIDEO_GEN_MODEL` (model-agnostic — Veo today, possibly Omni later; matches the image-side naming). The grep is therefore `grep -n 'IMAGE_GENERATION\s*=\|VIDEO_GEN_MODEL\s*=' app/config.py`. The owner also approved making both media-model values env-overridable (`IMAGE_GENERATION_MODEL`, `VIDEO_GEN_MODEL`) with the GA IDs as defaults.
 - [ ] A real Stage 1 image generation call succeeds against the new `IMAGE_GENERATION` ID — e.g. drive one video-generation request through `make dev` (adk web) against a demo campaign and confirm the scene image renders, or call `generate_scene_image()` directly from a one-line python snippet with the new ID. This is the actual release gate, not the config grep.
 - [ ] A real Stage 2 video generation call succeeds against the new `VEO_MODEL` ID — e.g. the same `make dev` request carried through to Stage 2 (Veo animation), or a direct `animate_scene_with_veo()` call. The actual release gate.
 - [ ] `make test-unit` and `make test-integration` pass unchanged.
@@ -67,4 +69,6 @@ None. Do this first, independent of every other phase.
 ## Open questions
 
 - Is `MODEL = "gemini-3-flash-preview"` (`app/config.py:24`, the main agent orchestration model) also on a deprecation timeline? It was not flagged in this pass — confirm it's still GA-track or preview-with-no-near-term-cutoff before treating it as settled. If in doubt, check Vertex's model garden page directly rather than assuming.
+
+  > **Amended (workstream 01, 2026-07-14):** Answered during kickoff research — Google's deprecations page lists `gemini-3-flash-preview` as deprecated 2025-12-17 with **"no shutdown date announced"** (successor: `gemini-3.5-flash`). No near-term cutoff, so it stays out of Phase 0's scope; revisit if a shutdown date is announced.
 - Confirm whether `GOOGLE_GENAI_USE_VERTEXAI=FALSE` (AI Studio / `GOOGLE_API_KEY`) path uses the same model ID registry as Vertex, or a separate one with different deprecation timing — this determines whether local/demo development was ever actually affected by the Veo April 2 deprecation, or only Vertex-backed deployments (Cloud Run, Agent Engine).

@@ -434,10 +434,10 @@ Get video properties for video 5
 
 | Purpose | Model |
 |---------|-------|
-| All Agents | `gemini-2.5-pro` |
-| Scene Images | `gemini-2.5-flash-image` |
-| Video Animation | `veo-3.1-generate-preview` |
-| Charts/Maps | `gemini-2.5-flash-image` |
+| All Agents | `gemini-3-flash-preview` |
+| Scene Images | `gemini-3-pro-image` |
+| Video Animation | `veo-3.1-generate-001` |
+| Charts/Maps | `gemini-3-pro-image` |
 
 ---
 

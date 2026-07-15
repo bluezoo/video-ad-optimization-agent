@@ -40,7 +40,7 @@ Run the `make` target for the chosen path (step 1). For Agent Engine deployments
 
 **Python version gotcha**: Agent Engine requires Python 3.9–3.13, not 3.14+. `make deploy-ae-global` auto-selects `.venv-deploy` (Python 3.12) or falls back to `python3.12`/`python3.11` — if deployment fails with a Python version error, check `python3 --version` and create `.venv-deploy` with a compatible interpreter.
 
-**Region gotcha**: All Gemini 3 models (`gemini-3-flash-preview`, `gemini-3-pro-image-preview`, `veo-3.1-generate-preview`) require `global` region. If you see `Publisher Model ... was not found (404)`, the deployment is pointed at a regional endpoint instead of `global`.
+**Region gotcha**: All Gemini 3 / Veo models (`gemini-3-flash-preview`, `gemini-3-pro-image`, `veo-3.1-generate-001`) require `global` region. If you see `Publisher Model ... was not found (404)`, the deployment is pointed at a regional endpoint instead of `global`.
 
 ## 5. Grant GCS permissions (Agent Engine only)
 
