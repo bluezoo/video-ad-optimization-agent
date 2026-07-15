@@ -43,3 +43,35 @@ image/video models — the release gate for any model-config change.
 **Pass:** both scenes' expected tools fired with sane arguments and responses
 match. **Fail:** wrong/no tool fired, any stage errors, timeout (>10 min), or
 a model-not-found / permission error anywhere.
+
+## Scenario F2: Analytics chart with defaults (workstream 02 regression)
+
+Covers the Phase 1 fixes: valid default metric and the no-data guard.
+
+### Scene F2.1 — Chart with default metric
+
+**Query:** "Show me a performance chart for the Blue Floral Maxi Dress campaign"
+
+**Expected tool calls:**
+- `generate_metrics_visualization` with `campaign_id` resolved to the Blue
+  Floral Maxi Dress campaign; `metric` argument either omitted (default
+  `revenue_per_impression`) or an explicit valid value — the response must
+  NOT contain "Invalid metric".
+
+**Pass criteria:**
+- Tool response has `status: "success"` and a chart artifact is rendered
+  in the UI (screenshot as evidence).
+
+### Scene F2.2 — Campaign with no activated-video metrics
+
+**Query:** "Create a campaign for product 1 at Test Mall in Austin, Texas,
+then show me its performance chart"
+
+**Expected tool calls:**
+- `create_campaign(product_id=1, store_name="Test Mall", city="Austin", state="Texas"|"TX")`
+- `generate_metrics_visualization` for the new campaign's id.
+
+**Pass criteria:**
+- No crash/traceback in the tool response; the visualization tool returns
+  the clean error ("No metrics data available … activate videos first")
+  and the agent relays that guidance (e.g. pointing at review/activation).
