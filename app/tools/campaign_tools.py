@@ -41,6 +41,12 @@ def create_campaign(
 
     Each campaign is tied to one product at one store location.
     The campaign name is auto-generated from product and store if not provided.
+    The campaign category is derived from the product's category via a
+    hardcoded mapping (dress→summer, top→essentials, pants→professional,
+    skirt→formal, outerwear→essentials); any unmapped product category
+    silently falls back to "essentials". Valid categories are enforced by
+    the CHECK constraint on campaigns.category (app/database/db.py) and
+    mirrored in config.CAMPAIGN_CATEGORIES.
 
     Args:
         product_id: The product ID from products table (use list_products to browse)

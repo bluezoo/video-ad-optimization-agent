@@ -38,3 +38,26 @@ def test_media_models_are_env_overridable(monkeypatch):
 def test_old_veo_model_name_is_gone():
     cfg = importlib.reload(config_module)
     assert not hasattr(cfg, "VEO_MODEL")
+
+
+class TestCampaignCategoriesParity:
+    """config.CAMPAIGN_CATEGORIES must stay in sync with the CHECK
+    constraint on campaigns.category (app/database/db.py — source of truth)."""
+
+    def test_all_config_categories_accepted_by_db(self, test_db):
+        from app import config
+        from app.database.db import get_db_cursor
+
+        with get_db_cursor() as cursor:
+            for cat in config.CAMPAIGN_CATEGORIES:
+                # Raises sqlite3.IntegrityError if cat violates the CHECK
+                cursor.execute(
+                    "INSERT INTO campaigns (name, city, state, category) "
+                    "VALUES (?, ?, ?, ?)",
+                    (f"parity-{cat}", "Los Angeles", "CA", cat),
+                )
+
+    def test_holiday_category_present(self):
+        from app import config
+
+        assert "holiday" in config.CAMPAIGN_CATEGORIES
