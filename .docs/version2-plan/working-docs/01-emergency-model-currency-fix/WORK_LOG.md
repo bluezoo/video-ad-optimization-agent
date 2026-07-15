@@ -10,3 +10,9 @@ Owner approved the six-dimension summary with one scope addition: media-model co
 
 ## 2026-07-14 18:05 — plan approved (checkpoint 3)
 Owner approved plan.md with one amendment: rename `VEO_MODEL` → `VIDEO_GEN_MODEL` (constant + env var; model-agnostic since Omni/Veo are both video-gen backends, aligns with image-side naming). Plan updated in place (Tasks 2/3 carry the rename incl. video_tools.py's six refs, CLAUDE.md:70 gotcha, and a phase-doc validation-grep provenance note). Execution: inline, trivial-phase fast path.
+
+## 2026-07-14 18:20 — Task 1: baseline smoke vs preview IDs
+Env bootstrapped: app/.env created (gitignored, verified via git check-ignore) — Vertex path, project kaggle-on-gcp, location global. Worktree venv built with python3.12 (`make install` recipe assumes bare `python`, absent on this machine — replicated manually).
+Stage 1 (gemini-3-pro-image-preview): **succeeded**, 1,352,070 bytes — Vertex still tolerates this ID for now.
+Stage 2 (veo-3.1-generate-preview): **failed — 404 NOT_FOUND**: "Publisher model `projects/kaggle-on-gcp/locations/global/publishers/google/models/veo-3.1-generate-preview` was not found or your project does not have access to it." The April deprecation is already biting: video generation is currently broken on the Vertex path.
+Note: `make lint` fails with 174 pre-existing ruff errors across untouched files (repo-wide condition, not introduced here — candidate for Phase 1 cleanup); the new smoke script itself lints clean.
