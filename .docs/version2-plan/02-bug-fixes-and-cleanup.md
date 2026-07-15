@@ -84,7 +84,22 @@ These are copy-paste-drift bugs, not "hardcoded fashion" (which is handled delib
 
 **Fix:** narrow the `except` so genuine eval failures fail the test. Keep `xfail` ONLY for infrastructure errors (e.g. missing credentials/quota), not for evaluation-score failures — catch the specific infrastructure exception(s) and let `AgentEvaluator`'s assertion failures propagate.
 
+> **Amended (workstream 01, 2026-07-14):** the masking is worse than the xfail alone — the tests' broad `except ImportError: pytest.skip("google.adk.evaluation not available")` also swallows the **lazy** ImportError `AgentEvaluator.evaluate` raises when the `google-adk[eval]` extra isn't installed. On a fresh checkout, `make test-integration` therefore reports all-skipped (looks green) while running nothing. Documented in `SETUP_INSTRUCTIONS.md` (Test section); the item-7 fix should distinguish "eval extra not installed" (a loud, actionable skip message at most) from real import problems, alongside the xfail narrowing. With the extra installed and `app/.env` sourced, the suite runs and passes for real (verified live 2026-07-14, 5 passed).
+
 **Test:** deliberately break one eval expectation locally and confirm `make test-integration` actually fails (then revert). (Adding the non-fashion eval *cases* themselves is Phase 8's job — see `09-prompt-and-agent-generalization.md` — since the products they exercise don't exist until the generalization work lands.)
+
+### 8. `tests/conftest.py` DB-path mismatch — already fixed in workstream 01
+
+> **Amended (workstream 01, 2026-07-14):** discovered and fixed during Phase 0, because it blocked that phase's `make test-unit` validation on a fresh checkout. `tests/conftest.py:43` hardcoded `MAIN_DB_PATH = APP_DIR / "campaigns.db"`, but `_ensure_main_db_exists()` populates via `init_database()`, which writes to `app.config.DB_PATH` — the **project root** in local dev. On any checkout without a leftover `app/campaigns.db` (all fresh clones and worktrees), every DB-dependent unit test errored with `FileNotFoundError`. Fixed by deriving `MAIN_DB_PATH` from `app.config.DB_PATH`. No action left for this phase; listed so the record of what Phase 1 "inherited already-fixed" is complete.
+
+### 9. Three pre-existing `tests/e2e` failures (test/code drift) — new item
+
+> **Amended (workstream 01, 2026-07-14):** found while running Phase 0's release gate; verified pre-existing by reproducing identically at the base commit (`e23ca66`) with only the conftest fix (item 8) applied. Not fixed in workstream 01 (unrelated to model currency — this is test-suite drift, squarely this phase's territory):
+>
+> - `tests/e2e/test_demo_workflows.py::TestCreativeGenerationWorkflow::test_video_generation_flow` — calls `generate_video_from_product()` with a `model_ethnicity` kwarg the function no longer accepts.
+> - `...::TestAnalyticsWorkflow::test_chart_generation` and `...::TestGeographicIntelligenceWorkflow::test_map_visualization` — both call async tools without awaiting them (`TypeError: argument of type 'coroutine' is not iterable`; `RuntimeWarning: coroutine ... was never awaited`).
+>
+> **Fix:** update the three tests to the current tool signatures / async contracts. **Test:** `make test-e2e` fully green.
 
 ## Validation
 

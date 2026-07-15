@@ -49,12 +49,17 @@ These are drop-in replacements at the config level — no call-site changes to `
 
 ## Validation
 
-- [ ] `grep -n 'IMAGE_GENERATION\s*=\|VEO_MODEL\s*=' app/config.py` shows the two GA IDs, not the old preview IDs. (Do not grep for the bare word "preview" in `config.py` — it will also match the unrelated main orchestration model, `MODEL = "gemini-3-flash-preview"` at `app/config.py:24`, which is intentionally out of scope for this phase per the open question below, and a broad grep would produce a false failure.)
-- [ ] A real Stage 1 image generation call succeeds against the new `IMAGE_GENERATION` ID — e.g. drive one video-generation request through `make dev` (adk web) against a demo campaign and confirm the scene image renders, or call `generate_scene_image()` directly from a one-line python snippet with the new ID. This is the actual release gate, not the config grep.
-- [ ] A real Stage 2 video generation call succeeds against the new `VEO_MODEL` ID — e.g. the same `make dev` request carried through to Stage 2 (Veo animation), or a direct `animate_scene_with_veo()` call. The actual release gate.
-- [ ] `make test-unit` and `make test-integration` pass unchanged.
-- [ ] The exact-ID grep from Step 3 (`gemini-3-pro-image-preview\|veo-3.1-generate-preview`) returns nothing, including the confirmed `video_tools.py:966` hit. (This preview-ID pattern cannot match `video_tools.py:218`, whose stale text is the string "Gemini 2.0 Flash Exp" — see the next bullet.)
+- [x] `grep -n 'IMAGE_GENERATION\s*=\|VEO_MODEL\s*=' app/config.py` shows the two GA IDs, not the old preview IDs. (Do not grep for the bare word "preview" in `config.py` — it will also match the unrelated main orchestration model, `MODEL = "gemini-3-flash-preview"` at `app/config.py:24`, which is intentionally out of scope for this phase per the open question below, and a broad grep would produce a false failure.)
+
+  > **Amended (workstream 01, 2026-07-14):** at plan approval the owner renamed the constant/env var `VEO_MODEL` → `VIDEO_GEN_MODEL` (model-agnostic — Veo today, possibly Omni later; matches the image-side naming). The grep is therefore `grep -n 'IMAGE_GENERATION\s*=\|VIDEO_GEN_MODEL\s*=' app/config.py`. The owner also approved making both media-model values env-overridable (`IMAGE_GENERATION_MODEL`, `VIDEO_GEN_MODEL`) with the GA IDs as defaults.
+- [x] A real Stage 1 image generation call succeeds against the new `IMAGE_GENERATION` ID — e.g. drive one video-generation request through `make dev` (adk web) against a demo campaign and confirm the scene image renders, or call `generate_scene_image()` directly from a one-line python snippet with the new ID. This is the actual release gate, not the config grep.
+- [x] A real Stage 2 video generation call succeeds against the new `VEO_MODEL` ID — e.g. the same `make dev` request carried through to Stage 2 (Veo animation), or a direct `animate_scene_with_veo()` call. The actual release gate.
+- [x] `make test-unit` and `make test-integration` pass unchanged.
+- [x] The exact-ID grep from Step 3 (`gemini-3-pro-image-preview\|veo-3.1-generate-preview`) returns nothing, including the confirmed `video_tools.py:966` hit. (This preview-ID pattern cannot match `video_tools.py:218`, whose stale text is the string "Gemini 2.0 Flash Exp" — see the next bullet.)
 - [ ] `grep -rn "Gemini 2.0 Flash Exp" app/` returns nothing once this phase and Phase 1 are both complete — `video_tools.py:218` is fixed here; the remaining `video_tools.py:18` module docstring and `agent.py:200` instruction text are Phase 1's (see `02-bug-fixes-and-cleanup.md`, item 6).
+
+
+> **Amended (workstream 01, 2026-07-14):** all Phase-0-owned validation items above completed and evidenced — see `working-docs/01-emergency-model-currency-fix/WORK_LOG.md` (release-gate entry 19:15 and scenario-F1 entry 19:45). The last item stays unticked by design: it can only close once Phase 1 fixes its two remaining "Gemini 2.0 Flash Exp" hits (`video_tools.py:18`, `agent.py:200`); this phase's `video_tools.py:218` share is done.
 
 ## Exit criteria
 
@@ -67,4 +72,8 @@ None. Do this first, independent of every other phase.
 ## Open questions
 
 - Is `MODEL = "gemini-3-flash-preview"` (`app/config.py:24`, the main agent orchestration model) also on a deprecation timeline? It was not flagged in this pass — confirm it's still GA-track or preview-with-no-near-term-cutoff before treating it as settled. If in doubt, check Vertex's model garden page directly rather than assuming.
+
+  > **Amended (workstream 01, 2026-07-14):** Answered during kickoff research — Google's deprecations page lists `gemini-3-flash-preview` as deprecated 2025-12-17 with **"no shutdown date announced"** (successor: `gemini-3.5-flash`). No near-term cutoff, so it stays out of Phase 0's scope; revisit if a shutdown date is announced.
+  >
+  > **Superseded (workstream 01, same day):** mid-implementation the owner directed swapping the orchestration model too — `MODEL` now defaults to `gemini-3.5-flash` (verified GA: released 2026-05-19, retirement "2027-05-19 or later", `global` supported), env-overridable via `AGENT_MODEL`. All three model config values are therefore GA-defaulted and env-overridable as of this workstream.
 - Confirm whether `GOOGLE_GENAI_USE_VERTEXAI=FALSE` (AI Studio / `GOOGLE_API_KEY`) path uses the same model ID registry as Vertex, or a separate one with different deprecation timing — this determines whether local/demo development was ever actually affected by the Veo April 2 deprecation, or only Vertex-backed deployments (Cloud Run, Agent Engine).

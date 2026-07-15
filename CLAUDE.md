@@ -67,7 +67,7 @@ Vertex AI path: `GOOGLE_GENAI_USE_VERTEXAI=TRUE`, `GOOGLE_CLOUD_PROJECT`, `GCS_B
 
 ## Gotchas
 
-- **Gemini 3 preview models need `GOOGLE_CLOUD_LOCATION=global`** (the `us`/`eu` multi-region endpoints also work; single regions like `us-central1` don't). `MODEL`, `IMAGE_GENERATION`, and `VEO_MODEL` in `app/config.py` are all Gemini 3 / Veo 3.1 preview models — don't point deploys at a single-region endpoint for them.
+- **Gemini 3.x models need `GOOGLE_CLOUD_LOCATION=global`** (the `us`/`eu` multi-region endpoints also work; most single regions like `us-central1` don't). `MODEL`, `IMAGE_GENERATION`, and `VIDEO_GEN_MODEL` in `app/config.py` are all Gemini 3.x / Veo 3.1 models — don't point deploys at a single-region endpoint for them. All three default to GA IDs and are env-overridable (`AGENT_MODEL`, `IMAGE_GENERATION_MODEL`, `VIDEO_GEN_MODEL`) for testing preview models.
 - **Agent Engine only supports Python 3.9–3.13**, not 3.14+. `make deploy-ae-global` auto-selects `.venv-deploy` (Python 3.12) or falls back to `python3.12`/`python3.11` — see the `DEPLOY_PYTHON` logic in the Makefile.
 - **`BuiltInCodeExecutor` cannot be combined with function-calling tools** in ADK — they're mutually exclusive on the same agent (see comment in `app/agent.py`).
 - Deploying to Agent Engine requires granting `roles/storage.objectAdmin` on the GCS bucket to the Reasoning Engine service agent (`service-<PROJECT_NUMBER>@gcp-sa-aiplatform-re.iam.gserviceaccount.com`) — run `make setup-ae-permissions` or it's handled automatically by `scripts/deploy_ae_inline.py`.

@@ -21,11 +21,14 @@ import os
 # NOTE: Gemini 3 models require global region. GlobalAdkApp preserves
 # GOOGLE_CLOUD_LOCATION=global after Agent Engine setup.
 # See: app/agent_engine_app.py and https://github.com/google/adk-python/issues/3628
-MODEL = "gemini-3-flash-preview"  # Main agent model (requires global region)
+MODEL = os.environ.get("AGENT_MODEL", "gemini-3.5-flash")  # Main agent model (GA; global region supported)
 
-# Media generation models
-IMAGE_GENERATION = "gemini-3-pro-image-preview"  # For scene image generation (Stage 1)
-VEO_MODEL = "veo-3.1-generate-preview"  # For video animation (Stage 2)
+# Media generation models — GA IDs as defaults, env-overridable so preview
+# models (e.g. Nano Banana 2 Lite, Gemini Omni Flash) can be swapped in for
+# pipeline testing without code changes (evaluation itself is Phase 13a/13b).
+# VIDEO_GEN_MODEL is deliberately model-agnostic (Veo today, possibly Omni later).
+IMAGE_GENERATION = os.environ.get("IMAGE_GENERATION_MODEL", "gemini-3-pro-image")  # Stage 1 scene images
+VIDEO_GEN_MODEL = os.environ.get("VIDEO_GEN_MODEL", "veo-3.1-generate-001")  # Stage 2 video animation
 
 # Video configuration
 VIDEO_ASPECT_RATIO = "9:16"  # Vertical format for retail displays

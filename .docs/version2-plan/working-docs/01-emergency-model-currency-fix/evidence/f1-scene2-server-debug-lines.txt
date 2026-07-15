@@ -1,0 +1,22 @@
+[DEBUG generate_video_from_product] Starting for campaign_id=4, product_id=21
+[DEBUG generate_video_from_product] Product: sage-satin-camisole
+[DEBUG generate_video_from_product] Campaign: Sage Satin Camisole - The Grove
+[DEBUG generate_video_from_product] Variation: elegant-studio-sage-camisole
+[DEBUG generate_video_from_product] Linked product to campaign
+[DEBUG generate_video_from_product] Loaded product image from: gs://kaggle-on-gcp-ad-campaign-assets/product-images/sage-satin-camisole.png
+[DEBUG generate_video_from_product] Stage 1: Generating scene image...
+[DEBUG generate_video_from_product] Saved thumbnail: gs://kaggle-on-gcp-ad-campaign-assets/generated/sage-satin-camisole-071426-elegant-studio-sage-camisole-thumbnail.png
+[DEBUG generate_video_from_product] Stage 2: Animating with Veo 3.1...
+[DEBUG animate_scene_with_veo] Starting animation for: sage-satin-camisole
+[DEBUG animate_scene_with_veo] Duration: 8s
+[DEBUG animate_scene_with_veo] Animation prompt: The model walks gracefully forward, the garment flowing with each step. Camera slowly orbits around the model, showcasing the garment's movement, drape, and fabric flow.
+[DEBUG animate_scene_with_veo] Calling Veo (veo-3.1-generate-001)...
+[DEBUG animate_scene_with_veo] Waiting... (0s elapsed)
+[DEBUG animate_scene_with_veo] Waiting... (20s elapsed)
+[DEBUG animate_scene_with_veo] Operation completed after 40s
+[DEBUG animate_scene_with_veo] GOOGLE_GENAI_USE_VERTEXAI=TRUE, is_vertex_ai=True
+[DEBUG animate_scene_with_veo] Video generated: 2939198 bytes
+[DEBUG generate_video_from_product] Total generation time: 97s
+[DEBUG generate_video_from_product] Saved video: gs://kaggle-on-gcp-ad-campaign-assets/generated/sage-satin-camisole-071426-elegant-studio-sage-camisole.mp4
+[DEBUG save_video_metadata] Saved metadata to: gs://kaggle-on-gcp-ad-campaign-assets/generated/sage-satin-camisole-071426-elegant-studio-sage-camisole.txt
+[DEBUG generate_video_from_product] Saved artifact version: 0

@@ -48,7 +48,7 @@ from ..config import (
     GENERATED_DIR,
     MODEL,
     IMAGE_GENERATION,
-    VEO_MODEL,
+    VIDEO_GEN_MODEL,
     VIDEO_DURATION_SECONDS,
 )
 from ..database.db import get_db_cursor, get_product, get_product_by_name
@@ -215,8 +215,8 @@ async def generate_scene_image(
 
     client = genai.Client()
 
-    # Use Gemini 2.0 Flash Exp for image generation (imagen-3.0-generate-002 alternative)
-    # For now, using native image generation via Gemini
+    # Native image generation via the configured Gemini image model
+    # (config.IMAGE_GENERATION — GA default gemini-3-pro-image, env-overridable)
     try:
         contents = [scene_prompt]
 
@@ -294,9 +294,9 @@ async def animate_scene_with_veo(
     image = types.Image(image_bytes=scene_image_bytes, mime_type="image/png")
 
     # Start video generation
-    print(f"[DEBUG animate_scene_with_veo] Calling Veo ({VEO_MODEL})...")
+    print(f"[DEBUG animate_scene_with_veo] Calling Veo ({VIDEO_GEN_MODEL})...")
     operation = client.models.generate_videos(
-        model=VEO_MODEL,
+        model=VIDEO_GEN_MODEL,
         prompt=video_prompt,
         image=image,
         config=types.GenerateVideosConfig(
@@ -578,7 +578,7 @@ async def generate_video_from_product(
 
             client = genai.Client()
             operation = client.models.generate_videos(
-                model=VEO_MODEL,
+                model=VIDEO_GEN_MODEL,
                 prompt=video_prompt,
                 image=image,
                 config=types.GenerateVideosConfig(
@@ -955,15 +955,15 @@ async def generate_video_ad(
         image = types.Image(image_bytes=image_bytes, mime_type=mime_type)
 
         # Start video generation
-        print(f"[DEBUG generate_video_ad] Starting video generation with {VEO_MODEL}...")
+        print(f"[DEBUG generate_video_ad] Starting video generation with {VIDEO_GEN_MODEL}...")
         operation = client.models.generate_videos(
-            model=VEO_MODEL,
+            model=VIDEO_GEN_MODEL,
             prompt=prompt,
             image=image,
             config=types.GenerateVideosConfig(
                 number_of_videos=1,
                 duration_seconds=duration_seconds,
-                # Note: enhance_prompt is NOT supported by veo-3.1-generate-preview
+                # Note: enhance_prompt is NOT supported by the Veo 3.1 models
             ),
         )
         print(f"[DEBUG generate_video_ad] Video generation started, operation: {operation}")

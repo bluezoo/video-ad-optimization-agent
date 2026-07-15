@@ -39,8 +39,12 @@ import pytest
 APP_DIR = Path(__file__).parent.parent / "app"
 sys.path.insert(0, str(APP_DIR.parent))
 
-# Path to the main database
-MAIN_DB_PATH = APP_DIR / "campaigns.db"
+# Path to the main database — must match app.config.DB_PATH (project root in
+# local dev), otherwise _ensure_main_db_exists() populates one file and
+# _copy_main_db_to_temp() copies a different, nonexistent one.
+from app.config import DB_PATH as _CONFIG_DB_PATH  # noqa: E402
+
+MAIN_DB_PATH = Path(_CONFIG_DB_PATH)
 
 
 # =============================================================================
