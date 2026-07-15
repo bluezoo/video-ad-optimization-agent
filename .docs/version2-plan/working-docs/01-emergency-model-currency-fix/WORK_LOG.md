@@ -16,3 +16,12 @@ Env bootstrapped: app/.env created (gitignored, verified via git check-ignore) �
 Stage 1 (gemini-3-pro-image-preview): **succeeded**, 1,352,070 bytes — Vertex still tolerates this ID for now.
 Stage 2 (veo-3.1-generate-preview): **failed — 404 NOT_FOUND**: "Publisher model `projects/kaggle-on-gcp/locations/global/publishers/google/models/veo-3.1-generate-preview` was not found or your project does not have access to it." The April deprecation is already biting: video generation is currently broken on the Vertex path.
 Note: `make lint` fails with 174 pre-existing ruff errors across untouched files (repo-wide condition, not introduced here — candidate for Phase 1 cleanup); the new smoke script itself lints clean.
+
+## 2026-07-14 18:35 — DISCOVERY: tests/conftest.py DB path mismatch breaks make test-unit on fresh checkouts
+Assumed: `make test-unit` passes unchanged (phase doc Validation; CLAUDE.md "~4s fastest feedback loop").
+Actual: on any checkout without a leftover `app/campaigns.db` (this worktree AND the main checkout today), 77/83 unit tests error with FileNotFoundError — `conftest.py:43` copies `APP_DIR / "campaigns.db"` but `_ensure_main_db_exists()` populates `app.config.DB_PATH` (project root locally). Unrelated to the model swap (reproduced before/after).
+Fix applied here (blocked this phase's validation): MAIN_DB_PATH now derives from `app.config.DB_PATH`. After fix: 82 passed, 1 skipped.
+Blast radius: Phase 1 doc amended (new item 8, marked already-fixed, provenance note). No other phase doc references conftest paths.
+
+## 2026-07-14 18:36 — Task 2 complete
+GA swap + env overrides + VEO_MODEL→VIDEO_GEN_MODEL rename (config.py, video_tools.py ×6, tests/unit/test_config.py 3 tests TDD red→green). Commit 24913b1. Conftest discovery fix in follow-up commit. make test-unit: 82 passed, 1 skipped.

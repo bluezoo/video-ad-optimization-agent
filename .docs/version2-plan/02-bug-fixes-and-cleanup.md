@@ -86,6 +86,10 @@ These are copy-paste-drift bugs, not "hardcoded fashion" (which is handled delib
 
 **Test:** deliberately break one eval expectation locally and confirm `make test-integration` actually fails (then revert). (Adding the non-fashion eval *cases* themselves is Phase 8's job — see `09-prompt-and-agent-generalization.md` — since the products they exercise don't exist until the generalization work lands.)
 
+### 8. `tests/conftest.py` DB-path mismatch — already fixed in workstream 01
+
+> **Amended (workstream 01, 2026-07-14):** discovered and fixed during Phase 0, because it blocked that phase's `make test-unit` validation on a fresh checkout. `tests/conftest.py:43` hardcoded `MAIN_DB_PATH = APP_DIR / "campaigns.db"`, but `_ensure_main_db_exists()` populates via `init_database()`, which writes to `app.config.DB_PATH` — the **project root** in local dev. On any checkout without a leftover `app/campaigns.db` (all fresh clones and worktrees), every DB-dependent unit test errored with `FileNotFoundError`. Fixed by deriving `MAIN_DB_PATH` from `app.config.DB_PATH`. No action left for this phase; listed so the record of what Phase 1 "inherited already-fixed" is complete.
+
 ## Validation
 
 - [ ] `make test-unit` covers items 1-3 with new/updated test cases; all pass.
