@@ -8,7 +8,7 @@ Update rows in place as a workstream progresses; don't append new rows for the s
 
 | Phase | Name | Status | Branch | PR | Last updated | Note |
 |---|---|---|---|---|---|---|
-| 0 | emergency-model-currency-fix | verify in progress | version_2_model-currency-fix | - | 2026-07-14 | tasks 1-5 done; release gate passed; scenario F1 next |
+| 0 | emergency-model-currency-fix | merged | version_2_model-currency-fix | [#1](https://github.com/bluezoo/video-ad-optimization-agent/pull/1) | 2026-07-14 | merged 9f12738; incl. conftest fix + preview-model probe |
 | 1 | bug-fixes-and-cleanup | not started | - | - | 2026-07-13 | - |
 | 2 | metrics-glossary-and-terminology | not started | - | - | 2026-07-13 | - |
 | 3 | centralize-rpi-metrics | not started | - | - | 2026-07-13 | depends on Phase 2 |
