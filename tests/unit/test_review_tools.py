@@ -265,7 +265,7 @@ class TestGenerateAdditionalMetrics:
         result = generate_additional_metrics(video_id=1, days=7)
 
         # Should succeed or report video not found
-        assert "success" in result or "metrics" in str(result).lower() or "error" in result or "not found" in str(result).lower()
+        assert "status" in result and (result["status"] == "success" or result["status"] == "error")
 
     def test_generate_additional_metrics_default_days(self, test_db, mock_storage_module):
         """generate_additional_metrics should use default days if not specified."""

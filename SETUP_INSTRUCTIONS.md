@@ -61,6 +61,8 @@ make test-coverage       # pytest --cov=app, HTML report in htmlcov/
 
 Run a single test: `pytest tests/unit/test_campaign_tools.py::TestClass::test_name -v`.
 
+**Test isolation note:** Prior to the database late-binding fix (workstream version_2_bug-fixes-and-cleanup), unit tests leaked writes into the real `campaigns.db` because `DB_PATH` was bound at import time, preventing test fixtures from patching it. Older checkouts with accumulated junk campaigns should run `make reset-db` once to clear them. The fix ensures all tests use isolated temporary database copies.
+
 **`make test-integration` requires the ADK eval extra:** `pip install "google-adk[eval]"` (into `.venv`). Without it, `AgentEvaluator.evaluate` raises a *lazy* ImportError that the test suite's broad `except ImportError` silently converts into "google.adk.evaluation not available" skips — the suite reports green-looking "5 skipped" while running nothing. (Found during workstream 01; the over-broad catch itself is Phase 1, item 7.) The suite also needs `app/.env` sourced or present (real LLM calls).
 
 ## Lint/format
