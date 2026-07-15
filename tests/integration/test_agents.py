@@ -25,6 +25,17 @@ from pathlib import Path
 
 import pytest
 
+try:
+    from google.adk.evaluation import AgentEvaluator
+except ImportError as e:
+    # Fail loudly. A broad per-test `except ImportError: pytest.skip` used to
+    # swallow this, silently reporting the whole suite as 6 skips when the
+    # eval extra was missing (discovered in workstream 01).
+    raise ImportError(
+        "google.adk.evaluation is unavailable. Install the eval extra: "
+        "pip install 'google-adk[eval]' — see SETUP_INSTRUCTIONS.md (Tests)."
+    ) from e
+
 # Skip these tests if not configured for integration testing
 pytestmark = pytest.mark.integration
 
@@ -55,15 +66,11 @@ class TestCoordinatorAgentRouting:
     async def test_coordinator_routes_to_campaign_agent(self):
         """Coordinator should route campaign queries to campaign_agent."""
         try:
-            from google.adk.evaluation import AgentEvaluator
-
             await AgentEvaluator.evaluate(
                 agent_module="app.agent",
                 eval_dataset_file_path_or_dir=get_eval_set_path("coordinator.test.json"),
                 num_runs=1,  # Single run for faster tests
             )
-        except ImportError:
-            pytest.skip("google.adk.evaluation not available")
         except Exception as e:
             # Log the error but don't fail - integration tests may have config issues
             pytest.xfail(f"Integration test failed (may need config): {e}")
@@ -76,15 +83,11 @@ class TestCampaignAgent:
     async def test_campaign_agent_tools(self):
         """Campaign agent should correctly execute campaign tools."""
         try:
-            from google.adk.evaluation import AgentEvaluator
-
             await AgentEvaluator.evaluate(
                 agent_module="app.agent",
                 eval_dataset_file_path_or_dir=get_eval_set_path("campaign_agent.test.json"),
                 num_runs=1,
             )
-        except ImportError:
-            pytest.skip("google.adk.evaluation not available")
         except Exception as e:
             pytest.xfail(f"Integration test failed (may need config): {e}")
 
@@ -96,15 +99,11 @@ class TestMediaAgent:
     async def test_media_agent_tools(self):
         """Media agent should correctly execute media tools."""
         try:
-            from google.adk.evaluation import AgentEvaluator
-
             await AgentEvaluator.evaluate(
                 agent_module="app.agent",
                 eval_dataset_file_path_or_dir=get_eval_set_path("media_agent.test.json"),
                 num_runs=1,
             )
-        except ImportError:
-            pytest.skip("google.adk.evaluation not available")
         except Exception as e:
             pytest.xfail(f"Integration test failed (may need config): {e}")
 
@@ -116,15 +115,11 @@ class TestReviewAgent:
     async def test_review_agent_tools(self):
         """Review agent should correctly execute review tools."""
         try:
-            from google.adk.evaluation import AgentEvaluator
-
             await AgentEvaluator.evaluate(
                 agent_module="app.agent",
                 eval_dataset_file_path_or_dir=get_eval_set_path("review_agent.test.json"),
                 num_runs=1,
             )
-        except ImportError:
-            pytest.skip("google.adk.evaluation not available")
         except Exception as e:
             pytest.xfail(f"Integration test failed (may need config): {e}")
 
@@ -136,15 +131,11 @@ class TestAnalyticsAgent:
     async def test_analytics_agent_tools(self):
         """Analytics agent should correctly execute analytics tools."""
         try:
-            from google.adk.evaluation import AgentEvaluator
-
             await AgentEvaluator.evaluate(
                 agent_module="app.agent",
                 eval_dataset_file_path_or_dir=get_eval_set_path("analytics_agent.test.json"),
                 num_runs=1,
             )
-        except ImportError:
-            pytest.skip("google.adk.evaluation not available")
         except Exception as e:
             pytest.xfail(f"Integration test failed (may need config): {e}")
 
@@ -157,8 +148,6 @@ class TestAllEvalSets:
     async def test_all_eval_sets_multi_run(self):
         """Run all eval sets with multiple runs for variance testing."""
         try:
-            from google.adk.evaluation import AgentEvaluator
-
             eval_dir = Path(__file__).parent / "eval_sets"
             for eval_file in eval_dir.glob("*.test.json"):
                 await AgentEvaluator.evaluate(
@@ -166,7 +155,5 @@ class TestAllEvalSets:
                     eval_dataset_file_path_or_dir=str(eval_file),
                     num_runs=2,  # Multiple runs for variance
                 )
-        except ImportError:
-            pytest.skip("google.adk.evaluation not available")
         except Exception as e:
             pytest.xfail(f"Integration test failed (may need config): {e}")
