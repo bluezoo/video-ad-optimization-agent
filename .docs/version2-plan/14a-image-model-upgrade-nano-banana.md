@@ -25,6 +25,8 @@ The first draft of this phase jumped straight to a new `IMAGE_MODEL_BACKEND` con
 ## Validation
 
 - [ ] `IMAGE_GENERATION=gemini-3.1-flash-lite-image` produces a working image through the existing `generate_scene_image()` call path with no code changes beyond config.
+
+  > **Amended (workstream 01, 2026-07-14):** pre-verified early — with Phase 0's env overrides in place, `IMAGE_GENERATION_MODEL=gemini-3.1-flash-lite-image` produced an on-brief scene image through the unmodified call path (sage satin camisole, studio, elegant; 102 KB output vs ~1.2-1.5 MB from `gemini-3-pro-image`, consistent with the 1K-output-token cap noted above). This validation item is effectively done; this phase's remaining work is the side-by-side quality/cost comparison.
 - [ ] Existing tests referencing `IMAGE_GENERATION`/Stage 1 image generation still pass unchanged with the default model ID.
 - [ ] A manual side-by-side comparison (step 3) is documented (even informally) before recommending a default-model change — including the non-fashion fixture comparison once Phase 7 exists.
 
