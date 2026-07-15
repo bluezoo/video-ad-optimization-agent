@@ -8,7 +8,7 @@ Update rows in place as a workstream progresses; don't append new rows for the s
 
 | Phase | Name | Status | Branch | PR | Last updated | Note |
 |---|---|---|---|---|---|---|
-| 0 | emergency-model-currency-fix | plan in progress | version_2_model-currency-fix | - | 2026-07-14 | working doc approved; env-override addendum |
+| 0 | emergency-model-currency-fix | implement in progress | version_2_model-currency-fix | - | 2026-07-14 | plan approved; VIDEO_GEN_MODEL rename amendment |
 | 1 | bug-fixes-and-cleanup | not started | - | - | 2026-07-13 | - |
 | 2 | metrics-glossary-and-terminology | not started | - | - | 2026-07-13 | - |
 | 3 | centralize-rpi-metrics | not started | - | - | 2026-07-13 | depends on Phase 2 |
