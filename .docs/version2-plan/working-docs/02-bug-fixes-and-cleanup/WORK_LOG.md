@@ -23,3 +23,32 @@ Blast radius: this workstream only — added as plan Task 7 (de-vacuate: await +
 
 ## 2026-07-14 — plan approved (checkpoint 3)
 Owner approved the 9-task implementation plan (plan.md), including Task 7 scope addition (de-vacuate 5 async unit tests). Execution via subagent-driven-development, fresh implementer + reviewer per task.
+
+## 2026-07-14 — Task 1 complete (mirrors .superpowers/sdd/progress.md)
+Fix invalid metric defaults → revenue_per_impression in both visualization tools. Commits 1684501..2062f66, review clean (spec ✅, quality approved, no findings).
+
+## 2026-07-14 — Task 2 complete (mirrors .superpowers/sdd/progress.md)
+No-data guard moved above summary deref (covers summary=None on status="success"); weekly ratio-sum bug flag comment added for Phase 3. Commits 2062f66..b7f9a34, review clean.
+
+## 2026-07-14 — Task 3 complete (mirrors .superpowers/sdd/progress.md)
+get_campaign_locations repointed to campaign_videos/video_metrics (activated-only, JOIN-condition filter so zero-video campaigns still appear). Commits b7f9a34..a08d3f3, review clean.
+
+## 2026-07-14 — Task 4 complete (mirrors .superpowers/sdd/progress.md)
+CAMPAIGN_CATEGORIES aligned to DB CHECK (+holiday, source-of-truth comment); create_campaign mapping/fallback documented; parity test added. Commits a08d3f3..8a7be90, review clean (2 minor observations logged for final review).
+
+## 2026-07-14 — Task 5 complete (mirrors .superpowers/sdd/progress.md)
+Stale prompt/docstring texts fixed (Sage Satin Camisole, 30 days, config-var model references); grep for stale strings clean. Commits 8a7be90..91b05d5, review clean.
+
+## 2026-07-14 — Task 6 complete (mirrors .superpowers/sdd/progress.md)
+Missing google-adk[eval] now raises actionable ImportError at module import; 6 per-test ImportError-skip arms removed; live integration run 5 passed / 0 skipped. Commits 91b05d5..2054c3b, review clean.
+
+## 2026-07-14 — Task 7 complete (mirrors .superpowers/sdd/progress.md)
+5 vacuous async unit tests de-vacuated (await + raising-mock deterministic error path); -W error::RuntimeWarning proves zero unawaited coroutines. Commits 2054c3b..ba6c2a3, review clean.
+
+## 2026-07-14 — DISCOVERY: DB test isolation is broken repo-wide (import-time DB_PATH binding)
+Assumed (CLAUDE.md gotcha + tests/conftest.py design): tests run against a COPY of campaigns.db. Actual: app/database/db.py:19 does `from ..config import DB_PATH`, binding the value at import — conftest's `patch("app.config.DB_PATH", …)` never reaches `get_db_cursor`, so ALL test reads/writes hit the real campaigns.db. Evidence: worktree campaigns.db grew to 138 campaigns (69 with NULL product_id — Task 4's parity INSERTs leak 5 rows on every PostToolUse hook run; older "Test Store"/"New Test Store" rows show the leak predates this workstream). This is what broke test_campaign_product_consistency (the "4th e2e failure" in Task 8).
+Blast radius: fix db.py to late-bind (`config.DB_PATH` at connect time) in this workstream — it's a bug of exactly this phase's class and our own new tests are actively polluting real DBs without it; reset polluted campaigns.db; note in SETUP_INSTRUCTIONS that pre-existing checkouts should `make reset-db` once. CLAUDE.md's gotcha line becomes true again (no edit needed). Owner will see this flagged at final review + PR.
+
+## 2026-07-14 — DISCOVERY: pytest pins GOOGLE_CLOUD_PROJECT=test-project — e2e slow tests cannot make real API calls
+Assumed (plan Task 8 steps 5-6): the slow e2e tests would run real Gemini/Veo generation. Actual: tests/conftest.py:60 deliberately sets GOOGLE_CLOUD_PROJECT="test-project" so pytest can never spend real API quota; the "live" runs completed in 1.4-3s because the tools returned their graceful 403-error dicts, which the tests' contract asserts (status in success/error) accept. This is the honest maximum for pytest under the harness — the REAL-generation release gate is scripts/smoke_media_models.py (proved in workstream 01) plus the demo scenarios via adk web (real env), which Task 9 runs.
+Blast radius: plan.md Task 8 steps 5-6 expectations amended by this entry; no downstream phase docs claim pytest does real generation.
