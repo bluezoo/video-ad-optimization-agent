@@ -2,16 +2,17 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use subagent-driven-development (this repo's vendored copy in `.claude/skills/`, NOT the global `superpowers:` one — the local copy carries the WORK_LOG/STATUS conventions) to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. **Exception (approved):** this phase is rated Trivial in `00-overview.md`, so per CLAUDE.md's trivial-phase fast path these tasks execute inline in the main session — no per-task subagent dispatch. Everything else (checkpoints, verification, PR) stays standard.
 
-**Goal:** Swap the two deprecated preview media-model IDs in `app/config.py` for their GA replacements, made env-overridable so preview models can be swapped in for testing (approved addendum), with stale references fixed and a real Stage 1 + Stage 2 generation proving the new IDs work.
+**Goal:** Swap the two deprecated preview media-model IDs in `app/config.py` for their GA replacements, made env-overridable so preview models can be swapped in for testing (approved addendum), with stale references fixed and a real Stage 1 + Stage 2 generation proving the new IDs work. Per plan-approval feedback, the video constant is renamed `VEO_MODEL` → `VIDEO_GEN_MODEL` (model-agnostic — Omni or Veo can back it; aligns with the image-side naming).
 
-**Architecture:** Pure config-level change — every call site already reads `IMAGE_GENERATION`/`VEO_MODEL` from `app/config.py` (verified: `video_tools.py:237,299,581,960`, `maps_tools.py:1279`, `metrics_tools.py:981`). The two constants become `os.environ.get(...)` lookups with GA defaults. A new committed smoke script provides the before/after release gate and doubles as the preview-model test harness the owner asked for.
+**Architecture:** Config-level change plus one mechanical rename — every call site already reads `IMAGE_GENERATION`/`VEO_MODEL` from `app/config.py` (verified: `video_tools.py:237,299,581,960`, `maps_tools.py:1279`, `metrics_tools.py:981`; `VEO_MODEL` is consumed only by `video_tools.py`). The two constants become `os.environ.get(...)` lookups with GA defaults. A new committed smoke script provides the before/after release gate and doubles as the preview-model test harness the owner asked for.
 
 **Tech Stack:** Python, google-genai SDK (Vertex path), pytest, existing `make` targets.
 
 ## Global Constraints
 
-- GA defaults exactly: `IMAGE_GENERATION` → `"gemini-3-pro-image"`, `VEO_MODEL` → `"veo-3.1-generate-001"` (re-verified current on Vertex, 2026-07-14).
-- Env override names exactly: `IMAGE_GENERATION_MODEL` and `VEO_MODEL` (approved addendum).
+- GA defaults exactly: `IMAGE_GENERATION` → `"gemini-3-pro-image"`, `VIDEO_GEN_MODEL` → `"veo-3.1-generate-001"` (re-verified current on Vertex, 2026-07-14).
+- Env override names exactly: `IMAGE_GENERATION_MODEL` and `VIDEO_GEN_MODEL` (approved addendum + plan-approval rename).
+- Constant rename `VEO_MODEL` → `VIDEO_GEN_MODEL` everywhere: `app/config.py:28`, `app/tools/video_tools.py:51,297,299,581,958,960`, plus the `CLAUDE.md:70` gotcha line and the phase doc's validation grep (both reference `VEO_MODEL` by name).
 - `MODEL = "gemini-3-flash-preview"` (config.py:24) is untouched — confirmed no near-term shutdown.
 - `README.md` untouched. `video_tools.py:18` docstring and `agent.py:200` "Gemini 2.0" texts untouched (Phase 1, item 6).
 - `app/.env` is gitignored (`.gitignore:23`) and must never be committed.
@@ -73,9 +74,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.config import IMAGE_GENERATION, VEO_MODEL  # noqa: E402
+from app import config  # noqa: E402
 from app.models.variation import CreativeVariation  # noqa: E402
 from app.tools.video_tools import animate_scene_with_veo, generate_scene_image  # noqa: E402
+
+# Tolerates both constant names so the Task-1 baseline (pre-rename config)
+# and every later run (post-rename) use the same script unchanged.
+IMAGE_MODEL = config.IMAGE_GENERATION
+VIDEO_MODEL = getattr(config, "VIDEO_GEN_MODEL", None) or getattr(config, "VEO_MODEL")
 
 # Minimal product dict; prompt builders use .get() with defaults for every key.
 PRODUCT = {
@@ -90,7 +96,7 @@ PRODUCT = {
 async def main() -> int:
     variation = CreativeVariation(name="smoke-test-studio")
 
-    print(f"Stage 1 model: {IMAGE_GENERATION}")
+    print(f"Stage 1 model: {IMAGE_MODEL}")
     scene_bytes, _ = await generate_scene_image(PRODUCT, variation)
     print(f"Stage 1 OK: {len(scene_bytes)} bytes")
 
@@ -98,7 +104,7 @@ async def main() -> int:
         print("Stage 2 skipped (--skip-video)")
         return 0
 
-    print(f"Stage 2 model: {VEO_MODEL}")
+    print(f"Stage 2 model: {VIDEO_MODEL}")
     video_bytes, _ = await animate_scene_with_veo(
         scene_bytes, PRODUCT, variation, duration_seconds=4
     )
@@ -140,14 +146,15 @@ git commit -m "Add media-model smoke script; record preview-ID baseline"
 
 ---
 
-### Task 2: Env-overridable GA model config (TDD)
+### Task 2: Env-overridable GA model config + `VIDEO_GEN_MODEL` rename (TDD)
 
 **Files:**
 - Create: `tests/unit/test_config.py`
 - Modify: `app/config.py:26-28`
+- Modify: `app/tools/video_tools.py:51,297,299,581,958,960` (rename only)
 
 **Interfaces:**
-- Produces: `app.config.IMAGE_GENERATION` (default `"gemini-3-pro-image"`, env override `IMAGE_GENERATION_MODEL`) and `app.config.VEO_MODEL` (default `"veo-3.1-generate-001"`, env override `VEO_MODEL`). All existing importers keep working unchanged.
+- Produces: `app.config.IMAGE_GENERATION` (default `"gemini-3-pro-image"`, env override `IMAGE_GENERATION_MODEL`) and `app.config.VIDEO_GEN_MODEL` (default `"veo-3.1-generate-001"`, env override `VIDEO_GEN_MODEL`) — the old `VEO_MODEL` name no longer exists. `video_tools.py` is its only consumer and is renamed in the same commit.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -168,24 +175,29 @@ def _reload_config_after_test(monkeypatch):
     """Each test reloads app.config; restore a clean-env reload afterwards."""
     yield
     monkeypatch.delenv("IMAGE_GENERATION_MODEL", raising=False)
-    monkeypatch.delenv("VEO_MODEL", raising=False)
+    monkeypatch.delenv("VIDEO_GEN_MODEL", raising=False)
     importlib.reload(config_module)
 
 
 def test_media_model_defaults_are_ga_ids(monkeypatch):
     monkeypatch.delenv("IMAGE_GENERATION_MODEL", raising=False)
-    monkeypatch.delenv("VEO_MODEL", raising=False)
+    monkeypatch.delenv("VIDEO_GEN_MODEL", raising=False)
     cfg = importlib.reload(config_module)
     assert cfg.IMAGE_GENERATION == "gemini-3-pro-image"
-    assert cfg.VEO_MODEL == "veo-3.1-generate-001"
+    assert cfg.VIDEO_GEN_MODEL == "veo-3.1-generate-001"
 
 
 def test_media_models_are_env_overridable(monkeypatch):
     monkeypatch.setenv("IMAGE_GENERATION_MODEL", "fake-image-preview-id")
-    monkeypatch.setenv("VEO_MODEL", "fake-veo-preview-id")
+    monkeypatch.setenv("VIDEO_GEN_MODEL", "fake-video-preview-id")
     cfg = importlib.reload(config_module)
     assert cfg.IMAGE_GENERATION == "fake-image-preview-id"
-    assert cfg.VEO_MODEL == "fake-veo-preview-id"
+    assert cfg.VIDEO_GEN_MODEL == "fake-video-preview-id"
+
+
+def test_old_veo_model_name_is_gone():
+    cfg = importlib.reload(config_module)
+    assert not hasattr(cfg, "VEO_MODEL")
 ```
 
 (Note: reloading `app.config` doesn't rebind names other modules imported with `from ..config import X` — irrelevant here, these tests assert on the module's own attributes.)
@@ -193,7 +205,7 @@ def test_media_models_are_env_overridable(monkeypatch):
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `.venv/bin/pytest tests/unit/test_config.py -v`
-Expected: `test_media_model_defaults_are_ga_ids` FAILS (`"gemini-3-pro-image-preview" != "gemini-3-pro-image"`); `test_media_models_are_env_overridable` FAILS (env var ignored).
+Expected: all 3 FAIL — `test_media_model_defaults_are_ga_ids` and `test_media_models_are_env_overridable` with `AttributeError: ... has no attribute 'VIDEO_GEN_MODEL'`; `test_old_veo_model_name_is_gone` because `VEO_MODEL` still exists.
 
 - [ ] **Step 3: Implement the config change**
 
@@ -211,9 +223,18 @@ with:
 # Media generation models — GA IDs as defaults, env-overridable so preview
 # models (e.g. Nano Banana 2 Lite, Gemini Omni Flash) can be swapped in for
 # pipeline testing without code changes (evaluation itself is Phase 13a/13b).
+# VIDEO_GEN_MODEL is deliberately model-agnostic (Veo today, possibly Omni later).
 IMAGE_GENERATION = os.environ.get("IMAGE_GENERATION_MODEL", "gemini-3-pro-image")  # Stage 1 scene images
-VEO_MODEL = os.environ.get("VEO_MODEL", "veo-3.1-generate-001")  # Stage 2 video animation
+VIDEO_GEN_MODEL = os.environ.get("VIDEO_GEN_MODEL", "veo-3.1-generate-001")  # Stage 2 video animation
 ```
+
+Then rename the consumer (`app/tools/video_tools.py` is the only importer): change `VEO_MODEL,` to `VIDEO_GEN_MODEL,` in the import at line 51, and replace the five usages at lines 297, 299, 581, 958, 960 (`{VEO_MODEL}` in the two debug prints, `model=VEO_MODEL` in the three API calls) with `VIDEO_GEN_MODEL`. Verify completeness:
+
+```bash
+grep -rn "VEO_MODEL" app/ tests/ scripts/
+```
+
+Expected: exactly one hit — the `getattr(config, "VEO_MODEL")` fallback string in `scripts/smoke_media_models.py` (kept deliberately so the script runs against both pre- and post-rename checkouts). Nothing in `app/` or `tests/`.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
@@ -234,13 +255,14 @@ git commit -m "Swap deprecated preview media models for GA IDs, env-overridable"
 
 ---
 
-### Task 3: Fix stale references (code comments, doc tables, phase-doc amendment)
+### Task 3: Fix stale references (code comments, doc tables, CLAUDE.md gotcha, phase-doc amendments)
 
 **Files:**
 - Modify: `app/tools/video_tools.py:218` and `:966` (comments only)
 - Modify: `DEMO_GUIDE.md:435-440` (model table)
 - Modify: `DEPLOYMENT.md:462-467` (model table)
-- Modify: `.docs/version2-plan/01-emergency-model-currency-fix.md` (open-question amendment)
+- Modify: `CLAUDE.md:70` (gotcha line references `VEO_MODEL` and calls the media models preview)
+- Modify: `.docs/version2-plan/01-emergency-model-currency-fix.md` (open-question amendment + rename provenance note on the validation grep)
 
 **Interfaces:** none — comments and docs only; no behavior change.
 
@@ -308,8 +330,20 @@ with:
 ```markdown
 | Agent Reasoning | `gemini-3-flash-preview` | `global` |
 | Scene Image Generation | `gemini-3-pro-image` (default; `IMAGE_GENERATION_MODEL` env override) | `global` |
-| Video Animation | `veo-3.1-generate-001` (default; `VEO_MODEL` env override) | `global` |
+| Video Animation | `veo-3.1-generate-001` (default; `VIDEO_GEN_MODEL` env override) | `global` |
 | Charts & Maps | `gemini-3-pro-image` (default; `IMAGE_GENERATION_MODEL` env override) | `global` |
+```
+
+- [ ] **Step 4b: Update the `CLAUDE.md:70` gotcha line** (durable-knowledge promotion — it names `VEO_MODEL` and calls all three models preview, both stale after this phase). Replace:
+
+```markdown
+- **Gemini 3 preview models need `GOOGLE_CLOUD_LOCATION=global`** (the `us`/`eu` multi-region endpoints also work; single regions like `us-central1` don't). `MODEL`, `IMAGE_GENERATION`, and `VEO_MODEL` in `app/config.py` are all Gemini 3 / Veo 3.1 preview models — don't point deploys at a single-region endpoint for them.
+```
+
+with:
+
+```markdown
+- **Gemini 3 models need `GOOGLE_CLOUD_LOCATION=global`** (the `us`/`eu` multi-region endpoints also work; single regions like `us-central1` don't). `MODEL` (preview), `IMAGE_GENERATION`, and `VIDEO_GEN_MODEL` in `app/config.py` are all Gemini 3 / Veo 3.1 models — don't point deploys at a single-region endpoint for them. The two media models default to GA IDs and are env-overridable (`IMAGE_GENERATION_MODEL`, `VIDEO_GEN_MODEL`) for testing preview models.
 ```
 
 - [ ] **Step 5: Amend the phase doc's open question 1** (research finding, provenance-marked per the Discoveries convention). In `.docs/version2-plan/01-emergency-model-currency-fix.md`, append directly under the first open-question bullet (the one about `MODEL = "gemini-3-flash-preview"`):
@@ -320,11 +354,17 @@ with:
 
 Also run `grep -n "gemini-3-flash-preview" .docs/version2-plan/99-open-questions.md` — if the consolidated list carries this question too, add the same amendment there; if not, no change.
 
+Additionally, add a rename provenance note to the phase doc's Validation section (its grep `VEO_MODEL\s*=` can no longer match). Directly under the first validation checkbox in `.docs/version2-plan/01-emergency-model-currency-fix.md`, append:
+
+```markdown
+  > **Amended (workstream 01, 2026-07-14):** at plan approval the owner renamed the constant/env var `VEO_MODEL` → `VIDEO_GEN_MODEL` (model-agnostic — Veo today, possibly Omni later; matches the image-side naming). The grep is therefore `grep -n 'IMAGE_GENERATION\s*=\|VIDEO_GEN_MODEL\s*=' app/config.py`.
+```
+
 - [ ] **Step 6: Run the phase doc's validation greps**
 
 ```bash
 grep -rn "gemini-3-pro-image-preview\|veo-3.1-generate-preview" --include="*.py" --include="*.md" --include="*.sh" . | grep -v ".docs/" | grep -v ".claude/"
-grep -n 'IMAGE_GENERATION\s*=\|VEO_MODEL\s*=' app/config.py
+grep -n 'IMAGE_GENERATION\s*=\|VIDEO_GEN_MODEL\s*=' app/config.py
 grep -rn "Gemini 2.0 Flash Exp" app/
 ```
 
@@ -333,8 +373,8 @@ Expected: grep 1 → no output. Grep 2 → the two `os.environ.get` lines with G
 - [ ] **Step 7: Commit**
 
 ```bash
-git add app/tools/video_tools.py DEMO_GUIDE.md DEPLOYMENT.md .docs/version2-plan/01-emergency-model-currency-fix.md .docs/version2-plan/99-open-questions.md
-git commit -m "Fix stale model references in comments and doc tables; amend phase doc"
+git add app/tools/video_tools.py DEMO_GUIDE.md DEPLOYMENT.md CLAUDE.md .docs/version2-plan/01-emergency-model-currency-fix.md .docs/version2-plan/99-open-questions.md
+git commit -m "Fix stale model references in comments, doc tables, and CLAUDE.md; amend phase doc"
 ```
 
 (Drop `99-open-questions.md` from the `git add` if Step 5 found no hit there.)

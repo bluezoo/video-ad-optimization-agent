@@ -44,7 +44,9 @@ Per CLAUDE.md's trivial-phase fast path, the implement step runs inline (one-tas
 
 ## Approval addendum (owner, 2026-07-14)
 
-Approved with one addition: **GA models are the defaults, but the two media-model config values become env-overridable** (`IMAGE_GENERATION_MODEL` / `VEO_MODEL` env vars, falling back to the GA IDs), so preview models (e.g. Gemini Omni Flash, Nano Banana 2 Lite) can be swapped in for pipeline testing without code changes. The actual evaluation of those preview models remains Phase 13a/13b scope. Owner also confirmed: env bootstrap on project `kaggle-on-gcp` (Vertex path), and updating both `DEMO_GUIDE.md` and `DEPLOYMENT.md` model-ID rows.
+Approved with one addition: **GA models are the defaults, but the two media-model config values become env-overridable** (`IMAGE_GENERATION_MODEL` / `VIDEO_GEN_MODEL` env vars, falling back to the GA IDs), so preview models (e.g. Gemini Omni Flash, Nano Banana 2 Lite) can be swapped in for pipeline testing without code changes. The actual evaluation of those preview models remains Phase 13a/13b scope. Owner also confirmed: env bootstrap on project `kaggle-on-gcp` (Vertex path), and updating both `DEMO_GUIDE.md` and `DEPLOYMENT.md` model-ID rows.
+
+**Plan-approval amendment (owner, 2026-07-14):** rename the video constant/env var `VEO_MODEL` → `VIDEO_GEN_MODEL` — model-agnostic naming since Omni and Veo are both video-generation backends, aligning with the image-side naming. `video_tools.py` is the only consumer; renamed in the same commit as the config change.
 
 ## Test plan
 

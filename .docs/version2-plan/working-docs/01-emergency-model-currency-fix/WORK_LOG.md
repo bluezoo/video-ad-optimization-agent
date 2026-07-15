@@ -7,3 +7,6 @@ Branch `version_2_model-currency-fix` created off `version_2` (e23ca66), worktre
 
 ## 2026-07-14 17:55 — working doc approved (checkpoint 2)
 Owner approved the six-dimension summary with one scope addition: media-model config values become env-overridable (`IMAGE_GENERATION_MODEL`/`VEO_MODEL` env vars, GA IDs as defaults) so preview models can be swapped in for pipeline testing; evaluation of Omni Flash / Nano Banana stays Phase 13a/13b. Also confirmed: env bootstrap on `kaggle-on-gcp` (Vertex path, location global), and updating both DEMO_GUIDE.md and DEPLOYMENT.md stale model-ID rows. See working-doc.md "Approval addendum".
+
+## 2026-07-14 18:05 — plan approved (checkpoint 3)
+Owner approved plan.md with one amendment: rename `VEO_MODEL` → `VIDEO_GEN_MODEL` (constant + env var; model-agnostic since Omni/Veo are both video-gen backends, aligns with image-side naming). Plan updated in place (Tasks 2/3 carry the rename incl. video_tools.py's six refs, CLAUDE.md:70 gotcha, and a phase-doc validation-grep provenance note). Execution: inline, trivial-phase fast path.
