@@ -65,3 +65,6 @@ Evidence: working-docs/02-bug-fixes-and-cleanup/evidence/f1-*.png, f1-scene2-ser
 
 ## 2026-07-14 — final whole-branch review: READY TO MERGE
 0 Critical, 0 Important, 4 Minor. Reviewer independently re-ran suites and leak-proof DB checks. Minors 1/2/4 fixed (stale markers dropped, app/.adk/ gitignored, precondition assert de-vacuated) + Phase 3 doc amended re: get_campaign_metrics summary=None contract (commit dd7f887). Minor 3 (hardcoded model names in deeper docstrings/prints, currently accurate) deferred as future cleanup. Two carried per-task minors adjudicated acceptable (parity test happy-path-only; phrasing divergence plan-specified).
+
+## 2026-07-14 — finish: PR open (checkpoint 6, pending merge)
+PR #2 into version_2: https://github.com/bluezoo/video-ad-optimization-agent/pull/2 — owner chose to hold it open for review. Worktree and branch preserved for PR iteration. On merge: run finishing-a-development-branch Path A tail (merge → ExitWorktree remove → STATUS.md "merged" → final WORK_LOG line).
