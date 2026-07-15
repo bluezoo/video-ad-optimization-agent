@@ -16,3 +16,7 @@ Branch `version_2_bug-fixes-and-cleanup` created off `version_2` (7d3c866, post-
 
 ## 2026-07-14 — working doc approved (checkpoint 2)
 Owner approved the six-dimension restatement: 7 fixes (metric defaults, null-deref guard, legacy-table repoint, category alignment, stale texts, loud integration import failure, 3 e2e repairs), e2e suite to fully green, README/DEMO_GUIDE untouched, weekly-aggregation + raw-revenue deferred to Phase 3. Design choice confirmed: default → revenue_per_impression only, no raw-revenue metric key this phase. Next: writing-plans.
+
+## 2026-07-14 — DISCOVERY: 5 vacuous async unit tests (never awaited)
+Assumed: unit suite meaningfully covers the visualization tools. Actual: `tests/unit/test_metrics_tools.py` (2 tests) and `tests/unit/test_maps_tools.py` (3 tests) call the `async def` visualization tools without `await` — they assert on a coroutine object (always truthy), execute nothing, and emit `RuntimeWarning: coroutine ... was never awaited` on every unit run. Same root cause as the 3 e2e failures (phase item 9): tools went async, tests didn't follow — but these 5 "pass" silently instead of failing.
+Blast radius: this workstream only — added as plan Task 7 (de-vacuate: await + deterministic raising-mock asserting the tools' graceful error path). No downstream phase doc claims depend on these tests; no amendments needed elsewhere.
