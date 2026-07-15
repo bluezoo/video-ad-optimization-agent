@@ -42,6 +42,10 @@ Mechanical, like-for-like swap (Step 3 of `starting-a-workstream` skipped — no
 
 Per CLAUDE.md's trivial-phase fast path, the implement step runs inline (one-task plan) instead of per-task subagent dispatch — everything else (plan approval, verification, WORK_LOG/STATUS checkpoints, PR) stays standard.
 
+## Approval addendum (owner, 2026-07-14)
+
+Approved with one addition: **GA models are the defaults, but the two media-model config values become env-overridable** (`IMAGE_GENERATION_MODEL` / `VEO_MODEL` env vars, falling back to the GA IDs), so preview models (e.g. Gemini Omni Flash, Nano Banana 2 Lite) can be swapped in for pipeline testing without code changes. The actual evaluation of those preview models remains Phase 13a/13b scope. Owner also confirmed: env bootstrap on project `kaggle-on-gcp` (Vertex path), and updating both `DEMO_GUIDE.md` and `DEPLOYMENT.md` model-ID rows.
+
 ## Test plan
 
 - `make test-unit` and `make test-e2e` pass (already model-ID-free, so these guard against regressions elsewhere).
