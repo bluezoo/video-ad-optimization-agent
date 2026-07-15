@@ -48,6 +48,8 @@ Approved with one addition: **GA models are the defaults, but the two media-mode
 
 **Plan-approval amendment (owner, 2026-07-14):** rename the video constant/env var `VEO_MODEL` → `VIDEO_GEN_MODEL` — model-agnostic naming since Omni and Veo are both video-generation backends, aligning with the image-side naming. `video_tools.py` is the only consumer; renamed in the same commit as the config change.
 
+**Mid-implementation amendment (owner, 2026-07-14):** the orchestration model moves into scope after all — owner directed `MODEL` → `gemini-3.5-flash`, verified GA on Vertex (released 2026-05-19, retirement "2027-05-19 or later", `global` supported; source: docs.cloud.google.com Gemini 3.5 Flash model page). Made env-overridable as `AGENT_MODEL` for consistency with the other two. This supersedes the "Out of scope" line about `MODEL`.
+
 ## Test plan
 
 - `make test-unit` and `make test-e2e` pass (already model-ID-free, so these guard against regressions elsewhere).

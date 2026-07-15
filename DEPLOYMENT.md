@@ -461,7 +461,7 @@ open "https://console.cloud.google.com/run/detail/us-central1/ad-campaign-agent/
 
 | Purpose | Model | Region Required |
 |---------|-------|-----------------|
-| Agent Reasoning | `gemini-3-flash-preview` | `global` |
+| Agent Reasoning | `gemini-3.5-flash` (default; `AGENT_MODEL` env override) | `global` |
 | Scene Image Generation | `gemini-3-pro-image` (default; `IMAGE_GENERATION_MODEL` env override) | `global` |
 | Video Animation | `veo-3.1-generate-001` (default; `VIDEO_GEN_MODEL` env override) | `global` |
 | Charts & Maps | `gemini-3-pro-image` (default; `IMAGE_GENERATION_MODEL` env override) | `global` |
