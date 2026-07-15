@@ -56,9 +56,9 @@ Fix the live bugs and stale facts already sitting in the codebase, before buildi
 
 ### 5. `CAMPAIGN_CATEGORIES` / DB CHECK constraint drift — dormant today, correct the classification
 
-**Files:** `app/config.py:86`, `app/database/db.py:60`, `app/tools/campaign_tools.py:64`
+**Files:** `app/config.py:86`, `app/database/db.py:70`, `app/tools/campaign_tools.py:73`
 
-**Correction from review:** this is not currently a live bug the way items 1-4 are — `create_campaign()` never actually validates against `CAMPAIGN_CATEGORIES` today. Instead, it runs its own hardcoded fashion-category mapping and silently defaults any unrecognized category to `"essentials"` (`campaign_tools.py:64`). The SQLite CHECK constraint (`db.py:60`) is also a hardcoded, independent copy, not generated from `config.py`. So today, `CAMPAIGN_CATEGORIES` and the CHECK constraint disagreeing (the constraint allows `'holiday'`, `config.py` doesn't list it) is **dormant schema/config drift** — it will only bite once something actually validates against `CAMPAIGN_CATEGORIES` (e.g., a future UI dropdown, or once Phase 7 tries to map a non-fashion product's category).
+**Correction from review:** this is not currently a live bug the way items 1-4 are — `create_campaign()` never actually validates against `CAMPAIGN_CATEGORIES` today. Instead, it runs its own hardcoded fashion-category mapping and silently defaults any unrecognized category to `"essentials"` (`campaign_tools.py:73`). The SQLite CHECK constraint (`db.py:70`) is also a hardcoded, independent copy, not generated from `config.py`. So today, `CAMPAIGN_CATEGORIES` and the CHECK constraint disagreeing (the constraint allows `'holiday'`, `config.py` doesn't list it) is **dormant schema/config drift** — it will only bite once something actually validates against `CAMPAIGN_CATEGORIES` (e.g., a future UI dropdown, or once Phase 7 tries to map a non-fashion product's category).
 
 **Fix:** align `CAMPAIGN_CATEGORIES` and the CHECK constraint now, while the mismatch is easy to see and fix, so it doesn't silently resurface during Phase 7. But do not treat "make the two lists match" as solving the deeper problem Phase 7 will hit: `create_campaign()`'s silent fallback-to-`"essentials"` for unrecognized categories means a non-fashion product's category will currently be silently miscategorized rather than erroring — Phase 7 needs to decide whether campaign category should become a free-form/generic taxonomy or a real controlled list with proper validation and an explicit error path, not just a longer hardcoded fashion mapping. Flagged as an open question there, not solved here.
 
@@ -71,9 +71,20 @@ These are copy-paste-drift bugs, not "hardcoded fashion" (which is handled delib
 - `app/agent.py:152, 539` — reference "Emerald Satin Slip Dress," a product that no longer exists in mock data. Current mock product is `sage-satin-camisole` (see `app/database/mock_data.py:63-64`, which even has a comment noting the rename). Update references to match current mock data, or better, avoid naming a specific product in agent instructions at all (reduces future drift — revisit if Phase 8 changes how products are referenced anyway).
 - `app/agent.py:310` — claims a "90 days" window; `app/database/mock_data.py:383` actually generates 30 days of mock metrics. Correct the instruction text to 30, or reference the config/constant if one exists rather than hardcoding a number that can drift again.
 - `app/agent.py:200` (`MEDIA_AGENT_INSTRUCTION`) — claims Stage 1 image generation uses "Gemini 2.0 Flash Exp." After Phase 0, the actual configured model is `gemini-3-pro-image` (GA). Update the instruction text to match `config.py`'s `IMAGE_GENERATION` value, or better, reference it dynamically so this can't drift again.
-- `README.md:66` — claims the repo "delivers the code for live connectivity to... BlueZoo's BigQuery database." No BlueZoo integration code exists anywhere in `app/` today (confirmed via repo-wide grep). Correct this to describe the current state accurately (demo-only, live integration planned — see Phase 10/11) rather than overstating what exists.
+- `app/tools/video_tools.py:18` — the module docstring ("Stage 1: Scene Image (Gemini 2.0 Flash Exp)") carries the same stale model name. Update it to match `config.py`'s `IMAGE_GENERATION` value. (This is distinct from the `video_tools.py:218` comment and `:966` Veo comment, both of which Phase 0 owns.)
+- `README.md:66` — claims the repo "delivers the code for live connectivity to... BlueZoo's BigQuery database." No BlueZoo integration code exists anywhere in `app/` today (confirmed via repo-wide grep). **This phase does not edit `README.md`** — it's client-facing and stays untouched per repo etiquette. Instead, record the correction in `SETUP_INSTRUCTIONS.md`'s "Version 2 workstream setup notes" section: a note that README's BigQuery-connectivity claim is aspirational — no BigQuery connectivity exists yet, and Phase 10 will build the real adapter. The README correction itself is deferred to a client-approved change.
 
-**Test:** none of these need automated tests; they're documentation/instruction text. Do a final grep pass to confirm no other reference to the old product name, the "90 days" figure, or "Gemini 2.0 Flash Exp" remains: `grep -rn "Emerald Satin\|90 days\|Gemini 2.0 Flash Exp" app/ README.md`.
+**Test:** none of these need automated tests; they're documentation/instruction text. Do a final grep pass to confirm no other reference to the old product name, the "90 days" figure, or "Gemini 2.0 Flash Exp" remains: `grep -rn "Emerald Satin\|90 days\|Gemini 2.0 Flash Exp" app/` (README.md is out of scope for this phase per item 6, so it's dropped from the grep). Note: a `Gemini 2.0 Flash Exp` hit at `video_tools.py:218` means Phase 0 hasn't run yet — Phase 0 owns that line (and `:966`); this phase owns `video_tools.py:18` and `agent.py:200`.
+
+### 7. Integration eval suite is structurally unable to fail (`pytest.xfail` catch)
+
+**File:** `tests/integration/test_agents.py` (first at ~lines 67-69, same pattern in all six tests)
+
+- Every `AgentEvaluator` call is wrapped in `except Exception: pytest.xfail(...)`, which converts any routing/tool/eval-score failure into an expected-failure rather than a real test failure. The effect is that `make test-integration` cannot fail on genuine agent regressions — the eval suite is structurally unfailable. (This is the CODEX-REVIEW.md:101 "should-fix" that was not folded in during the original correction pass; folded in here on 2026-07-14.)
+
+**Fix:** narrow the `except` so genuine eval failures fail the test. Keep `xfail` ONLY for infrastructure errors (e.g. missing credentials/quota), not for evaluation-score failures — catch the specific infrastructure exception(s) and let `AgentEvaluator`'s assertion failures propagate.
+
+**Test:** deliberately break one eval expectation locally and confirm `make test-integration` actually fails (then revert). (Adding the non-fashion eval *cases* themselves is Phase 8's job — see `09-prompt-and-agent-generalization.md` — since the products they exercise don't exist until the generalization work lands.)
 
 ## Validation
 
@@ -81,6 +92,7 @@ These are copy-paste-drift bugs, not "hardcoded fashion" (which is handled delib
 - [ ] `get_campaign_locations` returns correct data for a current-schema campaign (item 4).
 - [ ] `CAMPAIGN_CATEGORIES` matches the DB CHECK constraint exactly (item 5).
 - [ ] Grep for stale references (item 6) returns nothing.
+- [ ] After narrowing the `xfail` catch (item 7), deliberately breaking one eval expectation makes `make test-integration` fail; reverting restores green.
 - [ ] Full `make test` suite still passes (no regressions from these fixes).
 
 ## Exit criteria
@@ -89,7 +101,7 @@ All six items above are fixed, tested, and `make test` is green. No behavior cha
 
 ## Dependencies
 
-None — can start immediately, in parallel with or right after Phase 0.
+None — can start immediately, in parallel with or right after Phase 0. Note the "Gemini 2.0 Flash Exp" cleanup is split across both phases (Phase 0 owns `video_tools.py:218` and `:966`; this phase owns `video_tools.py:18` and `agent.py:200`), so run the final `grep -rn "Gemini 2.0 Flash Exp" app/` validation only after both phases are done.
 
 ## Open questions
 

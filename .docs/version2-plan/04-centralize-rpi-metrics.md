@@ -10,14 +10,15 @@ Replace the independent, ad-hoc metric computations scattered across the codebas
 
 - `app/database/mock_data.py:168-235` — `_generate_mock_video_metrics()`
 - `app/tools/review_tools.py:454-513` — a second, separate `_generate_mock_video_metrics()` (see Phase 4 — this duplication is fixed there, but both currently compute RPI inline too)
-- `app/tools/review_tools.py:843` — `get_video_details()` also computes RPI inline (missed in the first draft of this inventory)
+- `app/tools/review_tools.py:862` — `get_video_details()` also computes RPI inline (missed in the first draft of this inventory)
 - `app/tools/metrics_tools.py:169-283` — `get_campaign_metrics()`
 - `app/tools/metrics_tools.py:285-412` — `get_top_performing_ads()` — note its docstring/contract explicitly promises results **"across all campaigns"** with no campaign/date parameters; see the corrected step 4 below (do not silently change this to scoped-only behavior).
 - `app/tools/metrics_tools.py:415-605` — `get_campaign_insights()` — **correction: this is not an already-correct reference implementation.** Its signature takes only `campaign_id` (no date-range parameter, `metrics_tools.py:415`), and its "RPI trend" actually compares revenue totals, not RPI (`metrics_tools.py:467`). Its "best/worst day" logic also selects individual `video_metrics` rows without grouping by day (`metrics_tools.py:493`) — meaning "best day" may actually mean "best single video-day row," not an aggregated day. This function needs its own repair alongside the migration, not to be used as the template.
 - `app/tools/metrics_tools.py:608-717` — `compare_campaigns()`
 - `app/tools/metrics_tools.py:720-1061` — `generate_metrics_visualization()` (weekly-sum bug flagged in Phase 1, fixed here)
 - `app/tools/campaign_tools.py:184-292` — `get_campaign()`
-- `app/tools/maps_tools.py:958`, `app/tools/maps_tools.py:1006` — two more inline RPI computations, missed in the first draft.
+- `app/tools/maps_tools.py:559`, `app/tools/maps_tools.py:585` — two inline RPI computations inside `get_campaign_map_data()` (def at `:399`), missed in the first draft.
+- `app/tools/maps_tools.py:963`, `app/tools/maps_tools.py:1013` — two more inline RPI computations, missed in the first draft. (The complete `maps_tools.py` set is exactly {559, 585, 963, 1013}.)
 
 Before starting, re-run `grep -rn "revenue" app/tools/ app/database/ --include="*.py"` yourself and treat this list as a starting checklist, not a guaranteed-complete inventory — the point of this phase is that after it, that grep only matches the shared module and its callers.
 

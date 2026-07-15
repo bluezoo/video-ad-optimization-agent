@@ -41,7 +41,7 @@ Today, `_generate_mock_video_metrics()` (unified in Phase 4) assigns impressions
 
 - [ ] Given a fixed seed, the `AdPlayRecord` and `BlueZooVisitInterval`/revenue fixtures are reproducible.
 - [ ] The join function correctly attributes visit counts and revenue per `AdPlayRecord`'s exact `(screen_id/product_id, start_time, end_time)` window.
-- [ ] An ad-play's total impressions/revenue match `compute_rpi()`'s expected input shape from Phase 3.
+- [ ] A test computes RPI for one ad-play via `compute_rpi(sum(revenue), sum(impressions))` over the join output and asserts the expected value from the fixture.
 - [ ] `make test-unit`, `make test-e2e` pass with the new join logic; Phase 6's RPI-across-creatives comparison still produces sensible output using join-derived (rather than directly-assigned) impressions/revenue.
 
 ## Exit criteria

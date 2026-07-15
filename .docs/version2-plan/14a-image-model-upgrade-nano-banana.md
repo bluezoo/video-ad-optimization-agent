@@ -12,7 +12,7 @@ This phase (and 13b) can be done any time after Phase 0, independent of the gene
 
 - Stage 1 image generation lives in `generate_scene_image()` (`app/tools/video_tools.py`, ~lines 191-259), calling whatever model `config.py`'s `IMAGE_GENERATION` points at — after Phase 0, `gemini-3-pro-image` (GA).
 - `gemini-3.1-flash-lite-image` ("Nano Banana 2 Lite") — model ID, GA date (2026-06-30), and 1K/1120-output-token cap independently confirmed against Google's official model page. Its approximate per-image cost depends on current token pricing and can change — treat any specific dollar figure as a framing estimate to re-check at evaluation time (link the live pricing page), not a fixed number to design around. Google's own materials pair it with Gemini Omni Flash (Phase 13b) as a matched fast/cheap pipeline, rather than treating it as a drop-in replacement for the higher-resolution default in all cases.
-- No provider-neutral abstraction exists today — `generate_scene_image()` (`app/tools/video_tools.py:216`) already calls a configured model ID through `client.models.generate_content()`; the model ID itself is already config-driven via `IMAGE_GENERATION`, it just isn't exposed as an easily-swappable "backend" concept yet.
+- No provider-neutral abstraction exists today — `generate_scene_image()` already calls a configured model ID through the `generate_content(model=IMAGE_GENERATION)` call at `app/tools/video_tools.py:236-237` (client init at `:216`); the model ID itself is already config-driven via `IMAGE_GENERATION`, it just isn't exposed as an easily-swappable "backend" concept yet.
 
 ## Steps (scoped down from the first draft — correction from review)
 

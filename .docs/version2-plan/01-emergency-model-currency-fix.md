@@ -24,7 +24,7 @@ IMAGE_GENERATION = "gemini-3-pro-image-preview"
 VEO_MODEL = "veo-3.1-generate-preview"
 ```
 
-- `gemini-3-pro-image-preview` — preview model ID, scheduled for retirement from Vertex AI's model garden on **2026-07-17** (4 days from today). After that date, calls using this model ID will fail.
+- `gemini-3-pro-image-preview` — preview model ID, reported as scheduled for retirement from Vertex AI's model garden on **2026-07-17** (4 days from today). Re-verify the exact date at implementation time — this could not be independently confirmed against Vertex's current model-versions page; the AI Studio surface's shutdown for this model (2026-06-25) *is* confirmed and has already passed, so treat this as overdue regardless. After that date, calls using this model ID will fail.
 - `veo-3.1-generate-preview` — preview model ID that Vertex AI's own release notes list as **already deprecated as of 2026-04-02**, with `veo-3.1-generate-001` as the documented replacement. This app may already be experiencing generation failures in any environment hitting Vertex AI directly (as opposed to AI Studio / `GOOGLE_GENAI_USE_VERTEXAI=FALSE`, which may use a different model registry and not yet be affected — this asymmetry needs to be confirmed in Step 1 below, not assumed). Note: "silent fallback" is not the actual risk here — `generate_scene_image()` (`app/tools/video_tools.py`) already re-raises on failure rather than swallowing it, so a broken model ID should surface as a clear error, not a quiet placeholder. The real risk is simply generation failing outright.
 
 GA replacement IDs (confirmed present in the current Vertex AI model garden as of 2026-07-13):
@@ -43,17 +43,18 @@ These are drop-in replacements at the config level — no call-site changes to `
    ```bash
    grep -rn "gemini-3-pro-image-preview\|veo-3.1-generate-preview" --include="*.py" --include="*.md" --include="*.sh" .
    ```
-   Confirmed hits to fix as part of this step (found during review, not hypothetical): a hardcoded old Veo ID inside a comment at `app/tools/video_tools.py:966`, and a stale "Gemini 2.0" comment describing the Stage-1 model at `app/tools/video_tools.py:218` (this is a comment near the call site, distinct from the `MEDIA_AGENT_INSTRUCTION` text fixed in Phase 1, item 6 — fix both). Also check `README.md` and `app/agent_engine_app.py`.
+   Confirmed hits to fix as part of this step (found during review, not hypothetical): a hardcoded old Veo ID inside a comment at `app/tools/video_tools.py:966`, and a stale "Gemini 2.0" comment describing the Stage-1 model at `app/tools/video_tools.py:218` (this is a comment near the call site, distinct from the `MEDIA_AGENT_INSTRUCTION` text fixed in Phase 1, item 6 — fix both; a third stale reference at `app/tools/video_tools.py:18`, the module docstring, is assigned to Phase 1, item 6). Also check `README.md` and `app/agent_engine_app.py`.
 4. Re-run the same Stage 1 + Stage 2 smoke test from Step 1 against the new IDs and confirm both succeed.
 5. Run `make test-unit` and `make test-integration` to confirm nothing else references the old IDs in a way that breaks mocking/assertions.
 
 ## Validation
 
 - [ ] `grep -n 'IMAGE_GENERATION\s*=\|VEO_MODEL\s*=' app/config.py` shows the two GA IDs, not the old preview IDs. (Do not grep for the bare word "preview" in `config.py` — it will also match the unrelated main orchestration model, `MODEL = "gemini-3-flash-preview"` at `app/config.py:24`, which is intentionally out of scope for this phase per the open question below, and a broad grep would produce a false failure.)
-- [ ] A real Stage 1 image generation call succeeds against the new `IMAGE_GENERATION` ID — this is the actual release gate, not the config grep.
-- [ ] A real Stage 2 video generation call succeeds against the new `VEO_MODEL` ID — the actual release gate.
+- [ ] A real Stage 1 image generation call succeeds against the new `IMAGE_GENERATION` ID — e.g. drive one video-generation request through `make dev` (adk web) against a demo campaign and confirm the scene image renders, or call `generate_scene_image()` directly from a one-line python snippet with the new ID. This is the actual release gate, not the config grep.
+- [ ] A real Stage 2 video generation call succeeds against the new `VEO_MODEL` ID — e.g. the same `make dev` request carried through to Stage 2 (Veo animation), or a direct `animate_scene_with_veo()` call. The actual release gate.
 - [ ] `make test-unit` and `make test-integration` pass unchanged.
-- [ ] The exact-ID grep from Step 3 (`gemini-3-pro-image-preview\|veo-3.1-generate-preview`) returns nothing, including the confirmed `video_tools.py:966` and `:218` hits.
+- [ ] The exact-ID grep from Step 3 (`gemini-3-pro-image-preview\|veo-3.1-generate-preview`) returns nothing, including the confirmed `video_tools.py:966` hit. (This preview-ID pattern cannot match `video_tools.py:218`, whose stale text is the string "Gemini 2.0 Flash Exp" — see the next bullet.)
+- [ ] `grep -rn "Gemini 2.0 Flash Exp" app/` returns nothing once this phase and Phase 1 are both complete — `video_tools.py:218` is fixed here; the remaining `video_tools.py:18` module docstring and `agent.py:200` instruction text are Phase 1's (see `02-bug-fixes-and-cleanup.md`, item 6).
 
 ## Exit criteria
 
