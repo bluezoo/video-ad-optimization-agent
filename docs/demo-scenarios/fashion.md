@@ -64,14 +64,22 @@ Covers the Phase 1 fixes: valid default metric and the no-data guard.
 
 ### Scene F2.2 — Campaign with no activated-video metrics
 
-**Query:** "Create a campaign for product 1 at Test Mall in Austin, Texas,
+**Query 1:** "Create a campaign for product 1 at Test Mall in Austin, Texas,
 then show me its performance chart"
+
+**Query 2 (follow-up turn, required):** "Generate the trendline chart for that
+campaign anyway"
 
 **Expected tool calls:**
 - `create_campaign(product_id=1, store_name="Test Mall", city="Austin", state="Texas"|"TX")`
-- `generate_metrics_visualization` for the new campaign's id.
+- After Query 1 the analytics agent may legitimately short-circuit via
+  `get_campaign_metrics` (sees 0 activated videos, relays guidance) without
+  charting — that path is acceptable for Query 1.
+- Query 2 must invoke `generate_metrics_visualization` for the new campaign's
+  id — this is the regression guard under test.
 
 **Pass criteria:**
-- No crash/traceback in the tool response; the visualization tool returns
-  the clean error ("No metrics data available … activate videos first")
-  and the agent relays that guidance (e.g. pointing at review/activation).
+- No crash/traceback in any tool response; `generate_metrics_visualization`
+  returns the clean error ("No metrics data available … activate videos
+  first") and the agent relays that guidance (e.g. pointing at
+  review/activation).
