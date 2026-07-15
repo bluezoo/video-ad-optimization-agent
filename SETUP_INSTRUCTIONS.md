@@ -61,6 +61,8 @@ make test-coverage       # pytest --cov=app, HTML report in htmlcov/
 
 Run a single test: `pytest tests/unit/test_campaign_tools.py::TestClass::test_name -v`.
 
+**`make test-integration` requires the ADK eval extra:** `pip install "google-adk[eval]"` (into `.venv`). Without it, `AgentEvaluator.evaluate` raises a *lazy* ImportError that the test suite's broad `except ImportError` silently converts into "google.adk.evaluation not available" skips — the suite reports green-looking "5 skipped" while running nothing. (Found during workstream 01; the over-broad catch itself is Phase 1, item 7.) The suite also needs `app/.env` sourced or present (real LLM calls).
+
 ## Lint/format
 
 ```bash
@@ -84,4 +86,6 @@ See `DEPLOYMENT.md` for Cloud Run / Vertex AI Agent Engine deployment, including
 
 ## Version 2 workstream setup notes
 
-This section accumulates setup steps introduced by `.docs/version2-plan/` phases as they land — e.g. `APP_MODE` (Phase 5), a BlueZoo `AccessKey` secret (Phase 10), a PoS credential (Phase 11). Nothing has landed yet as of this writing; check `.docs/version2-plan/STATUS.md` for current progress.
+This section accumulates setup steps introduced by `.docs/version2-plan/` phases as they land — e.g. `APP_MODE` (Phase 5), a BlueZoo `AccessKey` secret (Phase 10), a PoS credential (Phase 11). Check `.docs/version2-plan/STATUS.md` for current progress.
+
+- **Phase 0 (workstream 01):** all three model config values now default to GA IDs and are env-overridable via `AGENT_MODEL` (default `gemini-3.5-flash`), `IMAGE_GENERATION_MODEL` (default `gemini-3-pro-image`), and `VIDEO_GEN_MODEL` (default `veo-3.1-generate-001`) — set them in `app/.env` only when testing a different (e.g. preview) model. `scripts/smoke_media_models.py` smoke-tests Stage 1 + Stage 2 generation against whatever is configured (`--skip-video` for the cheap image-only check). Note `make install` runs bare `python`; on machines with only versioned interpreters, create the venv manually (`python3.12 -m venv .venv && .venv/bin/pip install -r app/requirements.txt`).

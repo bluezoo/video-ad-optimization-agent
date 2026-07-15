@@ -25,3 +25,16 @@ Blast radius: Phase 1 doc amended (new item 8, marked already-fixed, provenance 
 
 ## 2026-07-14 18:36 — Task 2 complete
 GA swap + env overrides + VEO_MODEL→VIDEO_GEN_MODEL rename (config.py, video_tools.py ×6, tests/unit/test_config.py 3 tests TDD red→green). Commit 24913b1. Conftest discovery fix in follow-up commit. make test-unit: 82 passed, 1 skipped.
+
+## 2026-07-14 19:05 — owner scope addition: orchestration model to GA
+Mid-implementation the owner directed swapping `MODEL` too: now `gemini-3.5-flash` (verified GA on Vertex: released 2026-05-19, retirement "2027-05-19 or later", global supported), env-overridable as `AGENT_MODEL`. Supersedes the working doc's out-of-scope line for MODEL; working doc, phase doc, DEMO_GUIDE, DEPLOYMENT, CLAUDE.md, deploy-agent skill, deploy_ae_inline.py all updated. Commit a38e1d6.
+
+## 2026-07-14 19:10 — DISCOVERY: 3 pre-existing tests/e2e failures (test/code drift)
+Assumed: `make test-e2e` passes unchanged. Actual: 3 failures — `test_video_generation_flow` (stale `model_ethnicity` kwarg), `test_chart_generation` + `test_map_visualization` (async tools called without await). Verified pre-existing: identical failures reproduced at base commit e23ca66 (temp worktree, only the conftest fix applied). Not fixed here — amended into Phase 1 doc as new item 9.
+
+## 2026-07-14 19:12 — DISCOVERY: make test-integration silently runs nothing without google-adk[eval]
+Assumed: `make test-integration` runs real evals. Actual: `AgentEvaluator.evaluate` raises a lazy ImportError ("Eval module is not installed... google-adk[eval]") which the tests' broad `except ImportError` converts to all-skipped ("google.adk.evaluation not available") — looks green, runs nothing. Fixed locally by installing the extra; documented in SETUP_INSTRUCTIONS.md Test section; Phase 1 item 7 amended (its xfail-narrowing fix must also handle this).
+
+## 2026-07-14 19:15 — Task 4 complete: post-swap release gate PASSED
+Stage 1 (gemini-3-pro-image): OK, 1,218,671 bytes. Stage 2 (veo-3.1-generate-001): OK, 1,558,711 bytes (~40s generation). Env-override path verified live (IMAGE_GENERATION_MODEL → Stage 1 OK, 1,244,082 bytes).
+Suites: test-unit 82 passed/1 skipped; test-integration 5 passed (live, now on gemini-3.5-flash, with google-adk[eval] installed); test-e2e 22 passed/3 pre-existing failures (see DISCOVERY above, owned by Phase 1 item 9).
