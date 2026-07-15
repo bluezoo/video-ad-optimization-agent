@@ -149,7 +149,7 @@ The system has 4 product-centric campaigns:
 1. **Blue Floral Maxi Dress - Westfield Century City** (Los Angeles, CA)
 2. **Elegant Black Cocktail Dress - Bloomingdale's 59th Street** (New York, NY)
 3. **Black High Waist Trousers - Water Tower Place** (Chicago, IL)
-4. **Emerald Satin Slip Dress - The Grove** (Los Angeles, CA)
+4. **Sage Satin Camisole - The Grove** (Los Angeles, CA)
 
 ## Response Guidelines
 - Show product info when listing campaigns
@@ -197,12 +197,12 @@ The system has 22 pre-loaded products in scripts/products/:
 ## Two-Stage Video Generation Pipeline (NEW)
 All videos now use a two-stage pipeline:
 
-**Stage 1: Scene Image** (Gemini 2.0 Flash Exp)
+**Stage 1: Scene Image** (Gemini image model — see IMAGE_GENERATION in app/config.py)
 - Takes product image + variation parameters
 - Generates scene-ready first frame with model wearing product
 - Saved as thumbnail for review
 
-**Stage 2: Video Animation** (Veo 3.1)
+**Stage 2: Video Animation** (video model — see VIDEO_GEN_MODEL in app/config.py)
 - Animates the scene image into 8-second 9:16 video
 - Cinematic camera movements and transitions
 - Saved with descriptive filename: [product-name]-[MMDDYY]-[variation-name].mp4
@@ -307,7 +307,7 @@ The system tracks these retail-appropriate metrics:
 RPI is THE key performance indicator for retail media networks.
 Formula: RPI = Total Revenue / Total Impressions
 
-Each active campaign has 90 days of mock performance metrics.
+Each active campaign has 30 days of mock performance metrics.
 
 ## Chart Visualization Capabilities
 Use generate_metrics_visualization to create professional charts:
@@ -536,7 +536,7 @@ User: "I want to promote the black trousers at the Chicago store"
 - Blue Floral Maxi Dress - Westfield Century City (LA)
 - Elegant Black Cocktail Dress - Bloomingdale's 59th Street (NY)
 - Black High Waist Trousers - Water Tower Place (Chicago)
-- Emerald Satin Slip Dress - The Grove (LA)
+- Sage Satin Camisole - The Grove (LA)
 
 ## Response Guidelines
 - Explain product-centric model when creating campaigns

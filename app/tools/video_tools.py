@@ -15,12 +15,12 @@
 """Video generation tools using two-stage pipeline.
 
 Two-Stage Video Generation Pipeline:
-    Stage 1: Scene Image (Gemini 2.0 Flash Exp)
+    Stage 1: Scene Image (image model from config.IMAGE_GENERATION)
         - Input: Product image + CreativeVariation parameters
         - Output: Scene-ready first frame (model wearing product)
         - Saved as: thumbnail
 
-    Stage 2: Video Animation (Veo 3.1)
+    Stage 2: Video Animation (video model from config.VIDEO_GEN_MODEL)
         - Input: Scene image + Animation prompt
         - Output: 8-second 9:16 video
         - Saved as: final video
