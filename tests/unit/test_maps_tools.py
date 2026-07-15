@@ -118,49 +118,52 @@ class TestGenerateStaticMap:
 class TestGenerateMapVisualization:
     """Tests for generate_map_visualization tool (requires LLM)."""
 
-    def test_generate_map_visualization_performance_map(self, test_db, mock_storage_module):
-        """generate_map_visualization should create performance map."""
+    async def test_generate_map_visualization_performance_map(
+        self, test_db, mock_storage_module
+    ):
         with patch("google.genai.Client") as mock_client:
-            mock_instance = MagicMock()
-            mock_client.return_value = mock_instance
-            mock_instance.models.generate_content.return_value = MagicMock(
-                text="Map generated successfully"
+            mock_client.return_value.models.generate_content.side_effect = (
+                RuntimeError("mocked API failure")
+            )
+            from app.tools.maps_tools import generate_map_visualization
+
+            result = await generate_map_visualization(
+                visualization_type="performance_map"
             )
 
-            from app.tools.maps_tools import generate_map_visualization
+            assert result["status"] == "error"
+            assert "mocked API failure" in result["message"]
 
-            result = generate_map_visualization(visualization_type="performance_map")
-
-            assert result is not None
-
-    def test_generate_map_visualization_regional_comparison(self, test_db, mock_storage_module):
-        """generate_map_visualization should create regional comparison."""
+    async def test_generate_map_visualization_regional_comparison(
+        self, test_db, mock_storage_module
+    ):
         with patch("google.genai.Client") as mock_client:
-            mock_instance = MagicMock()
-            mock_client.return_value = mock_instance
-
+            mock_client.return_value.models.generate_content.side_effect = (
+                RuntimeError("mocked API failure")
+            )
             from app.tools.maps_tools import generate_map_visualization
 
-            result = generate_map_visualization(visualization_type="regional_comparison")
+            result = await generate_map_visualization(
+                visualization_type="regional_comparison"
+            )
 
-            assert result is not None
+            assert result["status"] == "error"
+            assert "mocked API failure" in result["message"]
 
-    def test_generate_map_visualization_styles(self, test_db, mock_storage_module):
-        """generate_map_visualization should support different styles."""
-        from app.tools.maps_tools import generate_map_visualization
+    async def test_generate_map_visualization_styles(
+        self, test_db, mock_storage_module
+    ):
+        with patch("google.genai.Client") as mock_client:
+            mock_client.return_value.models.generate_content.side_effect = (
+                RuntimeError("mocked API failure")
+            )
+            from app.tools.maps_tools import generate_map_visualization
 
-        styles = ["infographic", "artistic", "simple"]
-
-        for style in styles:
-            try:
-                result = generate_map_visualization(
-                    visualization_type="performance_map",
-                    style=style
-                )
-                assert result is not None
-            except Exception:
-                # May fail without LLM
-                pass
+            for style in ["infographic", "artistic", "simple"]:
+                result = await generate_map_visualization(style=style)
+                assert "Invalid style" not in result.get("message", ""), style
+                assert result["status"] == "error"
+                assert "mocked API failure" in result["message"], style
 
     async def test_default_metric_is_valid(self, test_db, mock_storage_module):
         """Calling with default metric must not trip the valid_metrics check.
