@@ -767,28 +767,34 @@ async def generate_metrics_visualization(
     summary = metrics_result["summary"]
     daily_metrics = metrics_result["daily_metrics"]
 
+    # Guard BEFORE any summary deref: get_campaign_metrics returns
+    # summary=None (status still "success") when no activated-video rows
+    # have impressions in the window.
+    if not daily_metrics or not summary:
+        return {
+            "status": "error",
+            "message": (
+                f"No metrics data available for campaign {campaign_id}. "
+                "Metrics only exist for activated videos — use the Review "
+                "Agent to activate videos first."
+            )
+        }
+
     print(f"[DEBUG VIZ] Step 2: Data received from DB:")
     print(f"[DEBUG VIZ]   - Campaign: {campaign_name}")
     print(f"[DEBUG VIZ]   - Total daily records: {len(daily_metrics)}")
     print(f"[DEBUG VIZ]   - Summary totals: impressions={summary['total_impressions']:,}, revenue=${summary['total_revenue']:,.2f}")
 
     # Show first 3 and last 3 daily records as sample
-    if daily_metrics:
-        print(f"[DEBUG VIZ]   - Sample daily data (first 3 records):")
-        for i, day in enumerate(daily_metrics[:3]):
-            print(f"[DEBUG VIZ]     [{i}] date={day['date']}, {metric}={day.get(metric, 'N/A')}")
-        if len(daily_metrics) > 6:
-            print(f"[DEBUG VIZ]     ... ({len(daily_metrics) - 6} more records) ...")
-        if len(daily_metrics) > 3:
-            print(f"[DEBUG VIZ]   - Sample daily data (last 3 records):")
-            for i, day in enumerate(daily_metrics[-3:]):
-                print(f"[DEBUG VIZ]     [{len(daily_metrics)-3+i}] date={day['date']}, {metric}={day.get(metric, 'N/A')}")
-
-    if not daily_metrics:
-        return {
-            "status": "error",
-            "message": f"No metrics data available for campaign {campaign_id}"
-        }
+    print(f"[DEBUG VIZ]   - Sample daily data (first 3 records):")
+    for i, day in enumerate(daily_metrics[:3]):
+        print(f"[DEBUG VIZ]     [{i}] date={day['date']}, {metric}={day.get(metric, 'N/A')}")
+    if len(daily_metrics) > 6:
+        print(f"[DEBUG VIZ]     ... ({len(daily_metrics) - 6} more records) ...")
+    if len(daily_metrics) > 3:
+        print(f"[DEBUG VIZ]   - Sample daily data (last 3 records):")
+        for i, day in enumerate(daily_metrics[-3:]):
+            print(f"[DEBUG VIZ]     [{len(daily_metrics)-3+i}] date={day['date']}, {metric}={day.get(metric, 'N/A')}")
 
     # Extract data points for the visualization
     print(f"[DEBUG VIZ] Step 3: Extracting '{metric}' values from daily_metrics...")
@@ -911,6 +917,11 @@ async def generate_metrics_visualization(
         for i in range(0, len(data_points), week_size):
             week_slice = data_points[i:i+week_size]
             if week_slice:
+                # KNOWN BUG (flagged, fix in Phase 3 / 04-centralize-rpi-metrics):
+                # summing per-day values is wrong for ratio metrics like
+                # revenue_per_impression — a weekly RPI must be recomputed as
+                # sum(revenue)/sum(impressions), not sum(daily ratios).
+                # Phase 3 centralizes per-metric aggregation rules.
                 week_total = sum(d["value"] for d in week_slice)
                 weekly_data.append({"week": f"Week {len(weekly_data)+1}", "value": week_total})
                 print(f"[DEBUG VIZ]     Week {len(weekly_data)}: {len(week_slice)} days, total={week_total:.2f}")

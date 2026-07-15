@@ -234,3 +234,28 @@ class TestGenerateMetricsVisualization:
             result = await generate_metrics_visualization(campaign_id=1)
 
             assert "Invalid metric" not in result.get("message", "")
+
+    async def test_no_metrics_campaign_returns_clean_error(self, test_db):
+        """A campaign with zero activated-video metrics must get a clean
+        error response, not TypeError.
+
+        Regression: get_campaign_metrics returns summary=None with
+        status="success" when no rows have impressions; a debug print
+        dereferenced summary['total_impressions'] before the empty guard.
+        """
+        from app.tools.campaign_tools import create_campaign
+        from app.tools.metrics_tools import generate_metrics_visualization
+
+        created = create_campaign(
+            product_id=1,
+            store_name="No Metrics Test Store",
+            city="Austin",
+            state="TX",
+        )
+        assert created["status"] == "success"
+        campaign_id = created["campaign"]["id"]
+
+        result = await generate_metrics_visualization(campaign_id=campaign_id)
+
+        assert result["status"] == "error"
+        assert "No metrics data available" in result["message"]
