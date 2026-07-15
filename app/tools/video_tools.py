@@ -48,7 +48,7 @@ from ..config import (
     GENERATED_DIR,
     MODEL,
     IMAGE_GENERATION,
-    VEO_MODEL,
+    VIDEO_GEN_MODEL,
     VIDEO_DURATION_SECONDS,
 )
 from ..database.db import get_db_cursor, get_product, get_product_by_name
@@ -294,9 +294,9 @@ async def animate_scene_with_veo(
     image = types.Image(image_bytes=scene_image_bytes, mime_type="image/png")
 
     # Start video generation
-    print(f"[DEBUG animate_scene_with_veo] Calling Veo ({VEO_MODEL})...")
+    print(f"[DEBUG animate_scene_with_veo] Calling Veo ({VIDEO_GEN_MODEL})...")
     operation = client.models.generate_videos(
-        model=VEO_MODEL,
+        model=VIDEO_GEN_MODEL,
         prompt=video_prompt,
         image=image,
         config=types.GenerateVideosConfig(
@@ -578,7 +578,7 @@ async def generate_video_from_product(
 
             client = genai.Client()
             operation = client.models.generate_videos(
-                model=VEO_MODEL,
+                model=VIDEO_GEN_MODEL,
                 prompt=video_prompt,
                 image=image,
                 config=types.GenerateVideosConfig(
@@ -955,9 +955,9 @@ async def generate_video_ad(
         image = types.Image(image_bytes=image_bytes, mime_type=mime_type)
 
         # Start video generation
-        print(f"[DEBUG generate_video_ad] Starting video generation with {VEO_MODEL}...")
+        print(f"[DEBUG generate_video_ad] Starting video generation with {VIDEO_GEN_MODEL}...")
         operation = client.models.generate_videos(
-            model=VEO_MODEL,
+            model=VIDEO_GEN_MODEL,
             prompt=prompt,
             image=image,
             config=types.GenerateVideosConfig(
