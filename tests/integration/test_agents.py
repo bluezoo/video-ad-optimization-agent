@@ -20,7 +20,6 @@ Tests are marked with @pytest.mark.integration to allow selective execution.
 Run with: pytest tests/integration -v -m "not slow"
 """
 
-import os
 from pathlib import Path
 
 import pytest

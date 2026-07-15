@@ -16,6 +16,7 @@
 
 import sqlite3
 from contextlib import contextmanager
+
 from .. import config
 
 
@@ -336,8 +337,9 @@ def populate_products() -> None:
     Products are loaded from products_data.py which contains metadata
     parsed from scripts/products/*.txt files.
     """
-    from .products_data import PRODUCTS
     import json
+
+    from .products_data import PRODUCTS
 
     conn = get_connection()
     cursor = conn.cursor()

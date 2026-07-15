@@ -20,8 +20,9 @@ Tests the Google Maps integration tools:
 - generate_map_visualization (requires LLM, marked slow)
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 
 class TestGetCampaignMapData:
@@ -42,11 +43,6 @@ class TestGetCampaignMapData:
 
         result = get_campaign_map_data()
 
-        # Check for Google Maps links
-        result_str = str(result)
-        # Should have maps.google.com or google.com/maps links
-        has_maps_link = "maps.google" in result_str or "google.com/maps" in result_str or "maps_url" in result_str
-
         # May not have links if no campaigns, but structure should exist
         assert result is not None
 
@@ -55,10 +51,6 @@ class TestGetCampaignMapData:
         from app.tools.maps_tools import get_campaign_map_data
 
         result = get_campaign_map_data()
-
-        # Should have coordinate data
-        result_str = str(result).lower()
-        has_coords = "lat" in result_str or "lng" in result_str or "longitude" in result_str
 
         assert result is not None
 

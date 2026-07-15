@@ -35,77 +35,77 @@ Usage:
     Or: adk api_server ad-campaign-agent
 """
 
+# Initialize database and populate mock data on import
+# Wrapped in try-except for better error reporting in Agent Engine
+import sys
+
 from google.adk.agents import LlmAgent
+
 # NOTE: BuiltInCodeExecutor cannot be used with function calling tools
 # It's mutually exclusive - you get either tools OR code execution, not both
 # For chart generation, consider a separate visualization agent without tools
-
-from .config import MODEL, APP_NAME, APP_DESCRIPTION
+from .config import APP_DESCRIPTION, APP_NAME, DB_PATH, MODEL
 from .database.db import init_database
 from .database.mock_data import populate_mock_data
 
 # Import all tools
 from .tools.campaign_tools import (
     create_campaign,
-    list_campaigns,
     get_campaign,
+    list_campaigns,
     update_campaign,
 )
 from .tools.image_tools import (
     add_seed_image,
     analyze_image,
-    list_campaign_images,
     list_available_images,
-)
-from .tools.video_tools import (
-    generate_video_ad,
-    generate_video_variation,
-    apply_winning_formula,
-    list_campaign_ads,
-    generate_video_with_properties,
-    get_video_properties,
-    analyze_video,
-    # New two-stage pipeline tools
-    generate_video_from_product,
-    generate_video_with_variation,
-    list_products,
-    list_campaign_videos,
-    get_variation_presets,
-)
-from .tools.review_tools import (
-    list_pending_videos,
-    activate_video,
-    activate_batch,
-    pause_video,
-    archive_video,
-    get_video_status,
-    get_activation_summary,
-    generate_additional_metrics,
-    # New review table tools
-    get_video_review_table,
-    get_video_details,
-)
-from .tools.metrics_tools import (
-    get_campaign_metrics,
-    get_top_performing_ads,
-    get_campaign_insights,
-    compare_campaigns,
-    generate_metrics_visualization,
+    list_campaign_images,
 )
 from .tools.maps_tools import (
-    get_campaign_locations,
-    search_nearby_stores,
-    get_location_demographics,
     generate_map_visualization,
+    generate_static_map,
+    get_campaign_locations,
     # New Google Maps integration tools
     get_campaign_map_data,
-    generate_static_map,
+    get_location_demographics,
+    search_nearby_stores,
+)
+from .tools.metrics_tools import (
+    compare_campaigns,
+    generate_metrics_visualization,
+    get_campaign_insights,
+    get_campaign_metrics,
+    get_top_performing_ads,
+)
+from .tools.review_tools import (
+    activate_batch,
+    activate_video,
+    archive_video,
+    generate_additional_metrics,
+    get_activation_summary,
+    get_video_details,
+    # New review table tools
+    get_video_review_table,
+    get_video_status,
+    list_pending_videos,
+    pause_video,
+)
+from .tools.video_tools import (
+    analyze_video,
+    apply_winning_formula,
+    generate_video_ad,
+    # New two-stage pipeline tools
+    generate_video_from_product,
+    generate_video_variation,
+    generate_video_with_properties,
+    generate_video_with_variation,
+    get_variation_presets,
+    get_video_properties,
+    list_campaign_ads,
+    list_campaign_videos,
+    list_products,
 )
 
-# Initialize database and populate mock data on import
-# Wrapped in try-except for better error reporting in Agent Engine
-import sys
-from .config import DB_PATH
 try:
     init_database()
     populate_mock_data()

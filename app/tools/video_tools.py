@@ -36,26 +36,28 @@ import json
 import os
 import time
 from datetime import datetime
-from typing import Optional, Dict, Any, Tuple
+from typing import Any
 
-from PIL import Image as PILImage
 from google import genai
-from google.genai import types
 from google.adk.tools import ToolContext
+from google.genai import types
+from PIL import Image as PILImage
 
-from ..config import (
-    SELECTED_DIR,
-    GENERATED_DIR,
-    MODEL,
-    IMAGE_GENERATION,
-    VIDEO_GEN_MODEL,
-    VIDEO_DURATION_SECONDS,
-)
-from ..database.db import get_db_cursor, get_product, get_product_by_name
-from ..models.video_properties import VideoProperties
-from ..models.variation import CreativeVariation, get_default_variation, PRESET_VARIATIONS
-from .prompt_builders import build_scene_image_prompt, build_video_animation_prompt, build_creative_prompt
 from .. import storage
+from ..config import (
+    GENERATED_DIR,
+    IMAGE_GENERATION,
+    MODEL,
+    VIDEO_GEN_MODEL,
+)
+from ..database.db import get_db_cursor, get_product
+from ..models.variation import PRESET_VARIATIONS, CreativeVariation, get_default_variation
+from ..models.video_properties import VideoProperties
+from .prompt_builders import (
+    build_creative_prompt,
+    build_scene_image_prompt,
+    build_video_animation_prompt,
+)
 
 
 def generate_video_prompt(metadata: dict, campaign_info: dict = None) -> str:
@@ -129,7 +131,7 @@ async def analyze_video(video_path: str) -> VideoProperties:
     client = genai.Client()
 
     # Read video file using storage abstraction
-    print(f"[DEBUG analyze_video] Reading video file...")
+    print("[DEBUG analyze_video] Reading video file...")
     video_bytes = storage.read_video(filename)
     print(f"[DEBUG analyze_video] Video size: {len(video_bytes)} bytes")
 
@@ -171,7 +173,7 @@ Respond with a JSON object matching the VideoProperties schema. Be precise and c
             )
         )
 
-        print(f"[DEBUG analyze_video] Response received")
+        print("[DEBUG analyze_video] Response received")
         properties_dict = json.loads(response.text)
         print(f"[DEBUG analyze_video] Parsed properties: mood={properties_dict.get('mood')}, "
               f"energy={properties_dict.get('energy_level')}")
@@ -189,10 +191,10 @@ Respond with a JSON object matching the VideoProperties schema. Be precise and c
 # =============================================================================
 
 async def generate_scene_image(
-    product: Dict[str, Any],
+    product: dict[str, Any],
     variation: CreativeVariation,
     product_image_bytes: bytes = None
-) -> Tuple[bytes, str]:
+) -> tuple[bytes, str]:
     """Stage 1: Generate a scene-ready first frame image.
 
     Creates an image of a model wearing the product in the desired setting,
@@ -222,7 +224,7 @@ async def generate_scene_image(
 
         # If we have product image, include it as reference
         if product_image_bytes:
-            print(f"[DEBUG generate_scene_image] Including product image as reference")
+            print("[DEBUG generate_scene_image] Including product image as reference")
             image_part = types.Part.from_bytes(
                 data=product_image_bytes,
                 mime_type="image/png"
@@ -261,10 +263,10 @@ async def generate_scene_image(
 
 async def animate_scene_with_veo(
     scene_image_bytes: bytes,
-    product: Dict[str, Any],
+    product: dict[str, Any],
     variation: CreativeVariation,
     duration_seconds: int = 8
-) -> Tuple[bytes, str]:
+) -> tuple[bytes, str]:
     """Stage 2: Animate a scene image into a video using Veo 3.1.
 
     Args:
@@ -368,7 +370,7 @@ def generate_video_filename(product_name: str, variation_name: str) -> str:
 
 def save_video_metadata(
     video_filename: str,
-    product: Dict[str, Any],
+    product: dict[str, Any],
     variation: CreativeVariation,
     scene_prompt: str,
     video_prompt: str,
@@ -424,7 +426,7 @@ STAGE 2 - Video Generation Prompt:
 async def generate_video_from_product(
     campaign_id: int,
     product_id: int,
-    variation: Optional[dict] = None,
+    variation: dict | None = None,
     use_two_stage: bool = True,
     duration_seconds: int = 8,
     tool_context: ToolContext = None
@@ -515,7 +517,7 @@ async def generate_video_from_product(
                 INSERT INTO campaign_products (campaign_id, product_id)
                 VALUES (?, ?)
             ''', (campaign_id, product_id))
-            print(f"[DEBUG generate_video_from_product] Linked product to campaign")
+            print("[DEBUG generate_video_from_product] Linked product to campaign")
 
     # Get product image bytes using storage abstraction
     product_image_filename = product.get('image_filename')
@@ -540,7 +542,7 @@ async def generate_video_from_product(
 
         if use_two_stage:
             # Stage 1: Generate scene image
-            print(f"[DEBUG generate_video_from_product] Stage 1: Generating scene image...")
+            print("[DEBUG generate_video_from_product] Stage 1: Generating scene image...")
             scene_image_bytes, scene_prompt = await generate_scene_image(
                 product=product,
                 variation=variation_obj,
@@ -557,7 +559,7 @@ async def generate_video_from_product(
             print(f"[DEBUG generate_video_from_product] Saved thumbnail: {thumbnail_path}")
 
             # Stage 2: Animate scene with Veo
-            print(f"[DEBUG generate_video_from_product] Stage 2: Animating with Veo 3.1...")
+            print("[DEBUG generate_video_from_product] Stage 2: Animating with Veo 3.1...")
             video_bytes, video_prompt = await animate_scene_with_veo(
                 scene_image_bytes=scene_image_bytes,
                 product=product,
@@ -566,7 +568,7 @@ async def generate_video_from_product(
             )
         else:
             # Single-stage: Direct video generation (fallback)
-            print(f"[DEBUG generate_video_from_product] Single-stage video generation...")
+            print("[DEBUG generate_video_from_product] Single-stage video generation...")
             scene_prompt = ""
             video_prompt = build_creative_prompt(product, variation_obj)
 
@@ -675,7 +677,7 @@ async def generate_video_from_product(
 
         return {
             "status": "success",
-            "message": f"Video generated successfully. Use activate_video to push live.",
+            "message": "Video generated successfully. Use activate_video to push live.",
             "video": {
                 "id": video_id,
                 "campaign_id": campaign_id,
@@ -713,7 +715,7 @@ async def generate_video_from_product(
 
 def build_templated_prompt(
     base_metadata: dict,
-    property_overrides: Optional[Dict[str, Any]] = None
+    property_overrides: dict[str, Any] | None = None
 ) -> str:
     """Build a video prompt from templates with property overrides.
 
@@ -814,8 +816,8 @@ Professional high-end fashion advertisement style."""
 
 async def generate_video_ad(
     campaign_id: int,
-    image_id: Optional[int] = None,
-    custom_prompt: Optional[str] = None,
+    image_id: int | None = None,
+    custom_prompt: str | None = None,
     duration_seconds: int = 6,
     tool_context: ToolContext = None
 ) -> dict:
@@ -856,7 +858,7 @@ async def generate_video_ad(
         os.makedirs(GENERATED_DIR, exist_ok=True)
         print(f"[DEBUG generate_video_ad] GENERATED_DIR: {GENERATED_DIR}")
     else:
-        print(f"[DEBUG generate_video_ad] Using GCS storage, skipping local directory creation")
+        print("[DEBUG generate_video_ad] Using GCS storage, skipping local directory creation")
 
     with get_db_cursor() as cursor:
         # Get campaign info
@@ -879,7 +881,7 @@ async def generate_video_ad(
                 WHERE id = ? AND campaign_id = ?
             ''', (image_id, campaign_id))
         else:
-            print(f"[DEBUG generate_video_ad] Fetching first image for campaign...")
+            print("[DEBUG generate_video_ad] Fetching first image for campaign...")
             cursor.execute('''
                 SELECT * FROM campaign_images
                 WHERE campaign_id = ?
@@ -906,12 +908,12 @@ async def generate_video_ad(
                 "status": "error",
                 "message": f"Image file not found: {image_filename}"
             }
-        print(f"[DEBUG generate_video_ad] Image file exists")
+        print("[DEBUG generate_video_ad] Image file exists")
 
         # Get or generate prompt
         if custom_prompt:
             prompt = custom_prompt
-            print(f"[DEBUG generate_video_ad] Using custom prompt")
+            print("[DEBUG generate_video_ad] Using custom prompt")
         else:
             metadata = json.loads(image_row["metadata"]) if image_row["metadata"] else {}
             campaign_info = {
@@ -921,11 +923,11 @@ async def generate_video_ad(
                 "state": campaign["state"]
             }
             prompt = generate_video_prompt(metadata, campaign_info)
-            print(f"[DEBUG generate_video_ad] Generated prompt from metadata")
+            print("[DEBUG generate_video_ad] Generated prompt from metadata")
         print(f"[DEBUG generate_video_ad] Prompt: {prompt[:100]}...")
 
         # Create pending ad record
-        print(f"[DEBUG generate_video_ad] Creating pending ad record...")
+        print("[DEBUG generate_video_ad] Creating pending ad record...")
         cursor.execute('''
             INSERT INTO campaign_ads (campaign_id, image_id, video_path, prompt_used, duration_seconds, status)
             VALUES (?, ?, '', ?, ?, 'generating')
@@ -935,12 +937,12 @@ async def generate_video_ad(
 
     # Generate video using Veo 3.1
     try:
-        print(f"[DEBUG generate_video_ad] Initializing genai client...")
+        print("[DEBUG generate_video_ad] Initializing genai client...")
         client = genai.Client()
 
         # Load image using storage abstraction and convert to bytes for Veo API
         # This follows the official Veo documentation pattern
-        print(f"[DEBUG generate_video_ad] Loading image...")
+        print("[DEBUG generate_video_ad] Loading image...")
         image_bytes = storage.read_image(image_filename)
         print(f"[DEBUG generate_video_ad] Image bytes size: {len(image_bytes)}")
 
@@ -997,7 +999,7 @@ async def generate_video_ad(
         # Check if operation succeeded (use .result NOT .response per official docs)
         print(f"[DEBUG generate_video_ad] Checking result: {operation.result}")
         if operation.result is None or not operation.result.generated_videos:
-            print(f"[DEBUG generate_video_ad] No result or no generated videos")
+            print("[DEBUG generate_video_ad] No result or no generated videos")
             with get_db_cursor() as cursor:
                 cursor.execute('''
                     UPDATE campaign_ads SET status = 'failed' WHERE id = ?
@@ -1024,14 +1026,14 @@ async def generate_video_ad(
 
         if is_vertex_ai:
             # Vertex AI: video_bytes already present in response
-            print(f"[DEBUG generate_video_ad] Vertex AI mode - using video_bytes from response")
+            print("[DEBUG generate_video_ad] Vertex AI mode - using video_bytes from response")
             video_data = generated_video.video.video_bytes
             if not video_data:
                 raise ValueError("No video_bytes in Vertex AI response")
             print(f"[DEBUG generate_video_ad] Video bytes size: {len(video_data)}")
         else:
             # Gemini Developer API: Must download first, then use .save()
-            print(f"[DEBUG generate_video_ad] Gemini Developer API mode - downloading video...")
+            print("[DEBUG generate_video_ad] Gemini Developer API mode - downloading video...")
             client.files.download(file=generated_video.video)
             # For Gemini API, we need to save to temp file to get bytes
             import tempfile
@@ -1052,21 +1054,21 @@ async def generate_video_ad(
             print(f"[DEBUG generate_video_ad] Saving video to: {output_path}")
             with open(output_path, "wb") as f:
                 f.write(video_data)
-            print(f"[DEBUG generate_video_ad] Video saved successfully")
+            print("[DEBUG generate_video_ad] Video saved successfully")
 
         # Save as ADK artifact if tool_context is provided
         if tool_context:
-            print(f"[DEBUG generate_video_ad] Saving as ADK artifact...")
+            print("[DEBUG generate_video_ad] Saving as ADK artifact...")
             # Use video_data we already have in memory (no need to re-read from storage)
             video_artifact = types.Part.from_bytes(data=video_data, mime_type="video/mp4")
             # save_artifact is async, await it properly
             version = await tool_context.save_artifact(filename=output_filename, artifact=video_artifact)
             print(f"[DEBUG generate_video_ad] Artifact saved, version: {version}")
         else:
-            print(f"[DEBUG generate_video_ad] No tool_context, skipping artifact save")
+            print("[DEBUG generate_video_ad] No tool_context, skipping artifact save")
 
         # Analyze the generated video to extract properties
-        print(f"[DEBUG generate_video_ad] Analyzing generated video for properties...")
+        print("[DEBUG generate_video_ad] Analyzing generated video for properties...")
         video_properties = await analyze_video(output_path)
         print(f"[DEBUG generate_video_ad] Extracted properties: mood={video_properties.mood}, "
               f"energy={video_properties.energy_level}, style={video_properties.visual_style}")
@@ -1081,7 +1083,7 @@ async def generate_video_ad(
 
         # NOTE: Auto-metrics generation REMOVED per HITL workflow
         # Metrics are now only created when a video is activated via review_tools.activate_video()
-        print(f"[DEBUG generate_video_ad] Video saved. No auto-metrics (HITL workflow).")
+        print("[DEBUG generate_video_ad] Video saved. No auto-metrics (HITL workflow).")
 
         return {
             "status": "success",
@@ -1264,7 +1266,7 @@ async def apply_winning_formula(
             characteristics_to_apply=["mood", "setting"]
         )
     """
-    print(f"[DEBUG apply_winning_formula] Starting...")
+    print("[DEBUG apply_winning_formula] Starting...")
     print(f"[DEBUG apply_winning_formula] target_campaign_id={target_campaign_id}")
     print(f"[DEBUG apply_winning_formula] source_ad_id={source_ad_id}")
     print(f"[DEBUG apply_winning_formula] characteristics_to_apply={characteristics_to_apply}")
@@ -1300,7 +1302,7 @@ async def apply_winning_formula(
                 GROUP BY ca.id
             ''', (source_ad_id,))
         else:
-            print(f"[DEBUG apply_winning_formula] Auto-selecting top performer by revenue...")
+            print("[DEBUG apply_winning_formula] Auto-selecting top performer by revenue...")
             cursor.execute('''
                 SELECT ca.*, ca.video_properties, ci.metadata, ci.image_path as source_image,
                        c.name as campaign_name,
@@ -1331,7 +1333,7 @@ async def apply_winning_formula(
         if source_ad["video_properties"]:
             try:
                 source_video_props = json.loads(source_ad["video_properties"])
-                print(f"[DEBUG apply_winning_formula] Using VIDEO PROPERTIES from source ad")
+                print("[DEBUG apply_winning_formula] Using VIDEO PROPERTIES from source ad")
             except json.JSONDecodeError:
                 pass
 
@@ -1353,7 +1355,7 @@ async def apply_winning_formula(
                 "key_feature": source_metadata.get("key_feature", "the details"),
                 "model_description": source_metadata.get("model_description", "a model"),
             }
-            print(f"[DEBUG apply_winning_formula] Winning formula from VIDEO PROPERTIES:")
+            print("[DEBUG apply_winning_formula] Winning formula from VIDEO PROPERTIES:")
         else:
             # Fallback to image metadata only
             winning_formula = {
@@ -1369,9 +1371,9 @@ async def apply_winning_formula(
                 "color_temperature": "neutral",
                 "lighting_style": "studio",
             }
-            print(f"[DEBUG apply_winning_formula] Winning formula from IMAGE METADATA (fallback):")
+            print("[DEBUG apply_winning_formula] Winning formula from IMAGE METADATA (fallback):")
 
-        print(f"[DEBUG apply_winning_formula] Winning formula extracted:")
+        print("[DEBUG apply_winning_formula] Winning formula extracted:")
         for k, v in winning_formula.items():
             print(f"[DEBUG apply_winning_formula]   - {k}: {v}")
 
@@ -1478,7 +1480,7 @@ async def apply_winning_formula(
         # Fallback to original prompt format
         winning_prompt = f"""A cinematic fashion video featuring {model_desc} wearing {clothing_desc}. {setting_desc}, the {garment_type} {movement}. Camera {camera_style}, capturing {key_feature}. Atmosphere: {mood}. Professional lighting, high-end fashion advertisement style."""
 
-    print(f"[DEBUG apply_winning_formula] Generated prompt with winning formula:")
+    print("[DEBUG apply_winning_formula] Generated prompt with winning formula:")
     print(f"[DEBUG apply_winning_formula] {winning_prompt[:200]}...")
     print(f"[DEBUG apply_winning_formula] Applied characteristics: {chars_to_use}")
     print(f"[DEBUG apply_winning_formula] Using video_properties format: {source_video_props is not None}")
@@ -1569,15 +1571,15 @@ def list_campaign_ads(campaign_id: int) -> dict:
 
 async def generate_video_with_properties(
     campaign_id: int,
-    image_id: Optional[int] = None,
-    mood: Optional[str] = None,
-    visual_style: Optional[str] = None,
-    energy_level: Optional[str] = None,
-    color_temperature: Optional[str] = None,
-    camera_movement: Optional[str] = None,
-    lighting_style: Optional[str] = None,
-    setting_type: Optional[str] = None,
-    time_of_day: Optional[str] = None,
+    image_id: int | None = None,
+    mood: str | None = None,
+    visual_style: str | None = None,
+    energy_level: str | None = None,
+    color_temperature: str | None = None,
+    camera_movement: str | None = None,
+    lighting_style: str | None = None,
+    setting_type: str | None = None,
+    time_of_day: str | None = None,
     duration_seconds: int = 6,
     tool_context: ToolContext = None
 ) -> dict:

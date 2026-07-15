@@ -24,8 +24,6 @@ Product-Centric Model:
     - Same product at different stores = different campaigns
 """
 
-import json
-from typing import Optional
 from ..database.db import get_db_cursor, get_product
 
 
@@ -34,8 +32,8 @@ def create_campaign(
     store_name: str,
     city: str,
     state: str,
-    name: Optional[str] = None,
-    description: Optional[str] = None
+    name: str | None = None,
+    description: str | None = None
 ) -> dict:
     """Create a new product-centric ad campaign.
 
@@ -123,7 +121,7 @@ def create_campaign(
         }
 
 
-def list_campaigns(status: Optional[str] = None, product_id: Optional[int] = None) -> dict:
+def list_campaigns(status: str | None = None, product_id: int | None = None) -> dict:
     """List all campaigns, optionally filtered by status or product.
 
     Args:
@@ -300,9 +298,9 @@ def get_campaign(campaign_id: int) -> dict:
 
 def update_campaign(
     campaign_id: int,
-    name: Optional[str] = None,
-    description: Optional[str] = None,
-    status: Optional[str] = None
+    name: str | None = None,
+    description: str | None = None,
+    status: str | None = None
 ) -> dict:
     """Update campaign properties.
 

@@ -27,8 +27,6 @@ Tests the 10 HITL review-related tools:
 - generate_additional_metrics
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
 
 
 class TestGetVideoReviewTable:
@@ -245,12 +243,6 @@ class TestGetActivationSummary:
 
         result = get_activation_summary()
 
-        # Should have status categories
-        result_str = str(result).lower()
-        statuses = ["generated", "activated", "paused", "archived"]
-
-        # At least some statuses should be mentioned
-        found = sum(1 for s in statuses if s in result_str)
         # May be 0 if no videos, but structure should exist
         assert result is not None
 

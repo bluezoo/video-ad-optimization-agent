@@ -20,9 +20,6 @@ simulating the demo scenarios to ensure the system works end-to-end.
 Run with: pytest tests/e2e -v -m "not slow"
 """
 
-import asyncio
-import os
-from typing import Any
 
 import pytest
 
@@ -430,8 +427,8 @@ class TestMultiAgentWorkflow:
 
     def test_product_then_review_flow(self, shared_test_db):
         """Cross-agent workflow: Media -> Review."""
-        from app.tools.video_tools import list_products, list_campaign_videos
         from app.tools.review_tools import get_video_review_table
+        from app.tools.video_tools import list_campaign_videos, list_products
 
         # Step 1: List products (Media Agent)
         products = list_products()
@@ -503,7 +500,6 @@ class TestDataConsistency:
         from app.tools.video_tools import list_campaign_videos
 
         campaigns = list_campaigns()
-        campaign_ids = {c["id"] for c in campaigns["campaigns"]}
 
         # Check videos for first campaign
         if campaigns["campaigns"]:

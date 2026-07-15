@@ -22,8 +22,9 @@ Tests the 5 analytics-related tools (non-visualization):
 - generate_metrics_visualization (requires LLM, marked slow)
 """
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 
 class TestGetCampaignMetrics:

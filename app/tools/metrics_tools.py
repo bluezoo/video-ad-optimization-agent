@@ -16,15 +16,13 @@
 
 import json
 import time
-from typing import List, Optional
 
 from google import genai
-from google.genai import types
 from google.adk.tools import ToolContext
+from google.genai import types
 
-from ..database.db import get_db_cursor
 from ..config import IMAGE_GENERATION
-
+from ..database.db import get_db_cursor
 
 # =============================================================================
 # Chart Prompt Templates (Anti-Hallucination)
@@ -605,7 +603,7 @@ def get_campaign_insights(campaign_id: int) -> dict:
         }
 
 
-def compare_campaigns(campaign_ids: List[int]) -> dict:
+def compare_campaigns(campaign_ids: list[int]) -> dict:
     """Compare performance metrics across multiple campaigns.
 
     Compares in-store retail media metrics including impressions, dwell time,
@@ -758,7 +756,7 @@ async def generate_metrics_visualization(
         }
 
     # Get campaign metrics data
-    print(f"[DEBUG VIZ] Step 1: Fetching metrics from database...")
+    print("[DEBUG VIZ] Step 1: Fetching metrics from database...")
     metrics_result = get_campaign_metrics(campaign_id, days)
     if metrics_result["status"] == "error":
         return metrics_result
@@ -780,19 +778,19 @@ async def generate_metrics_visualization(
             )
         }
 
-    print(f"[DEBUG VIZ] Step 2: Data received from DB:")
+    print("[DEBUG VIZ] Step 2: Data received from DB:")
     print(f"[DEBUG VIZ]   - Campaign: {campaign_name}")
     print(f"[DEBUG VIZ]   - Total daily records: {len(daily_metrics)}")
     print(f"[DEBUG VIZ]   - Summary totals: impressions={summary['total_impressions']:,}, revenue=${summary['total_revenue']:,.2f}")
 
     # Show first 3 and last 3 daily records as sample
-    print(f"[DEBUG VIZ]   - Sample daily data (first 3 records):")
+    print("[DEBUG VIZ]   - Sample daily data (first 3 records):")
     for i, day in enumerate(daily_metrics[:3]):
         print(f"[DEBUG VIZ]     [{i}] date={day['date']}, {metric}={day.get(metric, 'N/A')}")
     if len(daily_metrics) > 6:
         print(f"[DEBUG VIZ]     ... ({len(daily_metrics) - 6} more records) ...")
     if len(daily_metrics) > 3:
-        print(f"[DEBUG VIZ]   - Sample daily data (last 3 records):")
+        print("[DEBUG VIZ]   - Sample daily data (last 3 records):")
         for i, day in enumerate(daily_metrics[-3:]):
             print(f"[DEBUG VIZ]     [{len(daily_metrics)-3+i}] date={day['date']}, {metric}={day.get(metric, 'N/A')}")
 
@@ -819,7 +817,7 @@ async def generate_metrics_visualization(
     avg_val = sum(values) / len(values) if values else 0
     total_val = sum(values)
 
-    print(f"[DEBUG VIZ] Step 4: Calculated statistics:")
+    print("[DEBUG VIZ] Step 4: Calculated statistics:")
     print(f"[DEBUG VIZ]   - Min: {min_val}")
     print(f"[DEBUG VIZ]   - Max: {max_val}")
     print(f"[DEBUG VIZ]   - Avg: {avg_val:.2f}")
@@ -911,7 +909,7 @@ async def generate_metrics_visualization(
 
     elif chart_type == "bar_chart":
         # Get weekly aggregates for bar chart
-        print(f"[DEBUG VIZ]   - Aggregating data into weekly buckets...")
+        print("[DEBUG VIZ]   - Aggregating data into weekly buckets...")
         weekly_data = []
         week_size = 7
         for i in range(0, len(data_points), week_size):
@@ -949,7 +947,7 @@ async def generate_metrics_visualization(
 
     elif chart_type == "comparison":
         # Log the exact values being sent
-        print(f"[DEBUG VIZ]   - Comparison chart using summary metrics:")
+        print("[DEBUG VIZ]   - Comparison chart using summary metrics:")
         print(f"[DEBUG VIZ]     RPI: ${summary['revenue_per_impression']:.4f}")
         print(f"[DEBUG VIZ]     Impressions: {summary['total_impressions']:,}")
         print(f"[DEBUG VIZ]     Dwell Time: {summary['average_dwell_time']:.1f}s")
@@ -966,7 +964,7 @@ async def generate_metrics_visualization(
         else:
             primary_value = f"{int(avg_val):,}"
 
-        print(f"[DEBUG VIZ]   - Infographic using all data:")
+        print("[DEBUG VIZ]   - Infographic using all data:")
         print(f"[DEBUG VIZ]     Primary metric: {metric_display}")
         print(f"[DEBUG VIZ]     Primary value: {primary_value}")
         print(f"[DEBUG VIZ]     RPI: ${summary['revenue_per_impression']:.4f}")
@@ -977,7 +975,7 @@ async def generate_metrics_visualization(
 
         visualization_prompt = CHART_TEMPLATES["infographic"].format(**template_vars)
 
-    print(f"[DEBUG VIZ] Step 6: Complete prompt being sent to Gemini 3 Pro Image:")
+    print("[DEBUG VIZ] Step 6: Complete prompt being sent to Gemini 3 Pro Image:")
     print(f"[DEBUG VIZ] {'='*60}")
     print(visualization_prompt)
     print(f"[DEBUG VIZ] {'='*60}")
@@ -1021,7 +1019,7 @@ async def generate_metrics_visualization(
         timestamp = int(time.time())
         filename = f"chart_{campaign_id}_{chart_type}_{metric}_{timestamp}.png"
 
-        print(f"[DEBUG VIZ] Step 8: Saving artifact...")
+        print("[DEBUG VIZ] Step 8: Saving artifact...")
         if tool_context:
             print(f"[DEBUG VIZ]   - Filename: {filename}")
             # Get the image bytes from inline_data
@@ -1035,7 +1033,7 @@ async def generate_metrics_visualization(
             artifact_saved = False
             version = None
 
-        print(f"[DEBUG VIZ] Step 9: SUCCESS - Visualization complete!")
+        print("[DEBUG VIZ] Step 9: SUCCESS - Visualization complete!")
         print(f"[DEBUG VIZ]   - Data points used: {len(data_points)}")
         print(f"[DEBUG VIZ]   - Statistics: min={min_val}, max={max_val}, avg={avg_val:.2f}")
         print(f"[DEBUG VIZ]   - Trend: {trend}")
