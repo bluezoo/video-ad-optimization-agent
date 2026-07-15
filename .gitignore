@@ -1,9 +1,11 @@
-# Claude Code
-.claude/
+# Claude Code — local state stays out of git; vendored skills/agents + shared hook config are repo tooling
+.claude/*
+!.claude/skills/
+!.claude/agents/
+!.claude/settings.json
 
 # Local planning docs / notes (not for team distribution by default)
 .docs/*
-!.docs/2026-07-12-version2-review-and-plan.md
 !.docs/version2-plan/
 !.docs/.context/
 .docs/.context/*

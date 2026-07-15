@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath // empty' | { read -r f; case \"$f\" in *app/*.py) make test-unit ;; esac; }; true",
+            "timeout": 30,
+            "statusMessage": "Running unit tests..."
+          }
+        ]
+      }
+    ]
+  }
+}

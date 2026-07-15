@@ -22,6 +22,8 @@ adk --version       # ADK CLI (pip install google-adk)
 python3 --version   # Python 3.11+
 ```
 
+> **Agent Engine Python restriction:** Agent Engine supports Python **3.9–3.13 only** (not 3.14+). If your default `python3` is newer, `make deploy-ae-global` auto-selects `.venv-deploy` (Python 3.12) or falls back to `python3.12`/`python3.11` — see the `DEPLOY_PYTHON` logic in the Makefile. Cloud Run has no such restriction.
+
 ### GCP Authentication
 
 ```bash
