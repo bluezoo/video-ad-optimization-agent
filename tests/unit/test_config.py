@@ -9,11 +9,9 @@ import app.config as config_module
 
 @pytest.fixture(autouse=True)
 def _reload_config_after_test(monkeypatch):
-    """Each test reloads app.config; restore a clean-env reload afterwards."""
+    """Each test reloads app.config; re-reload under the restored env afterwards."""
     yield
-    monkeypatch.delenv("AGENT_MODEL", raising=False)
-    monkeypatch.delenv("IMAGE_GENERATION_MODEL", raising=False)
-    monkeypatch.delenv("VIDEO_GEN_MODEL", raising=False)
+    monkeypatch.undo()
     importlib.reload(config_module)
 
 

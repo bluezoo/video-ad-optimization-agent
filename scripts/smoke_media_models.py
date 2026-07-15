@@ -21,10 +21,8 @@ from app import config  # noqa: E402
 from app.models.variation import CreativeVariation  # noqa: E402
 from app.tools.video_tools import animate_scene_with_veo, generate_scene_image  # noqa: E402
 
-# Tolerates both constant names so the pre-rename baseline run and every
-# later (post-rename) run use the same script unchanged.
 IMAGE_MODEL = config.IMAGE_GENERATION
-VIDEO_MODEL = getattr(config, "VIDEO_GEN_MODEL", None) or config.VEO_MODEL
+VIDEO_MODEL = config.VIDEO_GEN_MODEL
 
 # Minimal product dict; prompt builders use .get() with defaults for every key.
 PRODUCT = {

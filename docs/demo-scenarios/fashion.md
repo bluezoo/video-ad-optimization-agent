@@ -21,7 +21,9 @@ image/video models — the release gate for any model-config change.
 - Expected tool call: `list_campaigns` (Campaign Agent; coordinator must route
   there, not answer from memory). Arguments: none/defaults.
 - Expected response: a campaign list including `sage-satin-camisole - The Grove`
-  (4 demo campaigns total), no tool errors in the trace.
+  and the other 3 seeded demo campaigns; extra campaigns left over from prior
+  local runs are tolerated (note them, don't fail on them). No tool errors in
+  the trace.
 
 **Scene 2 — two-stage video generation (the release gate)**
 
