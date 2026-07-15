@@ -176,3 +176,32 @@ class TestGenerateMapVisualization:
             result = await generate_map_visualization()
 
             assert "Invalid metric" not in result.get("message", "")
+
+
+class TestGetCampaignLocationsCurrentSchema:
+    """get_campaign_locations must read campaign_videos/video_metrics,
+    not the legacy campaign_ads/campaign_metrics tables (which are empty)."""
+
+    def test_locations_report_real_video_metrics(self, test_db):
+        with patch("app.tools.maps_tools.GOOGLE_MAPS_API_KEY", "test-key"), \
+             patch("googlemaps.Client") as mock_gmaps:
+            mock_gmaps.return_value.geocode.return_value = [
+                {"geometry": {"location": {"lat": 34.05, "lng": -118.24}}}
+            ]
+            from app.tools.maps_tools import get_campaign_locations
+
+            result = get_campaign_locations()
+
+            assert "locations" in result
+            # Demo data has activated videos with 30 days of metrics on the
+            # pre-loaded campaigns — the legacy tables are empty, so any
+            # non-zero count proves the query reads the current schema.
+            campaigns_with_ads = [
+                loc for loc in result["locations"]
+                if loc["metrics"]["ad_count"] > 0
+            ]
+            assert len(campaigns_with_ads) >= 1
+            assert any(
+                loc["metrics"]["total_impressions"] > 0
+                for loc in campaigns_with_ads
+            )

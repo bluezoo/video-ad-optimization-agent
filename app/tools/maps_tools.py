@@ -54,6 +54,8 @@ def get_campaign_locations() -> dict:
     gmaps = googlemaps.Client(key=api_key)
 
     with get_db_cursor() as cursor:
+        # Current schema: campaign_videos + video_metrics (HITL workflow).
+        # ad_count = activated videos; metrics only exist for activated videos.
         cursor.execute('''
             SELECT
                 c.id,
@@ -62,12 +64,12 @@ def get_campaign_locations() -> dict:
                 c.city,
                 c.state,
                 c.status,
-                COUNT(DISTINCT ca.id) as ad_count,
-                SUM(cm.revenue) as total_revenue,
-                SUM(cm.impressions) as total_impressions
+                COUNT(DISTINCT CASE WHEN cv.status = 'activated' THEN cv.id END) as ad_count,
+                SUM(vm.revenue) as total_revenue,
+                SUM(vm.impressions) as total_impressions
             FROM campaigns c
-            LEFT JOIN campaign_ads ca ON c.id = ca.campaign_id
-            LEFT JOIN campaign_metrics cm ON c.id = cm.campaign_id
+            LEFT JOIN campaign_videos cv ON c.id = cv.campaign_id
+            LEFT JOIN video_metrics vm ON cv.id = vm.video_id AND cv.status = 'activated'
             GROUP BY c.id
         ''')
 
