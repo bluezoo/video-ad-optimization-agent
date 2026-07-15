@@ -1,0 +1,55 @@
+2026-07-14 20:48:30,501 - INFO - google_llm.py:285 - Response received from the model.
+INFO:     127.0.0.1:59575 - "GET /dev/apps/app/debug/trace/session/2c184969-b1b1-4dd5-8f2e-918ceb2a96f7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59652 - "GET /apps/app/users/user/sessions/2c184969-b1b1-4dd5-8f2e-918ceb2a96f7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59663 - "GET /apps/app/users/user/sessions/2c184969-b1b1-4dd5-8f2e-918ceb2a96f7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59707 - "POST /run_sse HTTP/1.1" 200 OK
+2026-07-14 20:51:32,702 - INFO - google_llm.py:216 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-07-14 20:51:34,760 - INFO - google_llm.py:285 - Response received from the model.
+2026-07-14 20:51:34,823 - INFO - google_llm.py:216 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-07-14 20:51:36,764 - INFO - google_llm.py:285 - Response received from the model.
+2026-07-14 20:51:38,299 - INFO - models.py:6533 - AFC is enabled with max remote calls: 10.
+2026-07-14 20:52:04,720 - INFO - _client.py:1025 - HTTP Request: POST https://aiplatform.googleapis.com/v1beta1/projects/kaggle-on-gcp/locations/global/publishers/google/models/gemini-3-pro-image:generateContent "HTTP/1.1 200 OK"
+2026-07-14 20:52:19,201 - INFO - _client.py:1025 - HTTP Request: POST https://aiplatform.googleapis.com/v1beta1/projects/kaggle-on-gcp/locations/global/publishers/google/models/veo-3.1-generate-001:predictLongRunning "HTTP/1.1 200 OK"
+2026-07-14 20:52:49,709 - INFO - _client.py:1025 - HTTP Request: POST https://aiplatform.googleapis.com/v1beta1/projects/kaggle-on-gcp/locations/global/publishers/google/models/veo-3.1-generate-001:fetchPredictOperation "HTTP/1.1 200 OK"
+2026-07-14 20:53:20,122 - INFO - _client.py:1025 - HTTP Request: POST https://aiplatform.googleapis.com/v1beta1/projects/kaggle-on-gcp/locations/global/publishers/google/models/veo-3.1-generate-001:fetchPredictOperation "HTTP/1.1 200 OK"
+2026-07-14 20:53:40,636 - INFO - _client.py:1025 - HTTP Request: POST https://aiplatform.googleapis.com/v1beta1/projects/kaggle-on-gcp/locations/global/publishers/google/models/veo-3.1-generate-001:fetchPredictOperation "HTTP/1.1 200 OK"
+2026-07-14 20:53:42,039 - INFO - local_storage.py:129 - Using file artifact service at /Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_bug-fixes-and-cleanup/app/.adk/artifacts
+[DEBUG generate_video_from_product] Starting for campaign_id=4, product_id=21
+[DEBUG generate_video_from_product] Product: sage-satin-camisole
+[DEBUG generate_video_from_product] Campaign: Sage Satin Camisole - The Grove
+[DEBUG generate_video_from_product] Variation: elegant_studio_camisole
+[DEBUG generate_video_from_product] Linked product to campaign
+[DEBUG generate_video_from_product] Loaded product image from: gs://kaggle-on-gcp-ad-campaign-assets/product-images/sage-satin-camisole.png
+[DEBUG generate_video_from_product] Stage 1: Generating scene image...
+[DEBUG generate_scene_image] Starting scene generation for product: sage-satin-camisole
+[DEBUG generate_scene_image] Variation: elegant_studio_camisole
+[DEBUG generate_scene_image] Scene prompt: Cinematic fashion photography of a beautiful woman wearing a stunning soft sage green silky satin drapey camisole.
+
+She is mid-stride in an elegant walking pose in a minimalist professional photograph...
+[DEBUG generate_scene_image] Including product image as reference
+[DEBUG generate_scene_image] Scene image generated: 1296903 bytes
+[DEBUG generate_video_from_product] Saved thumbnail: gs://kaggle-on-gcp-ad-campaign-assets/generated/sage-satin-camisole-071426-elegant_studio_camisole-thumbnail.png
+[DEBUG generate_video_from_product] Stage 2: Animating with Veo 3.1...
+[DEBUG animate_scene_with_veo] Starting animation for: sage-satin-camisole
+[DEBUG animate_scene_with_veo] Duration: 8s
+[DEBUG animate_scene_with_veo] Animation prompt: The model walks gracefully forward, the garment flowing with each step. Camera slowly orbits around the model, showcasing the garment's movement, drape, and fabric flow.
+
+The scene has subtle ambient ...
+[DEBUG animate_scene_with_veo] Calling Veo (veo-3.1-generate-001)...
+[DEBUG animate_scene_with_veo] Waiting... (0s elapsed)
+[DEBUG animate_scene_with_veo] Waiting... (20s elapsed)
+[DEBUG animate_scene_with_veo] Waiting... (40s elapsed)
+[DEBUG animate_scene_with_veo] Operation completed after 60s
+[DEBUG animate_scene_with_veo] GOOGLE_GENAI_USE_VERTEXAI=TRUE, is_vertex_ai=True
+[DEBUG animate_scene_with_veo] Video generated: 3122756 bytes
+[DEBUG generate_video_from_product] Total generation time: 122s
+[DEBUG generate_video_from_product] Saved video: gs://kaggle-on-gcp-ad-campaign-assets/generated/sage-satin-camisole-071426-elegant_studio_camisole.mp4
+[DEBUG save_video_metadata] Saved metadata to: gs://kaggle-on-gcp-ad-campaign-assets/generated/sage-satin-camisole-071426-elegant_studio_camisole.txt
+[DEBUG generate_video_from_product] Saved artifact version: 0
+INFO:     127.0.0.1:59771 - "GET /apps/app/users/user/sessions/2c184969-b1b1-4dd5-8f2e-918ceb2a96f7 HTTP/1.1" 200 OK
+2026-07-14 20:53:42,139 - INFO - google_llm.py:216 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+INFO:     127.0.0.1:59814 - "GET /apps/app/users/user/sessions/2c184969-b1b1-4dd5-8f2e-918ceb2a96f7/artifacts/sage-satin-camisole-071426-elegant_studio_camisole.mp4/versions/0 HTTP/1.1" 200 OK
+2026-07-14 20:53:46,272 - INFO - google_llm.py:285 - Response received from the model.
+INFO:     127.0.0.1:59707 - "GET /dev/apps/app/debug/trace/session/2c184969-b1b1-4dd5-8f2e-918ceb2a96f7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59826 - "GET /apps/app/users/user/sessions/2c184969-b1b1-4dd5-8f2e-918ceb2a96f7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59832 - "GET /apps/app/users/user/sessions/2c184969-b1b1-4dd5-8f2e-918ceb2a96f7 HTTP/1.1" 200 OK

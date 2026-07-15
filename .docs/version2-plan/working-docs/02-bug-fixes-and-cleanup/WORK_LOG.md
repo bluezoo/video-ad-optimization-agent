@@ -55,3 +55,10 @@ Blast radius: plan.md Task 8 steps 5-6 expectations amended by this entry; no do
 
 ## 2026-07-14 — Task 8 complete (mirrors .superpowers/sdd/progress.md)
 3 e2e tests repaired (async/await, current signatures, real return-shape asserts) + None-guard on product_id consistency test (schema-legit: ON DELETE SET NULL) + fix round: DB test isolation repaired repo-wide (db.py late-binds config.DB_PATH; polluted campaigns.db reset; leak-proof verified across repeated runs; one genuinely-broken review_tools assertion fixed; SETUP_INSTRUCTIONS reset-db note). Full e2e: 25 passed, 1 skipped, 0 failed (was 3 failed). Commits ba6c2a3..51cd452, re-review clean.
+
+## 2026-07-14 — Task 9 complete + demo-scenario verification: PASS (checkpoint 5)
+Scenario F2 added to docs/demo-scenarios/fashion.md; touched files lint-cleaned (114→0 ruff errors); suites green (unit 88 passed/1 skipped; e2e 25 passed/1 skipped/0 failed).
+Demo verification via demo-scenario-verifier, sequential, worktree server on :8501:
+- **F1: 2/2 PASS.** Scene 1 list_campaigns → exactly 4 seeded campaigns (clean DB confirms isolation fix). Scene 2 real two-stage generation: generate_video_with_variation(product 21, campaign 4, studio/elegant) → sage-satin-camisole-071426-elegant_studio_camisole.mp4, Stage 1 image 1.3MB + Stage 2 Veo 60s op, 122s total, artifact rendered. This is the real-generation release gate (pytest can't do it — see test-project DISCOVERY).
+- **F2: 2/2 PASS.** F2.1 generate_metrics_visualization(campaign_id=1, trendline, metric=revenue_per_impression) → success, chart artifact rendered, no "Invalid metric". F2.2 create_campaign(Test Mall/Austin) then guard verified: clean "No metrics data available… activate videos first" error, no traceback. Scenario doc amended to two-turn script (agent legitimately short-circuits via get_campaign_metrics on turn 1 — observed 2/2).
+Evidence: working-docs/02-bug-fixes-and-cleanup/evidence/f1-*.png, f1-scene2-server-log-two-stage.log, f2-*.png.
