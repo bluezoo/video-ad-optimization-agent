@@ -161,3 +161,18 @@ class TestGenerateMapVisualization:
             except Exception:
                 # May fail without LLM
                 pass
+
+    async def test_default_metric_is_valid(self, test_db, mock_storage_module):
+        """Calling with default metric must not trip the valid_metrics check.
+
+        Regression: default was "revenue", which the tool itself rejects.
+        """
+        with patch("google.genai.Client") as mock_client:
+            mock_client.return_value.models.generate_content.side_effect = (
+                RuntimeError("mocked API failure")
+            )
+            from app.tools.maps_tools import generate_map_visualization
+
+            result = await generate_map_visualization()
+
+            assert "Invalid metric" not in result.get("message", "")

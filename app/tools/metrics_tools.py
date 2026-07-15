@@ -720,7 +720,7 @@ def compare_campaigns(campaign_ids: List[int]) -> dict:
 async def generate_metrics_visualization(
     campaign_id: int,
     chart_type: str = "trendline",
-    metric: str = "revenue",
+    metric: str = "revenue_per_impression",
     days: int = 30,
     tool_context: ToolContext = None
 ) -> dict:

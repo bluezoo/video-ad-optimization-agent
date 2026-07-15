@@ -217,3 +217,20 @@ class TestGenerateMetricsVisualization:
             except Exception:
                 # May fail without LLM, but should accept the parameters
                 pass
+
+    async def test_default_metric_is_valid(self, test_db, mock_storage_module):
+        """Calling with default metric must not trip the valid_metrics check.
+
+        Regression: default was "revenue", which the tool itself rejects.
+        The mocked client raises so the test never makes a real API call —
+        reaching the mocked-API error proves validation passed.
+        """
+        with patch("google.genai.Client") as mock_client:
+            mock_client.return_value.models.generate_content.side_effect = (
+                RuntimeError("mocked API failure")
+            )
+            from app.tools.metrics_tools import generate_metrics_visualization
+
+            result = await generate_metrics_visualization(campaign_id=1)
+
+            assert "Invalid metric" not in result.get("message", "")

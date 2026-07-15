@@ -857,7 +857,7 @@ Minimal style. 16:9 ratio. Data only - no decoration."""
 
 async def generate_map_visualization(
     visualization_type: str = "performance_map",
-    metric: str = "revenue",
+    metric: str = "revenue_per_impression",
     style: str = "infographic",
     tool_context: ToolContext = None
 ) -> dict:
