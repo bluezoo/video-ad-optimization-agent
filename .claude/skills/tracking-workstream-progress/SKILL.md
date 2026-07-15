@@ -30,12 +30,12 @@ Trust these files over your own memory of the conversation — that is the entir
 
 ## STATUS.md — Cross-Workstream Index
 
-One row per phase, updated in place (not appended):
+One row per phase, updated in place (not appended). The `Doc` column carries the phase-doc filename prefix — the offset-by-one companion to the 0-based `Phase` number (see the Overview above); keep both columns filled, they're how readers bridge the two numbering schemes:
 
 ```markdown
-| Phase | Name | Status | Branch | PR | Last updated | Note |
-|---|---|---|---|---|---|---|
-| 6 | rpi-across-creatives-chart | implement in progress | version_2_rpi-chart | - | 2026-07-13 | Task 2/4 done |
+| Phase | Doc | Name | Status | Branch | PR | Last updated | Note |
+|---|---|---|---|---|---|---|---|
+| 6 | `07` | rpi-across-creatives-chart | implement in progress | version_2_rpi-chart | - | 2026-07-13 | Task 2/4 done |
 ```
 
 Valid `Status` values and who sets them (every value has exactly one writer skill — if you're setting a value outside its skill, something's off-process):
