@@ -38,3 +38,10 @@ Assumed: `make test-integration` runs real evals. Actual: `AgentEvaluator.evalua
 ## 2026-07-14 19:15 — Task 4 complete: post-swap release gate PASSED
 Stage 1 (gemini-3-pro-image): OK, 1,218,671 bytes. Stage 2 (veo-3.1-generate-001): OK, 1,558,711 bytes (~40s generation). Env-override path verified live (IMAGE_GENERATION_MODEL → Stage 1 OK, 1,244,082 bytes).
 Suites: test-unit 82 passed/1 skipped; test-integration 5 passed (live, now on gemini-3.5-flash, with google-adk[eval] installed); test-e2e 22 passed/3 pre-existing failures (see DISCOVERY above, owned by Phase 1 item 9).
+
+## 2026-07-14 19:45 — demo scenario verification: PASS (checkpoint 5)
+Scenario F1 (docs/demo-scenarios/fashion.md), 2/2 scenes PASS via demo-scenario-verifier subagent against this worktree's adk web on :8501.
+Scene 1: coordinator routed via transfer_to_agent → campaign_agent, `list_campaigns` fired, target campaign present. (total_count was 14 not 4 — 10 leftover draft "Test Store" campaigns from prior test runs in the local DB; stale-DB state, not a code defect.)
+Scene 2: media_agent → `generate_video_with_variation` (two-stage), server log shows gemini-3-pro-image generateContent 200 OK then veo-3.1-generate-001 predictLongRunning 200 OK (97s total); produced sage-satin-camisole-071426-elegant-studio-sage-camisole.mp4, status "generated", HITL pending review; zero errors in full session JSON.
+Evidence: working-docs/01-emergency-model-currency-fix/evidence/ (trace + chat screenshots, session events JSON, server debug lines).
+Verifier also observed the agent NARRATING "Gemini 2.0 Flash" in chat text while actually calling gemini-3-pro-image — that's the known stale MEDIA_AGENT_INSTRUCTION text at agent.py:200, already owned by Phase 1 item 6; no action here.
