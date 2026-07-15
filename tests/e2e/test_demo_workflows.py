@@ -158,7 +158,7 @@ class TestCreativeGenerationWorkflow:
 
         # Get campaign details
         campaign = get_campaign(campaign_id=1)
-        assert campaign is not None
+        assert campaign.get("status") != "error", campaign
 
         # Generate video (this is slow - 2-3 minutes)
         result = await generate_video_from_product(

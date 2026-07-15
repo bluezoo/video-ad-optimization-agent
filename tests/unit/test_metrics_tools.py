@@ -24,8 +24,6 @@ Tests the 5 analytics-related tools (non-visualization):
 
 from unittest.mock import patch
 
-import pytest
-
 
 class TestGetCampaignMetrics:
     """Tests for get_campaign_metrics tool."""
@@ -175,10 +173,8 @@ class TestCompareCampaigns:
         assert result is not None
 
 
-@pytest.mark.slow
-@pytest.mark.integration
 class TestGenerateMetricsVisualization:
-    """Tests for generate_metrics_visualization tool (requires LLM)."""
+    """Tests for generate_metrics_visualization tool (LLM call is mocked)."""
 
     async def test_generate_metrics_visualization_trendline(
         self, test_db, mock_storage_module

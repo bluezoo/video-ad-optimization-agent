@@ -12,6 +12,9 @@ Replace the independent, ad-hoc metric computations scattered across the codebas
 - `app/tools/review_tools.py:454-513` — a second, separate `_generate_mock_video_metrics()` (see Phase 4 — this duplication is fixed there, but both currently compute RPI inline too)
 - `app/tools/review_tools.py:862` — `get_video_details()` also computes RPI inline (missed in the first draft of this inventory)
 - `app/tools/metrics_tools.py:169-283` — `get_campaign_metrics()`
+
+> **Amended (workstream 02, 2026-07-14):** `get_campaign_metrics` returns `summary=None` while still reporting `status="success"` when no activated-video rows have impressions in the window (metrics_tools.py). Workstream 02 guarded the one crash this caused, but the odd contract itself is left for this phase's centralization to normalize (e.g. always return a zeroed summary, or a distinct status).
+
 - `app/tools/metrics_tools.py:285-412` — `get_top_performing_ads()` — note its docstring/contract explicitly promises results **"across all campaigns"** with no campaign/date parameters; see the corrected step 4 below (do not silently change this to scoped-only behavior).
 - `app/tools/metrics_tools.py:415-605` — `get_campaign_insights()` — **correction: this is not an already-correct reference implementation.** Its signature takes only `campaign_id` (no date-range parameter, `metrics_tools.py:415`), and its "RPI trend" actually compares revenue totals, not RPI (`metrics_tools.py:467`). Its "best/worst day" logic also selects individual `video_metrics` rows without grouping by day (`metrics_tools.py:493`) — meaning "best day" may actually mean "best single video-day row," not an aggregated day. This function needs its own repair alongside the migration, not to be used as the template.
 - `app/tools/metrics_tools.py:608-717` — `compare_campaigns()`

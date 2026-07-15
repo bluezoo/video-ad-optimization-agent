@@ -105,10 +105,8 @@ class TestGenerateStaticMap:
             assert result is not None
 
 
-@pytest.mark.slow
-@pytest.mark.integration
 class TestGenerateMapVisualization:
-    """Tests for generate_map_visualization tool (requires LLM)."""
+    """Tests for generate_map_visualization tool (LLM call is mocked)."""
 
     async def test_generate_map_visualization_performance_map(
         self, test_db, mock_storage_module
