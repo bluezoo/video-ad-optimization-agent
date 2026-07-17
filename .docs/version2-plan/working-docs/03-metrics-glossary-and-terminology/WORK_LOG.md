@@ -22,3 +22,9 @@ Owner approved the 2-task plan (commit e7b1ed5): Task 1 creates docs/METRICS.md 
 
 ## 2026-07-16 — Task 1 complete (mirrors .superpowers/sdd/progress.md)
 docs/METRICS.md created (commit 69bd304), review clean: exact transcription of the approved glossary content, 6 sections, no code blocks, all cross-referenced phase-doc paths verified to exist.
+
+## 2026-07-16 — Task 2 complete (mirrors .superpowers/sdd/progress.md)
+Links wired (commit fdd38bf): SETUP_INSTRUCTIONS.md "Metrics glossary" section, CLAUDE.md project-overview pointer, phase-doc Step 2 provenance amendment. Review approved after one evidence fix: initial report showed only the integration count; full make test re-run evidenced (unit 88 passed/1 skipped, integration 5 passed, exit 0). Zero diff under app/, README.md and DEMO_GUIDE.md untouched.
+
+## 2026-07-16 — demo-scenario verification: SKIPPED (checkpoint 5)
+Per verifying-with-demo-scenarios' skip rule for genuinely non-agent-facing work: this phase is documentation-only (docs/METRICS.md + two doc pointers + phase-doc amendment), zero changes under app/, no tool contract or prompt changes — there is no agent behavior to observe. The full automated suite passing unchanged (see Task 2 entry) is the phase's own validation per the phase doc. Skip pre-declared in the approved working doc and plan.
