@@ -25,6 +25,7 @@ Product-Centric Model:
 """
 
 from ..database.db import get_db_cursor, get_product
+from .metrics_shared import compute_rpi
 
 
 def create_campaign(
@@ -251,7 +252,7 @@ def get_campaign(campaign_id: int) -> dict:
         if metrics_row and metrics_row["total_impressions"]:
             total_impressions = int(metrics_row["total_impressions"])
             total_revenue = round(metrics_row["total_revenue"], 2)
-            rpi = round(total_revenue / total_impressions, 4) if total_impressions > 0 else 0
+            rpi = compute_rpi(total_revenue, total_impressions)
 
             metrics_summary = {
                 "period": "last_30_days",

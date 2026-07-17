@@ -704,8 +704,7 @@ def compare_campaigns(campaign_ids: list[int]) -> dict:
             if row:
                 total_impressions = int(row["total_impressions"]) if row["total_impressions"] else 0
                 total_revenue = round(row["total_revenue"], 2) if row["total_revenue"] else 0
-                # Compute RPI on the fly
-                rpi = round(total_revenue / total_impressions, 4) if total_impressions > 0 else 0
+                rpi = compute_rpi(total_revenue, total_impressions)
 
                 comparisons.append({
                     "campaign_id": row["id"],

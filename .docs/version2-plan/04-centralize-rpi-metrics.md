@@ -35,6 +35,8 @@ Before starting, re-run `grep -rn "revenue" app/tools/ app/database/ --include="
 4. **Correction on `get_top_performing_ads()`**: do not silently narrow it to campaign/date-scoped-only, since its current contract is explicitly global ("top performing ads across all campaigns") and something may already rely on that. Instead, add **optional** `campaign_id`/date-range filter parameters that narrow the result when provided, while preserving the current unscoped behavior as the default when they're omitted. This is an enhancement to a documented contract, not a bug fix to a broken one.
 5. Do not touch `_generate_mock_video_metrics()` in either `mock_data.py` or `review_tools.py` in this phase beyond making them call `compute_rpi()` for the RPI figure they store — the deeper fix (making them a single deterministic generator) is Phase 4.
 
+> **Amended (workstream 04, 2026-07-16):** Step 5 is vacuous as written — neither `_generate_mock_video_metrics()` stores an RPI figure or divides revenue by impressions; both synthesize `revenue` as impressions × an RNG rate (multiplication only: `mock_data.py:223-224`, `review_tools.py:482/503`). Verified during this workstream's migration sweep; no change made to either generator. Phase 4 still owns their unification.
+
 ## Validation
 
 - [ ] Unit test `compute_rpi()` and `compute_weighted_average()` directly: known value pairs, including a zero-impressions case, an all-equal-daily-values case (where sum-of-ratios and ratio-of-sums coincidentally agree — doesn't prove correctness), and an unequal-daily-values case (where they must differ, catching regressions).

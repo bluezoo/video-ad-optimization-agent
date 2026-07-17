@@ -352,6 +352,25 @@ class TestCompareCampaigns:
         # Should handle gracefully
         assert result is not None
 
+    def test_comparison_rpi_is_thin_wrapper(self, test_db):
+        from app.tools.metrics_shared import compute_rpi
+        from app.tools.metrics_tools import compare_campaigns
+
+        a = _make_campaign_with_metrics(
+            [{"metric_date": _days_ago(1), "impressions": 1000, "revenue": 10.0},
+             {"metric_date": _days_ago(2), "impressions": 500, "revenue": 50.0}]
+        )
+        b = _make_campaign_with_metrics(
+            [{"metric_date": _days_ago(1), "impressions": 200, "revenue": 4.0}]
+        )
+        result = compare_campaigns(campaign_ids=[a["campaign_id"], b["campaign_id"]])
+        assert result["status"] == "success"
+        for comp in result["comparisons"]:
+            m = comp["metrics"]
+            assert m["revenue_per_impression"] == compute_rpi(
+                m["total_revenue"], m["total_impressions"]
+            )
+
 
 class TestGenerateMetricsVisualization:
     """Tests for generate_metrics_visualization tool (LLM call is mocked)."""
