@@ -34,3 +34,6 @@ Fable reviewer, range 1fb1d77..c54c3d7. Initial verdict "Needs fixes" on one Imp
 
 ## 2026-07-16 — finish: PR open (checkpoint 6, pending merge)
 PR #3 into version_2: https://github.com/bluezoo/video-ad-optimization-agent/pull/3 — awaiting owner confirmation to self-merge per the sequencing model.
+
+## 2026-07-16 — finish: merged (checkpoint 6 complete)
+PR #3 squash-merged into version_2 as 2bb2452; worktree and branch (local + origin) removed.

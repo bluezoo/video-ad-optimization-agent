@@ -12,7 +12,7 @@ Update rows in place as a workstream progresses; don't append new rows for the s
 |---|---|---|---|---|---|---|---|
 | 0 | `01` | emergency-model-currency-fix | merged | version_2_model-currency-fix | [#1](https://github.com/bluezoo/video-ad-optimization-agent/pull/1) | 2026-07-14 | merged 9f12738; incl. conftest fix + preview-model probe |
 | 1 | `02` | bug-fixes-and-cleanup | merged | version_2_bug-fixes-and-cleanup | [#2](https://github.com/bluezoo/video-ad-optimization-agent/pull/2) | 2026-07-16 | merged e0a0a52; incl. DB-isolation fix + test de-vacuation discoveries |
-| 2 | `03` | metrics-glossary-and-terminology | PR open | version_2_metrics-glossary | [#3](https://github.com/bluezoo/video-ad-optimization-agent/pull/3) | 2026-07-16 | final review Ready to merge; make test green; demo skipped by design (docs-only) |
+| 2 | `03` | metrics-glossary-and-terminology | merged | version_2_metrics-glossary | [#3](https://github.com/bluezoo/video-ad-optimization-agent/pull/3) | 2026-07-16 | merged 2bb2452; docs/METRICS.md is the metrics source of truth; demo skipped by design (docs-only) |
 | 3 | `04` | centralize-rpi-metrics | not started | - | - | 2026-07-13 | depends on Phase 2 |
 | 4 | `05` | deterministic-demo-data | not started | - | - | 2026-07-13 | depends on Phase 3 |
 | 5 | `06` | app-mode-config-skeleton | not started | - | - | 2026-07-13 | - |
