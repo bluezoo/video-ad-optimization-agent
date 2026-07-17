@@ -13,3 +13,6 @@ Owner approved the 6-task plan (commit 3a23dcc), including the two plan-time wor
 
 ## 2026-07-17 — Task 1 complete (mirrors .superpowers/sdd/progress.md)
 commits 4327655..986970c, review clean — app/demo_data/seed.py ported (HHMM bins verified incl. _0058_to_0100 boundary), numpy dep added, 10 tests incl. cross-process determinism. One justified lint deviation (zip strict=True, ruff B905, behavior-neutral).
+
+## 2026-07-17 — Task 2 complete (mirrors .superpowers/sdd/progress.md)
+commits bceee4e..ee424f2, review clean — constants.py (DEMO_RPI=0.05, DEMO_WINDOW_DAYS=30) + derive.py (inner-only impressions, absolute per-video fractions, synthetic dwell/circulation), 9 tests. Reviewer verified flat-RPI round-trip and the no-discontinuity property.
