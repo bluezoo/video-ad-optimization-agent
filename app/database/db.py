@@ -16,7 +16,7 @@
 
 import sqlite3
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from .. import config
 
@@ -462,7 +462,7 @@ def get_demo_anchor_date(cursor) -> str:
     row = cursor.fetchone()
     if row:
         return row["value"]
-    today = datetime.now(timezone.utc).date().isoformat()
+    today = datetime.now(UTC).date().isoformat()
     cursor.execute(
         "INSERT OR IGNORE INTO demo_meta (key, value) VALUES (?, ?)",
         (DEMO_ANCHOR_KEY, today),

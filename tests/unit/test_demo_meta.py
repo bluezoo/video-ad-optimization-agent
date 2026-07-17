@@ -1,6 +1,6 @@
 """Tests for the demo_meta table and demo anchor-date helpers."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.database.db import (
     get_db_cursor,
@@ -13,7 +13,7 @@ class TestDemoAnchor:
     def test_first_read_seeds_todays_utc_date(self, fresh_test_db):
         with get_db_cursor() as cursor:
             anchor = get_demo_anchor_date(cursor)
-        assert anchor == datetime.now(timezone.utc).date().isoformat()
+        assert anchor == datetime.now(UTC).date().isoformat()
 
     def test_anchor_is_stable_across_reads(self, fresh_test_db):
         with get_db_cursor() as cursor:
