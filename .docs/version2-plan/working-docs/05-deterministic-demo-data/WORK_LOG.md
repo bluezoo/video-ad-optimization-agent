@@ -10,3 +10,6 @@ Owner approved the six-dimension restatement. Two explicit owner decisions recor
 
 ## 2026-07-17 — plan approved (checkpoint 3)
 Owner approved the 6-task plan (commit 3a23dcc), including the two plan-time working-doc corrections (synthetic dwell per METRICS.md; absolute per-video fractions). Executing via subagent-driven-development.
+
+## 2026-07-17 — Task 1 complete (mirrors .superpowers/sdd/progress.md)
+commits 4327655..986970c, review clean — app/demo_data/seed.py ported (HHMM bins verified incl. _0058_to_0100 boundary), numpy dep added, 10 tests incl. cross-process determinism. One justified lint deviation (zip strict=True, ruff B905, behavior-neutral).
