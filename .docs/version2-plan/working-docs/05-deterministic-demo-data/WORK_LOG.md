@@ -16,3 +16,6 @@ commits 4327655..986970c, review clean — app/demo_data/seed.py ported (HHMM bi
 
 ## 2026-07-17 — Task 2 complete (mirrors .superpowers/sdd/progress.md)
 commits bceee4e..ee424f2, review clean — constants.py (DEMO_RPI=0.05, DEMO_WINDOW_DAYS=30) + derive.py (inner-only impressions, absolute per-video fractions, synthetic dwell/circulation), 9 tests. Reviewer verified flat-RPI round-trip and the no-discontinuity property.
+
+## 2026-07-17 — Task 3 complete (mirrors .superpowers/sdd/progress.md)
+commits e7679e2..61aec1b, review clean — demo_meta table (init + reset) and get/set_demo_anchor_date helpers in db.py, 3 tests, UTC convention honored. Reviewer's single ⚠️ (fresh_test_db fixture existence) resolved by controller: conftest.py:166-169.
