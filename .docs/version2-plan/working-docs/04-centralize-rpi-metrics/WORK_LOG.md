@@ -22,3 +22,6 @@ get_campaign_metrics migrated to compute_rpi; daily rows now carry revenue; no-d
 
 ## 2026-07-16 — Task 3 complete (SDD task ledger mirror)
 get_top_performing_ads: optional campaign_id/days filters (days in JOIN ON clause, default behavior verified identical), returned RPI via compute_rpi (commit 86b5fc2). Additive note: per-ad metrics dict gained total_revenue (plan's parity test referenced it; original dict lacked it). Review approved, no issues.
+
+## 2026-07-16 — Task 4 complete (SDD task ledger mirror)
+get_campaign_insights repaired (commit 9f35d5b): days param with all three queries date-scoped, trend compares RPI halves via compute_rpi (test proves rising revenue + falling RPI → declining), best/worst day from one GROUP BY date query with python max/min. Review approved; its one cannot-verify (compute_rpi edge inputs) is covered by Task 1's unit tests.
