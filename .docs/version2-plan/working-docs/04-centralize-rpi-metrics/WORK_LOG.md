@@ -16,3 +16,6 @@ Owner approved the 7-task plan (commit 8241551): T1 metrics_shared.py + tests + 
 
 ## 2026-07-16 — Task 1 complete (SDD task ledger mirror)
 app/tools/metrics_shared.py + tests/unit/test_metrics_shared.py (11 tests) + METRICS.md zero-impressions note (commit 1b94582); review approved, no issues.
+
+## 2026-07-16 — Task 2 complete (SDD task ledger mirror)
+get_campaign_metrics migrated to compute_rpi; daily rows now carry revenue; no-data normalized to status-error with the ws02 message (commit f3558e2); pre-existing visualization no-data test still green; review approved, no issues.
