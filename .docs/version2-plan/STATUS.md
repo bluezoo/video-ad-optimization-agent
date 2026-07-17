@@ -25,3 +25,4 @@ Update rows in place as a workstream progresses; don't append new rows for the s
 | 12 | `13` | production-hardening-live-mode | not started | - | - | 2026-07-13 | depends on Phases 10, 11 |
 | 13a | `14a` | image-model-upgrade-nano-banana | not started | - | - | 2026-07-13 | depends on Phase 0 only |
 | 13b | `14b` | video-model-upgrade-omni-flash | not started | - | - | 2026-07-13 | depends on Phase 0, ideally after 13a |
+| — | `—` | replan-data-track (docs only) | PR open | version_2_replan-data-track | [#5](https://github.com/bluezoo/video-ad-optimization-agent/pull/5) | 2026-07-16 | amends Phases 4/5/7/9/10, splits 10 into 10a/10b, adds Phase 14 (`15-product-onboarding.md`) per sibling-repo reassessment (.docs/.context/2026-07-16-sibling-repo-reassessment.md); on merge: split Phase 10 row into 10a/10b + add Phase 14 row |
