@@ -7,3 +7,6 @@ Branch version_2_deterministic-demo-data off version_2 @ 1008c79 (post-replan; P
 
 ## 2026-07-17 — working doc approved (checkpoint 2)
 Owner approved the six-dimension restatement. Two explicit owner decisions recorded in the working doc: (1) STRICT FLAT RPI CONSTANT — revenue = impressions × DEMO_RPI (0.05), no per-video variance factor; flat-RPI tension consciously deferred to Phase 7 (its phase doc amended with provenance this branch); (2) numpy only — added to requirements; frames as lists of dicts, no pandas. Next: writing-plans.
+
+## 2026-07-17 — plan approved (checkpoint 3)
+Owner approved the 6-task plan (commit 3a23dcc), including the two plan-time working-doc corrections (synthetic dwell per METRICS.md; absolute per-video fractions). Executing via subagent-driven-development.
