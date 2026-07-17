@@ -13,3 +13,6 @@ Owner approved the six-dimension restatement: shared metrics_shared.py (compute_
 
 ## 2026-07-16 — plan approved (checkpoint 3)
 Owner approved the 7-task plan (commit 8241551): T1 metrics_shared.py + tests + glossary note; T2 get_campaign_metrics migration + enriched daily rows + no-data status-error contract; T3 get_top_performing_ads optional filters; T4 get_campaign_insights repair (scoping/trend/day-grouping); T5 mechanical migrations + phase-doc amendment (generator step vacuous); T6 maps_tools + weighted regional dwell; T7 weekly-chart fix + weekly-RPI regression tests. Executing via subagent-driven-development.
+
+## 2026-07-16 — Task 1 complete (SDD task ledger mirror)
+app/tools/metrics_shared.py + tests/unit/test_metrics_shared.py (11 tests) + METRICS.md zero-impressions note (commit 1b94582); review approved, no issues.
