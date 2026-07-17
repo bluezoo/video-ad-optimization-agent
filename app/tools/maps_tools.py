@@ -22,6 +22,7 @@ from google.genai import types
 
 from ..config import GOOGLE_MAPS_API_KEY, IMAGE_GENERATION
 from ..database.db import get_db_cursor
+from .metrics_shared import compute_rpi, compute_weighted_average
 
 
 def get_campaign_locations() -> dict:
@@ -555,7 +556,7 @@ def get_campaign_map_data(
                 if metrics and metrics["total_impressions"]:
                     camp_revenue = round(metrics["total_revenue"], 2) if metrics["total_revenue"] else 0
                     camp_impressions = int(metrics["total_impressions"])
-                    rpi = round(camp_revenue / camp_impressions, 4) if camp_impressions > 0 else 0
+                    rpi = compute_rpi(camp_revenue, camp_impressions)
 
                     loc_data["metrics"] = {
                         "total_revenue": camp_revenue,
@@ -581,7 +582,7 @@ def get_campaign_map_data(
                 "total_revenue": round(total_revenue, 2),
                 "total_impressions": total_impressions,
                 "active_videos": active_videos,
-                "overall_rpi": round(total_revenue / total_impressions, 4) if total_impressions > 0 else 0
+                "overall_rpi": compute_rpi(total_revenue, total_impressions)
             },
             "message": "Click google_maps_url links to open store locations in Google Maps"
         }
@@ -958,8 +959,7 @@ async def generate_map_visualization(
         impressions = int(camp['total_impressions']) if camp['total_impressions'] else 0
         dwell_time = round(camp['avg_dwell_time'], 1) if camp['avg_dwell_time'] else 0
         circulation = int(camp['total_circulation']) if camp['total_circulation'] else 0
-        # Compute RPI on the fly
-        rpi = round(revenue / impressions, 4) if impressions > 0 else 0
+        rpi = compute_rpi(revenue, impressions)
 
         total_revenue += revenue
         total_impressions += impressions
@@ -986,11 +986,13 @@ async def generate_map_visualization(
 
         # Aggregate by region
         if region not in regional_data:
-            regional_data[region] = {"revenue": 0, "impressions": 0, "campaigns": 0, "dwell_time_sum": 0, "circulation": 0}
+            regional_data[region] = {"revenue": 0, "impressions": 0, "campaigns": 0, "dwell_rows": [], "circulation": 0}
         regional_data[region]["revenue"] += revenue
         regional_data[region]["impressions"] += impressions
         regional_data[region]["campaigns"] += 1
-        regional_data[region]["dwell_time_sum"] += dwell_time
+        regional_data[region]["dwell_rows"].append(
+            {"dwell_time": dwell_time, "impressions": impressions}
+        )
         regional_data[region]["circulation"] += circulation
 
         # Aggregate by category
@@ -1002,15 +1004,21 @@ async def generate_map_visualization(
         category_data[cat]["campaigns"] += 1
         category_data[cat]["locations"].append(location_key)
 
-    # Calculate regional averages and RPI
+    # Calculate regional averages and RPI. Dwell is impressions-weighted:
+    # an unweighted mean of per-campaign averages over-weights small
+    # campaigns (see docs/METRICS.md / metrics_shared).
     for region in regional_data:
         if regional_data[region]["campaigns"] > 0:
             regional_data[region]["avg_dwell_time"] = round(
-                regional_data[region]["dwell_time_sum"] / regional_data[region]["campaigns"], 1
+                compute_weighted_average(
+                    regional_data[region]["dwell_rows"], "dwell_time", "impressions"
+                ), 1
             )
-            regional_data[region]["rpi"] = round(
-                regional_data[region]["revenue"] / regional_data[region]["impressions"], 4
-            ) if regional_data[region]["impressions"] > 0 else 0
+            regional_data[region]["rpi"] = compute_rpi(
+                regional_data[region]["revenue"],
+                regional_data[region]["impressions"],
+            )
+        del regional_data[region]["dwell_rows"]
 
     print("[DEBUG MAP VIZ] Step 3: Data aggregation complete")
     print(f"[DEBUG MAP VIZ]   - Total revenue: ${total_revenue:,.2f}")
