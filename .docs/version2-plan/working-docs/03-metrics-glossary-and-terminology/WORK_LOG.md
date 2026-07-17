@@ -16,3 +16,6 @@ Branch `version_2_metrics-glossary` created off `version_2` (1fb1d77, post-works
 
 ## 2026-07-16 — working doc approved (checkpoint 2)
 Owner approved the six-dimension restatement: docs/METRICS.md glossary (five definitions, circulation/dwell marked unresolved, BlueZoo table appendix), links via SETUP_INSTRUCTIONS.md + CLAUDE.md — README stays untouched (divergence resolved in favor of the standing rule; phase doc to be amended with provenance) — zero changes under app/, demo-scenario step explicitly skipped as docs-only. Next: writing-plans.
+
+## 2026-07-16 — plan approved (checkpoint 3)
+Owner approved the 2-task plan (commit e7b1ed5): Task 1 creates docs/METRICS.md (full literal content in plan — 5 definitions, live-verified BlueZoo quotes, ratio-of-sums rule, table appendix); Task 2 wires links (SETUP_INSTRUCTIONS.md before '## Test', CLAUDE.md project-overview pointer), amends phase-doc Step 2 with README-divergence provenance, and proves zero behavior change. Executing via subagent-driven-development.
