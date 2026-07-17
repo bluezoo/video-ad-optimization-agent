@@ -39,7 +39,7 @@ Unlike BlueZoo's audience data (one well-documented API this plan has already fe
 
 ## Dependencies
 
-Phase 3 (`compute_rpi()`), Phase 5 (`APP_MODE`), **Phase 10** (a real end-to-end RPI figure is only meaningful once real impressions exist to join against — this is a hard dependency, not just an "effectively" one).
+Phase 3 (`compute_rpi()`), Phase 5 (`APP_MODE`), **Phase 10b** (a real end-to-end RPI figure is only meaningful once real impressions exist to join against — this is a hard dependency, not just an "effectively" one; Phase 10 was split 2026-07-16 into 10a seam-port / 10b live conformer, and it's the live conformer this phase needs). The `RevenueDataSource` interface here should mirror 10a's provider-seam pattern.
 
 ## Open questions
 

@@ -12,7 +12,7 @@ Key source layout: `app/agent.py` (agent graph), `app/config.py` (models/env), `
 
 ## Version 2 plan
 
-**`.docs/version2-plan/` is the sole authoritative plan for ongoing work.** Start at `00-overview.md` for sequencing and philosophy, then the numbered phase docs (`01-*.md` through `14b-*.md`); `99-open-questions.md` consolidates every phase's open questions. `STATUS.md` in that folder is the cross-workstream progress index — read it before starting or resuming any phase.
+**`.docs/version2-plan/` is the sole authoritative plan for ongoing work.** Start at `00-overview.md` for sequencing and philosophy, then the numbered phase docs (`01-*.md` through `15-*.md`); `99-open-questions.md` consolidates every phase's open questions. `STATUS.md` in that folder is the cross-workstream progress index — read it before starting or resuming any phase.
 
 `.docs/2026-07-12-version2-review-and-plan.md` is superseded and moved to `.docs/.backup/` (gitignored, kept locally as historical record only) — do not treat it as current.
 

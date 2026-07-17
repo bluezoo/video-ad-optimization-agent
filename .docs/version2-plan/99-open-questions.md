@@ -1,6 +1,6 @@
 # Open Questions for BlueZoo
 
-Consolidated questions for BlueZoo/the client, so this can be sent as a single list without digging through 15 files. Purely internal technical questions (e.g. Phase 12's deployment-identity question in `13-production-hardening-live-mode.md`, Phase 9's CMS-delivery-mechanism question in `10-playout-attribution.md`) stay in their own phase docs rather than being surfaced here. Ordered roughly by how much they block downstream work — the first two are the ones most worth resolving soonest.
+Consolidated questions for BlueZoo/the client, so this can be sent as a single list without digging through 16 files. Purely internal technical questions (e.g. Phase 12's deployment-identity question in `13-production-hardening-live-mode.md`, Phase 9's CMS-delivery-mechanism question in `10-playout-attribution.md`) stay in their own phase docs rather than being surfaced here. Ordered roughly by how much they block downstream work — the first two are the ones most worth resolving soonest.
 
 **Update:** the client's ad-play-tracking email (full text, names redacted, in `.docs/.context/project_context.md`) substantially resolves or narrows questions 4 and 17 below — see each for details. It also confirms the design is an end-of-day batch job (not real-time) and introduces a third external system, the retailer's CMS, whose exact delivery mechanism is still unknown (see Phase 9's open questions). Note: that email references "your list of 5 architectural changes," but the only such list captured across the three reviewed screenshots is a 2-item list (Phase 0/overview's original source) — the fuller 5-item list, if it exists as a separate email, was not among the material reviewed.
 
@@ -10,9 +10,13 @@ BlueZoo has already publicly announced and open-sourced a project at `github.com
 - Whether "production launch" (Phase 12) means shipping into that public repo or hardening a separate private deployment.
 - Whether the intended live-data integration path is the REST Data Warehouse API (`api.bluezoo.io`, documented and already fetched/verified for this plan) or a BigQuery dataset-share (mentioned in the press release and this repo's own README).
 
-## 2. REST API vs. BigQuery for live audience data (blocks Phase 10 entirely)
+> **Evidence found (workstream replan-data-track, 2026-07-16), half-answering this:** a code-level comparison shows this repo was seeded (mid-June 2026, by the client's account) from a **squashed snapshot of the owner's personal repo** `lavinigam-gcp/ad-campaign-agent` — the trees match closely at that repo's `main`-era state, though no git history was preserved. The owner's repo then continued ~97 unpushed commits (a BQ/services branch: `AudienceProvider` seam, BigQuery-backed synthetic provider, query guard) that never came downstream. So the two lines are the **same effort**, with the personal repo as upstream donor; the plan now treats it as a donor codebase (Phases 4/10a port from it). What still needs the client's confirmation: the intended convergence (does this repo remain the delivery vehicle?) and the transport question below.
 
-Directly tied to question 1. BlueZoo's documented REST API (`api.bluezoo.io`) and a BigQuery dataset-share imply meaningfully different adapter code. Phase 10 cannot start until this is confirmed.
+## 2. REST API vs. BigQuery for live audience data (blocks Phase 10**b** only — narrowed 2026-07-16)
+
+Directly tied to question 1. BlueZoo's documented REST API (`api.bluezoo.io`) and a BigQuery dataset-share imply meaningfully different adapter code.
+
+> **Narrowed (workstream replan-data-track, 2026-07-16):** per the owner's one-system decision, the demo providers mimic BlueZoo's schema/API behind a single provider seam (Phase 10a — unblocked, ports the donor's proven interface), so this question now blocks **only the live conformer (Phase 10b)**, which is a thin adapter behind the existing seam either way. Two asks for BlueZoo: (a) REST vs. BigQuery dataset-share for live access, and (b) **their actual schema/API reference docs** so the demo-side mimic can be validated rather than inferred (the donor's five-table shape is our working hypothesis). Weak signal on file: the donor repo — the only place anyone built a live-ish path — bet on BigQuery-shaped tables.
 
 ## 3. Revenue/PoS integration target (blocks Phase 11 entirely)
 
@@ -34,9 +38,9 @@ Does BlueZoo's `group_uv_*` (unique visitor) concept need to be surfaced as a di
 
 Which non-fashion vertical should the generalization work's proof-of-concept fixture catalog use? BlueZoo's own marketed verticals are out-of-home advertising, retail, hospitality, and smart cities — picking one that matches an actual upcoming conversation/demo would make Phase 7's fixture data doubly useful.
 
-## 8. Product CRUD scope (Phase 7)
+## 8. Product CRUD scope (Phase 7) — ANSWERED 2026-07-16
 
-Is a full product-CRUD tool actually needed now, or is seeded-fixture-only sufficient for near-term demos? Avoids building an interface nothing calls yet.
+~~Is a full product-CRUD tool actually needed now, or is seeded-fixture-only sufficient for near-term demos?~~ **Answered by the owner: yes, it's needed.** From-scratch onboarding (fresh product images → products → campaigns → analytics, no preseeded catalog) is a stated goal; product CRUD (agent tools + CLI wrapper) is now Phase 14, `15-product-onboarding.md`. No client input required.
 
 ## 9. RPI demo range realism (Phase 4)
 
@@ -66,9 +70,9 @@ Is Nano Banana 2 Lite's 1K resolution cap acceptable for this app's actual displ
 
 **Corrected framing after Codex review:** the Interactions API and Omni Flash model are both currently labeled experimental/preview by Google's own primary sources — not GA, as an earlier draft of this plan assumed. Given that, is it worth investing engineering time in this integration now, or should Phase 13b wait for either surface to reach GA? If pursued now, once (if) it reaches GA, should it become the *default* video backend, or does this app's specific demo needs (duration/resolution constraints) argue for keeping Veo as default regardless?
 
-## 16. Is "zero external accounts for demo mode" actually a requirement? (Phase 5/philosophy)
+## 16. Is "zero external accounts for demo mode" actually a requirement? (Phase 5/philosophy) — RESOLVED 2026-07-16
 
-This plan's philosophy states demo mode should work with zero external accounts, but `app/storage.py:189 (also 208, 224)` currently requires a real GCS bucket/client for product images and raises without one — the primary video pipeline depends on this path. Is "no BlueZoo/PoS credentials required" the actual bar (which the demo already clears), or does "zero external accounts" need to be taken literally (which would require a new local-fixture asset provider, not currently planned as its own phase)?
+~~Is "no BlueZoo/PoS credentials required" the actual bar, or does "zero external accounts" need to be taken literally?~~ **Resolved by the owner: local-first.** The bar is: GCP credentials are needed **only for model calls** (Gemini/Veo/image generation); product images and generated videos save/load locally with no GCS bucket required, and GCS becomes an explicit opt-in for cloud deploys. The local storage backend (and removal of the personal-bucket default at `app/config.py:52-53`, which `app/storage.py:189/208/224` currently hard-depend on) is Phase 14, `15-product-onboarding.md`, step 1. No client input required.
 
 ## 17. Cross-creative attribution rule when multiple videos share one BlueZoo sensor window (narrowed: Phase 10 technical check — does BlueZoo answer sub-15-minute windows accurately; shapes Phase 6's credibility once real data lands)
 
@@ -76,4 +80,4 @@ This plan's philosophy states demo mode should work with zero external accounts,
 
 ---
 
-None of these block starting the plan — Phase 0 through Phase 8 can proceed without any of them being answered. Question 17 is a Phase 10 verification item (does BlueZoo answer sub-15-minute windows accurately) and does not block Phase 9's demo join, which uses deterministic fixtures. Questions 1 and 2 block Phase 10 entirely; question 3 blocks Phase 11; question 4 is now a narrower capability check against the PoS system chosen in question 3. Question 11 (screen-to-sensor mapping) and question 12 (sandbox access) inform Phase 10 but don't block starting it. The rest are refinements that improve later phases but don't block starting them.
+None of these block starting the plan — Phase 0 through Phase 9, Phase 10a, and Phase 14 can all proceed without any of them being answered. Question 17 is a Phase 10b verification item (does BlueZoo answer sub-15-minute windows accurately) and does not block Phase 9's demo join, which uses the deterministic generator. Questions 1 and 2 block **Phase 10b only** (the live conformer — 10a, the seam port, is unblocked); question 3 blocks Phase 11; question 4 is now a narrower capability check against the PoS system chosen in question 3. Questions 8 and 16 are answered/resolved (owner decisions, 2026-07-16). Question 11 (screen-to-sensor mapping) and question 12 (sandbox access) inform Phase 10b but don't block starting it. The rest are refinements that improve later phases but don't block starting them.
