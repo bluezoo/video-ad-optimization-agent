@@ -22,3 +22,6 @@ commits e7679e2..61aec1b, review clean — demo_meta table (init + reset) and ge
 
 ## 2026-07-17 — Task 4 complete (mirrors .superpowers/sdd/progress.md)
 commits ff19a91..d533ce9, review clean — populate_mock_data() now derives deterministic metrics on [anchor-29, anchor]; old mock_data generator deleted; import random removed. Plan-vs-reality note: the plan's reseeding test was impossible against populate's original "already exists" early-return; the implementer's minimal two-mode restructure (create-once / regen-metrics-always) was reviewed as genuinely required and backward-compatible (conftest, make dev, reset-db unaffected). Unit 138 passed, e2e 25 passed.
+
+## 2026-07-17 — Task 5 complete (mirrors .superpowers/sdd/progress.md)
+commits 789b6c4..0b8a84b, review clean — activate_video fills [anchor-29, anchor]; generate_additional_metrics advances the global anchor and extends every activated video atomically, count scoped to the requested video; second _generate_mock_video_metrics deleted (repo-wide grep now zero hits); response contracts byte-compatible. Unit 141 passed, e2e 25 passed.
