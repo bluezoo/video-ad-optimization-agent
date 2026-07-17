@@ -20,10 +20,10 @@ Owner approved the six-dimension restatement: docs/METRICS.md glossary (five def
 ## 2026-07-16 — plan approved (checkpoint 3)
 Owner approved the 2-task plan (commit e7b1ed5): Task 1 creates docs/METRICS.md (full literal content in plan — 5 definitions, live-verified BlueZoo quotes, ratio-of-sums rule, table appendix); Task 2 wires links (SETUP_INSTRUCTIONS.md before '## Test', CLAUDE.md project-overview pointer), amends phase-doc Step 2 with README-divergence provenance, and proves zero behavior change. Executing via subagent-driven-development.
 
-## 2026-07-16 — Task 1 complete (mirrors .superpowers/sdd/progress.md)
+## 2026-07-16 — Task 1 complete (SDD task ledger mirror)
 docs/METRICS.md created (commit 69bd304), review clean: exact transcription of the approved glossary content, 6 sections, no code blocks, all cross-referenced phase-doc paths verified to exist.
 
-## 2026-07-16 — Task 2 complete (mirrors .superpowers/sdd/progress.md)
+## 2026-07-16 — Task 2 complete (SDD task ledger mirror)
 Links wired (commit fdd38bf): SETUP_INSTRUCTIONS.md "Metrics glossary" section, CLAUDE.md project-overview pointer, phase-doc Step 2 provenance amendment. Review approved after one evidence fix: initial report showed only the integration count; full make test re-run evidenced (unit 88 passed/1 skipped, integration 5 passed, exit 0). Zero diff under app/, README.md and DEMO_GUIDE.md untouched.
 
 ## 2026-07-16 — demo-scenario verification: SKIPPED (checkpoint 5)

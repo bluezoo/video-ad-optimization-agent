@@ -34,7 +34,7 @@ Derived convenience form: revenue per 1,000 impressions (`RPI × 1000`, a CPM-st
 
 **App-local synthetic metric; BlueZoo mapping unresolved.**
 
-The `video_metrics.circulation` column exists in this app's schema and is populated by the demo-mode mock generator, but it has **no confirmed BlueZoo counterpart**. Candidate interpretation (unconfirmed): broader foot-traffic / opportunity-to-see near a screen — possibly BlueZoo `sensor_visitors` occupancy or an outer-zone visit count — as distinct from impressions (inner-zone attention). That is a plausible retail-signage-industry pattern (circulation = OTS, impressions = actual attention) but it has **not been confirmed against BlueZoo's docs or the client's own usage**. Do not build anything on the candidate mapping; see open question 1 in `.docs/version2-plan/99-open-questions.md`.
+The `video_metrics.circulation` column exists in this app's schema and is populated by the demo-mode mock generator, but it has **no confirmed BlueZoo counterpart**. Candidate interpretation (unconfirmed): broader foot-traffic / opportunity-to-see near a screen — possibly BlueZoo `sensor_visitors` occupancy or an outer-zone visit count — as distinct from impressions (inner-zone attention). That is a plausible retail-signage-industry pattern (circulation = OTS, impressions = actual attention) but it has **not been confirmed against BlueZoo's docs or the client's own usage**. Do not build anything on the candidate mapping; see open question 5 ("`circulation` metric definition (Phase 2 glossary — does not block Phase 2 itself)") in `.docs/version2-plan/99-open-questions.md`.
 
 ## Dwell time
 
@@ -50,6 +50,6 @@ This app's `video_metrics.dwell_time_seconds` column stores **one scalar average
 | `sensor_visitors` | Occupancy (min/avg/max) per 15-minute period | *Not* visits: occupancy is a point-in-time count, visits are events. Candidate (unconfirmed) relative of circulation. |
 | `sensor_dwell` | Distribution of visit-duration bins per 15-minute slot | No direct mapping to our scalar `dwell_time_seconds` — needs an aggregation rule (Phase 10). |
 | `sensor_visitors_per_minute` | Fine-grained occupancy time series | Unused today; candidate input for playout attribution (Phase 9). |
-| `group_uv_daily/weekly/monthly/custom` | Unique visitor counts, deduplicated over a period | "Unique reach" — a *different* metric from impressions; never conflate deduplicated visitors with visit counts. See open question 2. |
+| `group_uv_daily/weekly/monthly/custom` | Unique visitor counts, deduplicated over a period | "Unique reach" — a *different* metric from impressions; never conflate deduplicated visitors with visit counts. See open question 6 ("Unique-reach metric (Phase 2 glossary)") in `.docs/version2-plan/99-open-questions.md`. |
 | `group_flow_transition/correlation/duration/segmentation` | Cross-zone traffic-flow journeys | Carries a `campaign_id` field that is **BlueZoo's own "flow campaign" concept — unrelated to this app's ad campaigns.** When mapping BlueZoo data, never reuse the bare name `campaign_id` for this app's ad-campaign id; pick a distinct field name (e.g. `ad_campaign_id`) to avoid collision. |
 | `sensor_pulses` | Sensor telemetry/health (uptime, connectivity) | Not audience data — must never appear in any impressions/revenue rollup. |
