@@ -1,8 +1,8 @@
-# Phase 8 — Prompt & Agent Instruction Generalization
+# Phase 9 — Prompt & Agent Instruction Generalization
 
 ## Goal
 
-Remove the hardcoded fashion assumptions from prompt construction and agent instructions, using the generic `Product` model from Phase 7 as the input instead of fashion-specific fields.
+Remove the hardcoded fashion assumptions from prompt construction and agent instructions, using the generic `Product` model from Phase 8 as the input instead of fashion-specific fields.
 
 ## Current state
 
@@ -26,8 +26,8 @@ Remove the hardcoded fashion assumptions from prompt construction and agent inst
 3. Make `model_ethnicity`, `model_description`, and `activity` on `CreativeVariation` optional (`Optional[...] = None`), and have `prompt_builders.py` skip that part of the prompt entirely when `presentation_mode == "product_only"` or when they're unset, rather than requiring a value or defaulting to something meaningless. Leave `props` as-is (already generic, not part of this change).
 4. Fix the `ethnicity_map`'s reductive `"diverse"` entry (`"a beautiful woman"`) to something actually descriptive and non-reductive, while you're already touching this function. **This intentionally changes output for the default variation** (`variation.py:301` sets `model_ethnicity="diverse"` by default) — call this out explicitly as an intentional, expected change, and exclude the default-variation case from whatever golden/regression comparison step 6 below uses, rather than trying to make it byte-for-byte identical to the old (reductive) output.
 5. Rewrite the five agent instructions in `app/agent.py`, `APP_DESCRIPTION` (`config.py:83`), the campaign-description default (`campaign_tools.py:83`), and the map tool defaults (`maps_tools.py:141, 229, 858`), plus the remaining fashion-framed prompt bodies the validation grep surfaces (e.g. `maps_tools.py:761` "Editorial fashion magazine aesthetic", the fashion-categories infographic prompt at `maps_tools.py:1122-1157`, and the `fashion_market_index` usage at `maps_tools.py:1172`/`:1202`), to remove hardcoded fashion framing. Replace with generic retail/advertising framing that references the active product's category dynamically (from the `Product` model) rather than assuming a vertical in the text/defaults itself. Do this as one pass across all of these — they're the same kind of edit repeated across files, not independent design decisions.
-6. Re-run the Phase 7 non-fashion fixture catalog through the full pipeline (product → prompt → image → video) using `presentation_mode="product_only"`, and confirm the generated prompts contain no fashion/garment/model language.
-7. Add non-fashion routing eval cases to `tests/integration/eval_sets/` (the `AgentEvaluator` suite currently exercises fashion queries only), so the generalization this phase claims is checked by the deterministic eval suite, not only by the browser demo scenario. Keep it small — 2-3 cases exercising a non-fashion product through create-campaign and analytics routing. (This is the second half of the eval should-fix whose first half — narrowing the `pytest.xfail` catch so the suite can actually fail — is Phase 1, item 7 in `02-bug-fixes-and-cleanup.md`; both are needed for these new cases to be meaningful.)
+6. Re-run the Phase 8 non-fashion fixture catalog through the full pipeline (product → prompt → image → video) using `presentation_mode="product_only"`, and confirm the generated prompts contain no fashion/garment/model language.
+7. Add non-fashion routing eval cases to `tests/integration/eval_sets/` (the `AgentEvaluator` suite currently exercises fashion queries only), so the generalization this phase claims is checked by the deterministic eval suite, not only by the browser demo scenario. Keep it small — 2-3 cases exercising a non-fashion product through create-campaign and analytics routing. (This is the second half of the eval should-fix whose first half — narrowing the `pytest.xfail` catch so the suite can actually fail — is Phase 2, item 7 in `02-bug-fixes-and-cleanup.md`; both are needed for these new cases to be meaningful.)
 
 ## Validation
 
@@ -36,7 +36,7 @@ Remove the hardcoded fashion assumptions from prompt construction and agent inst
 - [ ] Non-fashion fixture products (`presentation_mode="product_only"`) produce prompts with no garment/ethnicity/model language — a test asserting the output string doesn't contain any of the model-specific field names' typical values.
 - [ ] All five agent instructions, `APP_DESCRIPTION`, the campaign-description default, and the map tool defaults no longer contain hardcoded fashion framing — `grep -rn "fashion" app/agent.py app/config.py app/tools/campaign_tools.py app/tools/maps_tools.py app/tools/prompt_builders.py` returns nothing outside of comments explaining historical defaults (a judgment call, not a hard requirement). **Expected survivors in `prompt_builders.py`:** the `with_model` (fashion) prompt path is intentionally preserved this phase, so hits inside that path (e.g. the 'elegant fashion piece' fallbacks at `:43`/`:53`/`:283`/`:286`, and 'wearing a stunning {garment_desc}' at `:147`/`:373`) are expected and acceptable; any `fashion` hit *outside* the `with_model` path is a failure.
 - [ ] `make test-unit`, `make test-e2e` pass; `make test-integration` (real LLM) run manually against both a fashion and a non-fashion product to sanity-check actual generated output quality, not just prompt-string structure.
-- [ ] The new non-fashion routing eval cases (step 7) are present in `tests/integration/eval_sets/` and pass under `make test-integration` — and, given Phase 1 item 7's narrowed `xfail`, would actually fail if routing regressed.
+- [ ] The new non-fashion routing eval cases (step 7) are present in `tests/integration/eval_sets/` and pass under `make test-integration` — and, given Phase 2 item 7's narrowed `xfail`, would actually fail if routing regressed.
 
 ## Exit criteria
 
@@ -44,8 +44,8 @@ The full pipeline (including map tools and campaign descriptions, not just promp
 
 ## Dependencies
 
-Phase 7 (`Product` model and non-fashion fixture data must exist first).
+Phase 8 (`Product` model and non-fashion fixture data must exist first).
 
 ## Open questions
 
-None new beyond Phase 7's — this phase is the mechanical follow-through on the schema decisions made there.
+None new beyond Phase 8's — this phase is the mechanical follow-through on the schema decisions made there.

@@ -46,7 +46,7 @@ a model-not-found / permission error anywhere.
 
 ## Scenario F2: Analytics chart with defaults (workstream 02 regression)
 
-Covers the Phase 1 fixes: valid default metric and the no-data guard.
+Covers the Phase 2 fixes: valid default metric and the no-data guard.
 
 ### Scene F2.1 — Chart with default metric
 

@@ -1,4 +1,4 @@
-# Phase 12 — Production Hardening for Live Mode
+# Phase 13 — Production Hardening for Live Mode
 
 ## Goal
 
@@ -6,7 +6,7 @@ Close the gaps that are acceptable for an internal demo but not for a real, exte
 
 ## Scope split (correction from review — the first draft bundled too much into one gate)
 
-This phase is split into two tiers. **Tier A is the actual connected-mode launch gate** — the minimum that must be true before any `APP_MODE=connected` deployment is exposed beyond a developer's own machine. **Tier B is governance/operability work** that matters but shouldn't block launch on an experimental primitive or an unresolved policy conversation. Note that minimum live-secret handling (reading credentials from a real secret store, defaulting to authenticated-only deployment) was already moved into Phases 10/11 themselves per their own corrections — this phase builds the *remaining* gate items on top of that baseline, it doesn't introduce secret handling from scratch here.
+This phase is split into two tiers. **Tier A is the actual connected-mode launch gate** — the minimum that must be true before any `APP_MODE=connected` deployment is exposed beyond a developer's own machine. **Tier B is governance/operability work** that matters but shouldn't block launch on an experimental primitive or an unresolved policy conversation. Note that minimum live-secret handling (reading credentials from a real secret store, defaulting to authenticated-only deployment) was already moved into Phases 11/12 themselves per their own corrections — this phase builds the *remaining* gate items on top of that baseline, it doesn't introduce secret handling from scratch here.
 
 ## Current state (confirmed gaps — corrected against what's actually in the scripts)
 
@@ -45,7 +45,7 @@ This phase is split into two tiers. **Tier A is the actual connected-mode launch
 
 ## Dependencies
 
-Phases 10, 11 (this phase hardens the connected-mode paths those phases build).
+Phases 11b, 12 (this phase hardens the connected-mode paths those phases build).
 
 ## Open questions
 

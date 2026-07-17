@@ -4,7 +4,7 @@
 
 **Goal:** Fix the seven confirmed defects from `.docs/version2-plan/02-bug-fixes-and-cleanup.md` (invalid metric defaults, null-deref crash, legacy-table query, category drift, stale prompt texts, silently-masked integration imports, three broken e2e tests) plus one planning-time discovery (five vacuous async unit tests), taking `make test-e2e` to fully green.
 
-**Architecture:** Pure bug-fix batch — no new modules, no schema changes. Each task touches one defect site plus its test. The weekly ratio-aggregation bug gets a flag comment only (fix belongs to Phase 3's metric centralization).
+**Architecture:** Pure bug-fix batch — no new modules, no schema changes. Each task touches one defect site plus its test. The weekly ratio-aggregation bug gets a flag comment only (fix belongs to Phase 4's metric centralization).
 
 **Tech Stack:** Python 3.12, pytest (`asyncio_mode = auto` — async test functions need no markers), unittest.mock, SQLite, google-genai SDK (mocked in unit tests).
 
@@ -13,7 +13,7 @@
 - Branch `version_2_bug-fixes-and-cleanup`, worktree `.claude/worktrees/version_2_bug-fixes-and-cleanup`. Never commit `app/.env`.
 - `README.md` and `DEMO_GUIDE.md` are never edited. Corrections to README facts live in `SETUP_INSTRUCTIONS.md` (the one relevant correction already exists at SETUP_INSTRUCTIONS.md:81 — no work).
 - No schema changes: legacy tables `campaign_ads`/`campaign_metrics` stay in `app/database/db.py`.
-- New chart/map default metric is exactly `"revenue_per_impression"`. Do NOT add a raw `revenue` metric key (deferred to Phase 3 per the approved working doc).
+- New chart/map default metric is exactly `"revenue_per_impression"`. Do NOT add a raw `revenue` metric key (deferred to Phase 4 per the approved working doc).
 - No `Co-Authored-By: Claude` or AI-attribution trailers in commits.
 - A PostToolUse hook runs `make test-unit` after every `app/**/*.py` edit — if it fails, stop and fix before proceeding.
 - Only lint-clean files this plan touches; the ~170 pre-existing `make lint` errors elsewhere are out of scope.
@@ -245,16 +245,16 @@ In `app/tools/metrics_tools.py`, the current sequence after fetching (~lines 768
 
 (The old `if daily_metrics:` wrapper around the sample prints becomes unnecessary — the guard above already returned. The old standalone `if not daily_metrics:` error block is subsumed; delete it.)
 
-- [ ] **Step 4: Add the Phase 3 flag comment**
+- [ ] **Step 4: Add the Phase 4 flag comment**
 
 At `app/tools/metrics_tools.py:914` (`week_total = sum(...)` inside the bar_chart branch), add the comment above the line — no behavior change:
 
 ```python
-                # KNOWN BUG (flagged, fix in Phase 3 / 04-centralize-rpi-metrics):
+                # KNOWN BUG (flagged, fix in Phase 4 / 04-centralize-rpi-metrics):
                 # summing per-day values is wrong for ratio metrics like
                 # revenue_per_impression — a weekly RPI must be recomputed as
                 # sum(revenue)/sum(impressions), not sum(daily ratios).
-                # Phase 3 centralizes per-metric aggregation rules.
+                # Phase 4 centralizes per-metric aggregation rules.
                 week_total = sum(d["value"] for d in week_slice)
 ```
 
@@ -268,7 +268,7 @@ Expected: all PASS, including `test_no_metrics_campaign_returns_clean_error`.
 
 ```bash
 git add app/tools/metrics_tools.py tests/unit/test_metrics_tools.py
-git commit -m "Guard no-data path before summary deref; flag weekly ratio-sum bug for Phase 3"
+git commit -m "Guard no-data path before summary deref; flag weekly ratio-sum bug for Phase 4"
 ```
 
 ---
@@ -867,7 +867,7 @@ Expected: 2 PASS (each makes one real Gemini image call; allow ~1-2 min).
 
 Run: `.venv/bin/python -m pytest "tests/e2e/test_demo_workflows.py::TestCreativeGenerationWorkflow::test_video_generation_flow" -v`
 
-Expected: PASS in ~2-4 min (Phase 0's smoke run generated a video in ~97s). If it fails on quota/transient API errors, retry once; a genuine signature/contract failure is a bug to fix, not to skip.
+Expected: PASS in ~2-4 min (Phase 1's smoke run generated a video in ~97s). If it fails on quota/transient API errors, retry once; a genuine signature/contract failure is a bug to fix, not to skip.
 
 - [ ] **Step 7: Full e2e sweep — the phase's headline deliverable**
 
@@ -899,7 +899,7 @@ Append (matching the existing F1 Act/Scene format with explicit expected-tool-ca
 ```markdown
 ## Scenario F2: Analytics chart with defaults (workstream 02 regression)
 
-Covers the Phase 1 fixes: valid default metric and the no-data guard.
+Covers the Phase 2 fixes: valid default metric and the no-data guard.
 
 ### Scene F2.1 — Chart with default metric
 

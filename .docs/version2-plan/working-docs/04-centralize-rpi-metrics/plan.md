@@ -14,7 +14,7 @@
 - RPI over any window = ratio of sums, never sum/average of per-period ratios (docs/METRICS.md rule).
 - Optional-parameter idiom is `param: int = None` (repo/ADK convention, e.g. `maps_tools.generate_static_map(locations: list = None, ...)`) — NOT `int | None`.
 - `get_top_performing_ads` default (no-filter) behavior stays identical: global, all-time.
-- Mock generators (`mock_data.py`, `review_tools.py:_generate_mock_video_metrics`) are NOT touched — verified: neither contains any division; Phase 4 owns them.
+- Mock generators (`mock_data.py`, `review_tools.py:_generate_mock_video_metrics`) are NOT touched — verified: neither contains any division; Phase 5 owns them.
 - SQL `AVG(dwell_time_seconds)` sites untouched. Only two python-level cross-row aggregations change: visualization weekly dwell, maps regional dwell.
 - One SQL ratio survives by design: `metrics_tools.py` `metric_column_map`'s `SUM(vm.revenue) / NULLIF(SUM(vm.impressions), 0)` — used for ORDER BY only; returned values come from `compute_rpi()` (Task 3 adds a comment saying so).
 - Imports are relative: `from .metrics_shared import compute_rpi` inside `app/tools/`.
@@ -143,7 +143,7 @@ Create `app/tools/metrics_shared.py` with exactly:
 """Shared metric computation — the ONLY place RPI math lives.
 
 docs/METRICS.md is the authoritative definition source; this module is its
-executable counterpart (Phase 3 / 04-centralize-rpi-metrics). Every tool
+executable counterpart (Phase 4 / 04-centralize-rpi-metrics). Every tool
 that returns an RPI value calls compute_rpi() instead of dividing inline;
 python-level cross-row averaging of already-averaged quantities (dwell
 time) goes through compute_weighted_average().
@@ -192,7 +192,7 @@ Expected: 11 passed
 In `docs/METRICS.md`, in the "## Revenue per Impression (RPI)" section, immediately after the paragraph beginning `Derived convenience form:`, insert as a new paragraph:
 
 ```markdown
-Zero-impressions convention: the shared implementation (`compute_rpi()` in `app/tools/metrics_shared.py`, added by Phase 3) returns `0.0` when total impressions are zero — "no impressions yet" is reported as zero RPI, not an error or null. A caller that needs to distinguish "no data" from "genuinely zero RPI" must check the impressions count, not the ratio.
+Zero-impressions convention: the shared implementation (`compute_rpi()` in `app/tools/metrics_shared.py`, added by Phase 4) returns `0.0` when total impressions are zero — "no impressions yet" is reported as zero RPI, not an error or null. A caller that needs to distinguish "no data" from "genuinely zero RPI" must check the impressions count, not the ratio.
 ```
 
 - [ ] **Step 6: Commit**
@@ -297,10 +297,10 @@ with:
                 "revenue_per_1000_impressions": round(rpi * 1000, 2)  # CPM equivalent
             }
 
-        # Normalized no-data contract (Phase 3): a window with no
+        # Normalized no-data contract (Phase 4): a window with no
         # activated-video impressions is an explicit error, never
         # summary=None under status="success" (the ambiguity behind the
-        # Phase-1 visualization crash).
+        # Phase-2 visualization crash).
         if not summary or not daily_metrics:
             return {
                 "status": "error",
@@ -1056,7 +1056,7 @@ Expected: no division lines in either `_generate_mock_video_metrics` (both synth
 In `.docs/version2-plan/04-centralize-rpi-metrics.md`, directly below the Steps list item beginning `5. Do not touch `_generate_mock_video_metrics()``, add:
 
 ```markdown
-> **Amended (workstream 04, 2026-07-16):** Step 5 is vacuous as written — neither `_generate_mock_video_metrics()` stores an RPI figure or divides revenue by impressions; both synthesize `revenue` as impressions × an RNG rate (multiplication only: `mock_data.py:223-224`, `review_tools.py:482/503`). Verified during this workstream's migration sweep; no change made to either generator. Phase 4 still owns their unification.
+> **Amended (workstream 04, 2026-07-16):** Step 5 is vacuous as written — neither `_generate_mock_video_metrics()` stores an RPI figure or divides revenue by impressions; both synthesize `revenue` as impressions × an RNG rate (multiplication only: `mock_data.py:223-224`, `review_tools.py:482/503`). Verified during this workstream's migration sweep; no change made to either generator. Phase 5 still owns their unification.
 ```
 
 - [ ] **Step 5: Add parity tests**
@@ -1379,7 +1379,7 @@ def _aggregate_week(week_slice: list, metric: str) -> float:
 
     Ratio metrics recompute ratio-of-sums via compute_rpi; dwell time is an
     impressions-weighted average; additive metrics (impressions,
-    circulation) sum. This is the per-metric aggregation rule Phase 3
+    circulation) sum. This is the per-metric aggregation rule Phase 4
     centralized — the old code summed daily values for every metric, which
     is meaningless for ratios (see docs/METRICS.md).
     """
@@ -1401,11 +1401,11 @@ Replace:
 
 ```python
             if week_slice:
-                # KNOWN BUG (flagged, fix in Phase 3 / 04-centralize-rpi-metrics):
+                # KNOWN BUG (flagged, fix in Phase 4 / 04-centralize-rpi-metrics):
                 # summing per-day values is wrong for ratio metrics like
                 # revenue_per_impression — a weekly RPI must be recomputed as
                 # sum(revenue)/sum(impressions), not sum(daily ratios).
-                # Phase 3 centralizes per-metric aggregation rules.
+                # Phase 4 centralizes per-metric aggregation rules.
                 week_total = sum(d["value"] for d in week_slice)
                 weekly_data.append({"week": f"Week {len(weekly_data)+1}", "value": week_total})
                 print(f"[DEBUG VIZ]     Week {len(weekly_data)}: {len(week_slice)} days, total={week_total:.2f}")

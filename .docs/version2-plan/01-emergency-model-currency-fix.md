@@ -1,4 +1,4 @@
-# Phase 0 — Emergency Model Currency Fix
+# Phase 1 — Emergency Model Currency Fix
 
 **Do this before anything else in this plan.** It has nothing to do with the client's two requests and everything to do with the app continuing to function at all.
 
@@ -6,7 +6,7 @@
 
 Stop pointing production config at Gemini/Veo model IDs that are deprecated or about to be, on the Vertex AI surface this repo actually deploys to (Cloud Run, Agent Engine).
 
-## Why this is Phase 0, not part of the media-upgrade workstream
+## Why this is Phase 1, not part of the media-upgrade workstream
 
 This was not in the original plan (`.docs/2026-07-12-version2-review-and-plan.md`) at all — it surfaced during re-grounding against current Vertex AI model documentation (2026-07-13). It is:
 
@@ -14,7 +14,7 @@ This was not in the original plan (`.docs/2026-07-12-version2-review-and-plan.md
 - **Trivial to fix** (two config string changes).
 - **Time-critical**, unlike anything else here.
 
-Do not bundle this with Phase 13a/13b (the Nano Banana / Omni Flash upgrade). Those are a deliberate architectural upgrade to a new generation paradigm and deserve their own careful rollout. This phase is a like-for-like swap to keep the lights on with the *current* architecture.
+Do not bundle this with Phase 14a/14b (the Nano Banana / Omni Flash upgrade). Those are a deliberate architectural upgrade to a new generation paradigm and deserve their own careful rollout. This phase is a like-for-like swap to keep the lights on with the *current* architecture.
 
 ## Current state (verified against Vertex AI model documentation, 2026-07-13)
 
@@ -43,7 +43,7 @@ These are drop-in replacements at the config level — no call-site changes to `
    ```bash
    grep -rn "gemini-3-pro-image-preview\|veo-3.1-generate-preview" --include="*.py" --include="*.md" --include="*.sh" .
    ```
-   Confirmed hits to fix as part of this step (found during review, not hypothetical): a hardcoded old Veo ID inside a comment at `app/tools/video_tools.py:966`, and a stale "Gemini 2.0" comment describing the Stage-1 model at `app/tools/video_tools.py:218` (this is a comment near the call site, distinct from the `MEDIA_AGENT_INSTRUCTION` text fixed in Phase 1, item 6 — fix both; a third stale reference at `app/tools/video_tools.py:18`, the module docstring, is assigned to Phase 1, item 6). Also check `README.md` and `app/agent_engine_app.py`.
+   Confirmed hits to fix as part of this step (found during review, not hypothetical): a hardcoded old Veo ID inside a comment at `app/tools/video_tools.py:966`, and a stale "Gemini 2.0" comment describing the Stage-1 model at `app/tools/video_tools.py:218` (this is a comment near the call site, distinct from the `MEDIA_AGENT_INSTRUCTION` text fixed in Phase 2, item 6 — fix both; a third stale reference at `app/tools/video_tools.py:18`, the module docstring, is assigned to Phase 2, item 6). Also check `README.md` and `app/agent_engine_app.py`.
 4. Re-run the same Stage 1 + Stage 2 smoke test from Step 1 against the new IDs and confirm both succeed.
 5. Run `make test-unit` and `make test-integration` to confirm nothing else references the old IDs in a way that breaks mocking/assertions.
 
@@ -56,10 +56,10 @@ These are drop-in replacements at the config level — no call-site changes to `
 - [x] A real Stage 2 video generation call succeeds against the new `VEO_MODEL` ID — e.g. the same `make dev` request carried through to Stage 2 (Veo animation), or a direct `animate_scene_with_veo()` call. The actual release gate.
 - [x] `make test-unit` and `make test-integration` pass unchanged.
 - [x] The exact-ID grep from Step 3 (`gemini-3-pro-image-preview\|veo-3.1-generate-preview`) returns nothing, including the confirmed `video_tools.py:966` hit. (This preview-ID pattern cannot match `video_tools.py:218`, whose stale text is the string "Gemini 2.0 Flash Exp" — see the next bullet.)
-- [ ] `grep -rn "Gemini 2.0 Flash Exp" app/` returns nothing once this phase and Phase 1 are both complete — `video_tools.py:218` is fixed here; the remaining `video_tools.py:18` module docstring and `agent.py:200` instruction text are Phase 1's (see `02-bug-fixes-and-cleanup.md`, item 6).
+- [ ] `grep -rn "Gemini 2.0 Flash Exp" app/` returns nothing once this phase and Phase 2 are both complete — `video_tools.py:218` is fixed here; the remaining `video_tools.py:18` module docstring and `agent.py:200` instruction text are Phase 2's (see `02-bug-fixes-and-cleanup.md`, item 6).
 
 
-> **Amended (workstream 01, 2026-07-14):** all Phase-0-owned validation items above completed and evidenced — see `working-docs/01-emergency-model-currency-fix/WORK_LOG.md` (release-gate entry 19:15 and scenario-F1 entry 19:45). The last item stays unticked by design: it can only close once Phase 1 fixes its two remaining "Gemini 2.0 Flash Exp" hits (`video_tools.py:18`, `agent.py:200`); this phase's `video_tools.py:218` share is done.
+> **Amended (workstream 01, 2026-07-14):** all Phase-1-owned validation items above completed and evidenced — see `working-docs/01-emergency-model-currency-fix/WORK_LOG.md` (release-gate entry 19:15 and scenario-F1 entry 19:45). The last item stays unticked by design: it can only close once Phase 2 fixes its two remaining "Gemini 2.0 Flash Exp" hits (`video_tools.py:18`, `agent.py:200`); this phase's `video_tools.py:218` share is done.
 
 ## Exit criteria
 
@@ -73,7 +73,7 @@ None. Do this first, independent of every other phase.
 
 - Is `MODEL = "gemini-3-flash-preview"` (`app/config.py:24`, the main agent orchestration model) also on a deprecation timeline? It was not flagged in this pass — confirm it's still GA-track or preview-with-no-near-term-cutoff before treating it as settled. If in doubt, check Vertex's model garden page directly rather than assuming.
 
-  > **Amended (workstream 01, 2026-07-14):** Answered during kickoff research — Google's deprecations page lists `gemini-3-flash-preview` as deprecated 2025-12-17 with **"no shutdown date announced"** (successor: `gemini-3.5-flash`). No near-term cutoff, so it stays out of Phase 0's scope; revisit if a shutdown date is announced.
+  > **Amended (workstream 01, 2026-07-14):** Answered during kickoff research — Google's deprecations page lists `gemini-3-flash-preview` as deprecated 2025-12-17 with **"no shutdown date announced"** (successor: `gemini-3.5-flash`). No near-term cutoff, so it stays out of Phase 1's scope; revisit if a shutdown date is announced.
   >
   > **Superseded (workstream 01, same day):** mid-implementation the owner directed swapping the orchestration model too — `MODEL` now defaults to `gemini-3.5-flash` (verified GA: released 2026-05-19, retirement "2027-05-19 or later", `global` supported), env-overridable via `AGENT_MODEL`. All three model config values are therefore GA-defaulted and env-overridable as of this workstream.
 - Confirm whether `GOOGLE_GENAI_USE_VERTEXAI=FALSE` (AI Studio / `GOOGLE_API_KEY`) path uses the same model ID registry as Vertex, or a separate one with different deprecation timing — this determines whether local/demo development was ever actually affected by the Veo April 2 deprecation, or only Vertex-backed deployments (Cloud Run, Agent Engine).

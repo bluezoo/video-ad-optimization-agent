@@ -25,7 +25,7 @@ MODEL = os.environ.get("AGENT_MODEL", "gemini-3.5-flash")  # Main agent model (G
 
 # Media generation models — GA IDs as defaults, env-overridable so preview
 # models (e.g. Nano Banana 2 Lite, Gemini Omni Flash) can be swapped in for
-# pipeline testing without code changes (evaluation itself is Phase 13a/13b).
+# pipeline testing without code changes (evaluation itself is Phase 14a/14b).
 # VIDEO_GEN_MODEL is deliberately model-agnostic (Veo today, possibly Omni later).
 IMAGE_GENERATION = os.environ.get("IMAGE_GENERATION_MODEL", "gemini-3-pro-image")  # Stage 1 scene images
 VIDEO_GEN_MODEL = os.environ.get("VIDEO_GEN_MODEL", "veo-3.1-generate-001")  # Stage 2 video animation

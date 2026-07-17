@@ -1,6 +1,6 @@
 # Metrics Glossary
 
-**This is the single source of truth for what every metric in this app means.** Read it before touching any metric-related code. Phase 3 (`.docs/version2-plan/04-centralize-rpi-metrics.md`) turns the RPI rule below into the one shared implementation (`compute_rpi()`); until then, no code file is authoritative — this document is.
+**This is the single source of truth for what every metric in this app means.** Read it before touching any metric-related code. Phase 4 (`.docs/version2-plan/04-centralize-rpi-metrics.md`) turns the RPI rule below into the one shared implementation (`compute_rpi()`); until then, no code file is authoritative — this document is.
 
 Definitions are aligned to BlueZoo's own vocabulary wherever BlueZoo defines the term (quotes below were verified against the live BlueZoo Data Warehouse API docs at `api.bluezoo.io`, fetched 2026-07-16). Where a mapping is *not* confirmed, this document says so explicitly rather than guessing.
 
@@ -26,23 +26,23 @@ In this app: the `video_metrics.revenue` column (mock-generated in demo mode).
 
 This is the app's primary KPI, and it is BlueZoo's own coined, marketed metric. The client's operational framing (from the project README): retailers normalize each store's point-of-sale revenue for the advertised product by the number of impressions delivered for that store's ad during a day.
 
-**The one non-negotiable computation rule: RPI over any multi-period window is the *ratio of sums, never the sum (or average) of per-period ratios*.** A weekly RPI is sum(revenue over the week) ÷ sum(impressions over the week) — it is *not* the sum or mean of seven daily RPI values. Summing ratios produces a number with no meaning (this exact bug existed in the weekly bar chart and is fixed by Phase 3's centralization). Any code that aggregates RPI across days, videos, campaigns, or stores must recompute from the summed numerator and denominator.
+**The one non-negotiable computation rule: RPI over any multi-period window is the *ratio of sums, never the sum (or average) of per-period ratios*.** A weekly RPI is sum(revenue over the week) ÷ sum(impressions over the week) — it is *not* the sum or mean of seven daily RPI values. Summing ratios produces a number with no meaning (this exact bug existed in the weekly bar chart and is fixed by Phase 4's centralization). Any code that aggregates RPI across days, videos, campaigns, or stores must recompute from the summed numerator and denominator.
 
 Derived convenience form: revenue per 1,000 impressions (`RPI × 1000`, a CPM-style figure) — same rule applies.
 
-Zero-impressions convention: the shared implementation (`compute_rpi()` in `app/tools/metrics_shared.py`, added by Phase 3) returns `0.0` when total impressions are zero — "no impressions yet" is reported as zero RPI, not an error or null. A caller that needs to distinguish "no data" from "genuinely zero RPI" must check the impressions count, not the ratio.
+Zero-impressions convention: the shared implementation (`compute_rpi()` in `app/tools/metrics_shared.py`, added by Phase 4) returns `0.0` when total impressions are zero — "no impressions yet" is reported as zero RPI, not an error or null. A caller that needs to distinguish "no data" from "genuinely zero RPI" must check the impressions count, not the ratio.
 
 ## Circulation
 
 **App-local synthetic metric; BlueZoo mapping unresolved.**
 
-The `video_metrics.circulation` column exists in this app's schema and is populated by the demo-mode mock generator, but it has **no confirmed BlueZoo counterpart**. Candidate interpretation (unconfirmed): broader foot-traffic / opportunity-to-see near a screen — possibly BlueZoo `sensor_visitors` occupancy or an outer-zone visit count — as distinct from impressions (inner-zone attention). That is a plausible retail-signage-industry pattern (circulation = OTS, impressions = actual attention) but it has **not been confirmed against BlueZoo's docs or the client's own usage**. Do not build anything on the candidate mapping; see open question 5 ("`circulation` metric definition (Phase 2 glossary — does not block Phase 2 itself)") in `.docs/version2-plan/99-open-questions.md`.
+The `video_metrics.circulation` column exists in this app's schema and is populated by the demo-mode mock generator, but it has **no confirmed BlueZoo counterpart**. Candidate interpretation (unconfirmed): broader foot-traffic / opportunity-to-see near a screen — possibly BlueZoo `sensor_visitors` occupancy or an outer-zone visit count — as distinct from impressions (inner-zone attention). That is a plausible retail-signage-industry pattern (circulation = OTS, impressions = actual attention) but it has **not been confirmed against BlueZoo's docs or the client's own usage**. Do not build anything on the candidate mapping; see open question 5 ("`circulation` metric definition (Phase 3 glossary — does not block Phase 3 itself)") in `.docs/version2-plan/99-open-questions.md`.
 
 ## Dwell time
 
-**App-local scalar average; BlueZoo alignment requires an aggregation rule, unresolved until Phase 10.**
+**App-local scalar average; BlueZoo alignment requires an aggregation rule, unresolved until Phase 11.**
 
-This app's `video_metrics.dwell_time_seconds` column stores **one scalar average per video per day**. BlueZoo's `sensor_dwell` is *not* that: it is "a distribution of visit durations per 15-minute slots" — i.e., visit-duration *bins*, not a single number. Mapping the distribution onto our scalar requires a defined, documented aggregation rule (e.g., a weighted mean across bins) that must be validated against a real BlueZoo response before it is written down as fact — that validation belongs to Phase 10 (`.docs/version2-plan/11-live-bluezoo-adapter.md`). Until then, treat our column as demo-mode synthetic data with intentionally unresolved provenance.
+This app's `video_metrics.dwell_time_seconds` column stores **one scalar average per video per day**. BlueZoo's `sensor_dwell` is *not* that: it is "a distribution of visit durations per 15-minute slots" — i.e., visit-duration *bins*, not a single number. Mapping the distribution onto our scalar requires a defined, documented aggregation rule (e.g., a weighted mean across bins) that must be validated against a real BlueZoo response before it is written down as fact — that validation belongs to Phase 11 (`.docs/version2-plan/11-live-bluezoo-adapter.md`). Until then, treat our column as demo-mode synthetic data with intentionally unresolved provenance.
 
 ## Appendix: BlueZoo table map (do-not-conflate notes)
 
@@ -50,8 +50,8 @@ This app's `video_metrics.dwell_time_seconds` column stores **one scalar average
 |---|---|---|
 | `sensor_visits` | Inner-zone visit counts — "also known as impressions" (BlueZoo's own caption) | **= our impressions.** The one confirmed 1:1 mapping. |
 | `sensor_visitors` | Occupancy (min/avg/max) per 15-minute period | *Not* visits: occupancy is a point-in-time count, visits are events. Candidate (unconfirmed) relative of circulation. |
-| `sensor_dwell` | Distribution of visit-duration bins per 15-minute slot | No direct mapping to our scalar `dwell_time_seconds` — needs an aggregation rule (Phase 10). |
-| `sensor_visitors_per_minute` | Fine-grained occupancy time series | Unused today; candidate input for playout attribution (Phase 9). |
-| `group_uv_daily/weekly/monthly/custom` | Unique visitor counts, deduplicated over a period | "Unique reach" — a *different* metric from impressions; never conflate deduplicated visitors with visit counts. See open question 6 ("Unique-reach metric (Phase 2 glossary)") in `.docs/version2-plan/99-open-questions.md`. |
+| `sensor_dwell` | Distribution of visit-duration bins per 15-minute slot | No direct mapping to our scalar `dwell_time_seconds` — needs an aggregation rule (Phase 11). |
+| `sensor_visitors_per_minute` | Fine-grained occupancy time series | Unused today; candidate input for playout attribution (Phase 10). |
+| `group_uv_daily/weekly/monthly/custom` | Unique visitor counts, deduplicated over a period | "Unique reach" — a *different* metric from impressions; never conflate deduplicated visitors with visit counts. See open question 6 ("Unique-reach metric (Phase 3 glossary)") in `.docs/version2-plan/99-open-questions.md`. |
 | `group_flow_transition/correlation/duration/segmentation` | Cross-zone traffic-flow journeys | Carries a `campaign_id` field that is **BlueZoo's own "flow campaign" concept — unrelated to this app's ad campaigns.** When mapping BlueZoo data, never reuse the bare name `campaign_id` for this app's ad-campaign id; pick a distinct field name (e.g. `ad_campaign_id`) to avoid collision. |
 | `sensor_pulses` | Sensor telemetry/health (uptime, connectivity) | Not audience data — must never appear in any impressions/revenue rollup. |

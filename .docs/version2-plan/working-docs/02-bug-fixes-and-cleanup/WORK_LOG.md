@@ -3,7 +3,7 @@
 Append-only, newest at the bottom. Owned by the `tracking-workstream-progress` skill.
 
 ## 2026-07-14 19:29 — kickoff: worktree created
-Branch `version_2_bug-fixes-and-cleanup` created off `version_2` (7d3c866, post-Phase-0 merge), worktree at `.claude/worktrees/version_2_bug-fixes-and-cleanup`. Base verified. STATUS.md row set to "kickoff in progress" in main checkout. Phase doc research: pending.
+Branch `version_2_bug-fixes-and-cleanup` created off `version_2` (7d3c866, post-Phase-1 merge), worktree at `.claude/worktrees/version_2_bug-fixes-and-cleanup`. Base verified. STATUS.md row set to "kickoff in progress" in main checkout. Phase doc research: pending.
 
 **Amended 2026-07-14 — phase doc research done.** All 9 items re-verified against current code; every claim holds. Highlights beyond the phase doc:
 - Item 1: daily row dicts lack a raw `revenue` key (only date/impressions/dwell_time/circulation/revenue_per_impression), though raw revenue is computed inside the loop. Both bad defaults confirmed (metrics_tools.py `generate_metrics_visualization`, maps_tools.py `generate_map_visualization`).
@@ -15,7 +15,7 @@ Branch `version_2_bug-fixes-and-cleanup` created off `version_2` (7d3c866, post-
 - Worktree env set up: `app/.env` copied from main checkout, `.venv` built with python3.12, `google-adk[eval]` installed.
 
 ## 2026-07-14 — working doc approved (checkpoint 2)
-Owner approved the six-dimension restatement: 7 fixes (metric defaults, null-deref guard, legacy-table repoint, category alignment, stale texts, loud integration import failure, 3 e2e repairs), e2e suite to fully green, README/DEMO_GUIDE untouched, weekly-aggregation + raw-revenue deferred to Phase 3. Design choice confirmed: default → revenue_per_impression only, no raw-revenue metric key this phase. Next: writing-plans.
+Owner approved the six-dimension restatement: 7 fixes (metric defaults, null-deref guard, legacy-table repoint, category alignment, stale texts, loud integration import failure, 3 e2e repairs), e2e suite to fully green, README/DEMO_GUIDE untouched, weekly-aggregation + raw-revenue deferred to Phase 4. Design choice confirmed: default → revenue_per_impression only, no raw-revenue metric key this phase. Next: writing-plans.
 
 ## 2026-07-14 — DISCOVERY: 5 vacuous async unit tests (never awaited)
 Assumed: unit suite meaningfully covers the visualization tools. Actual: `tests/unit/test_metrics_tools.py` (2 tests) and `tests/unit/test_maps_tools.py` (3 tests) call the `async def` visualization tools without `await` — they assert on a coroutine object (always truthy), execute nothing, and emit `RuntimeWarning: coroutine ... was never awaited` on every unit run. Same root cause as the 3 e2e failures (phase item 9): tools went async, tests didn't follow — but these 5 "pass" silently instead of failing.
@@ -28,7 +28,7 @@ Owner approved the 9-task implementation plan (plan.md), including Task 7 scope 
 Fix invalid metric defaults → revenue_per_impression in both visualization tools. Commits 1684501..2062f66, review clean (spec ✅, quality approved, no findings).
 
 ## 2026-07-14 — Task 2 complete (mirrors .superpowers/sdd/progress.md)
-No-data guard moved above summary deref (covers summary=None on status="success"); weekly ratio-sum bug flag comment added for Phase 3. Commits 2062f66..b7f9a34, review clean.
+No-data guard moved above summary deref (covers summary=None on status="success"); weekly ratio-sum bug flag comment added for Phase 4. Commits 2062f66..b7f9a34, review clean.
 
 ## 2026-07-14 — Task 3 complete (mirrors .superpowers/sdd/progress.md)
 get_campaign_locations repointed to campaign_videos/video_metrics (activated-only, JOIN-condition filter so zero-video campaigns still appear). Commits b7f9a34..a08d3f3, review clean.
@@ -64,7 +64,7 @@ Demo verification via demo-scenario-verifier, sequential, worktree server on :85
 Evidence: working-docs/02-bug-fixes-and-cleanup/evidence/f1-*.png, f1-scene2-server-log-two-stage.log, f2-*.png.
 
 ## 2026-07-14 — final whole-branch review: READY TO MERGE
-0 Critical, 0 Important, 4 Minor. Reviewer independently re-ran suites and leak-proof DB checks. Minors 1/2/4 fixed (stale markers dropped, app/.adk/ gitignored, precondition assert de-vacuated) + Phase 3 doc amended re: get_campaign_metrics summary=None contract (commit dd7f887). Minor 3 (hardcoded model names in deeper docstrings/prints, currently accurate) deferred as future cleanup. Two carried per-task minors adjudicated acceptable (parity test happy-path-only; phrasing divergence plan-specified).
+0 Critical, 0 Important, 4 Minor. Reviewer independently re-ran suites and leak-proof DB checks. Minors 1/2/4 fixed (stale markers dropped, app/.adk/ gitignored, precondition assert de-vacuated) + Phase 4 doc amended re: get_campaign_metrics summary=None contract (commit dd7f887). Minor 3 (hardcoded model names in deeper docstrings/prints, currently accurate) deferred as future cleanup. Two carried per-task minors adjudicated acceptable (parity test happy-path-only; phrasing divergence plan-specified).
 
 ## 2026-07-14 — finish: PR open (checkpoint 6, pending merge)
 PR #2 into version_2: https://github.com/bluezoo/video-ad-optimization-agent/pull/2 — owner chose to hold it open for review. Worktree and branch preserved for PR iteration. On merge: run finishing-a-development-branch Path A tail (merge → ExitWorktree remove → STATUS.md "merged" → final WORK_LOG line).

@@ -12,7 +12,7 @@ Key source layout: `app/agent.py` (agent graph), `app/config.py` (models/env), `
 
 ## Version 2 plan
 
-**`.docs/version2-plan/` is the sole authoritative plan for ongoing work.** Start at `00-overview.md` for sequencing and philosophy, then the numbered phase docs (`01-*.md` through `14b-*.md`); `99-open-questions.md` consolidates every phase's open questions. `STATUS.md` in that folder is the cross-workstream progress index — read it before starting or resuming any phase.
+**`.docs/version2-plan/` is the sole authoritative plan for ongoing work.** Start at `00-overview.md` for sequencing and philosophy, then the numbered phase docs (`01-*.md` through `15-*.md`); `99-open-questions.md` consolidates every phase's open questions. `STATUS.md` in that folder is the cross-workstream progress index — read it before starting or resuming any phase.
 
 `.docs/2026-07-12-version2-review-and-plan.md` is superseded and moved to `.docs/.backup/` (gitignored, kept locally as historical record only) — do not treat it as current.
 
@@ -31,7 +31,7 @@ Lifecycle, each step backed by a skill in `.claude/skills/` — a mix of skills 
 5. **Verify** — `verifying-with-demo-scenarios`: beyond the automated test suite, drive a local `adk web`/`api_server` instance through vertical-specific demo scenarios (`docs/demo-scenarios/<vertical>.md`, modeled on `DEMO_GUIDE.md` but not replacing it — that file stays fashion-specific and untouched) via chrome-devtools MCP (declared in the repo's `.mcp.json`), dispatched to the `demo-scenario-verifier` subagent (`.claude/agents/`), one scenario at a time (the dev server port is fixed at 8501).
 6. **Review & finish** — `requesting-code-review` for the whole branch, then `finishing-a-development-branch` (modified: PR into `version_2`, then self-merge per the sequencing model above).
 
-**Trivial-phase fast path:** for a phase `00-overview.md` rates Trivial (e.g. Phase 0's two-config-string change), step 4's per-task subagent dispatch may be replaced by inline execution of a one-task plan. Everything else stays non-negotiable: working-doc and plan approval, real verification, `WORK_LOG.md`/`STATUS.md` checkpoints, PR via `finishing-a-development-branch`.
+**Trivial-phase fast path:** for a phase `00-overview.md` rates Trivial (e.g. Phase 1's two-config-string change), step 4's per-task subagent dispatch may be replaced by inline execution of a one-task plan. Everything else stays non-negotiable: working-doc and plan approval, real verification, `WORK_LOG.md`/`STATUS.md` checkpoints, PR via `finishing-a-development-branch`.
 
 **Discoveries (plan-reality divergence):** when work reveals a planned assumption is wrong ("we thought X, it's actually Y"), follow `tracking-workstream-progress`'s Discoveries section: log a `DISCOVERY` entry in the workstream's `WORK_LOG.md`, amend every affected downstream phase doc and `99-open-questions.md` in the same branch with a provenance note (`> **Amended (workstream <NN>, date):** …`), and promote durable facts to `CLAUDE.md`/`SETUP_INSTRUCTIONS.md`/memory. Plan docs are living documents — after every merge they must be current as of everything learned so far. `.docs/version2-plan/HOW_TO_RUN_A_WORKSTREAM.md` is the owner-facing walkthrough of the whole lifecycle, including this.
 

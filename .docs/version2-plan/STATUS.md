@@ -6,23 +6,23 @@ Update rows in place as a workstream progresses; don't append new rows for the s
 
 **Status values:** `not started` · `kickoff in progress` · `plan in progress` · `implement in progress` · `verify in progress` · `PR open` · `merged` · `discarded`
 
-**Numbering (read once, saves confusion):** phase numbers are 0-based; doc filename prefixes are 1-based, because `00-overview.md` is the overview, not a phase. So they're offset by one — Phase 0's doc is `01-*.md`, Phase 6's is `07-*.md`. This is deliberate and *not* being renumbered (every "depends on Phase N" cross-reference in the plan uses phase numbers). The **Doc** column below is the authoritative mapping; workstream folders under `working-docs/` and worktree/branch names key off the doc prefix, never the phase number.
+**Numbering:** phase number = doc filename prefix (Phase 7 ↔ `07-rpi-across-creatives-chart.md`). Phases start at 1; `00-overview.md` is the overview, not a phase. Renumbered 2026-07-16 (workstream replan-data-track) from the old 0-based scheme, so anything written before then — merged PR #1–#4 titles/discussions, old commit messages — may use old phase numbers, which are one less than today's. The **Doc** column stays as the explicit mapping; workstream folders under `working-docs/` and worktree/branch names use the doc prefix, which now equals the phase number.
 
 | Phase | Doc | Name | Status | Branch | PR | Last updated | Note |
 |---|---|---|---|---|---|---|---|
-| 0 | `01` | emergency-model-currency-fix | merged | version_2_model-currency-fix | [#1](https://github.com/bluezoo/video-ad-optimization-agent/pull/1) | 2026-07-14 | merged 9f12738; incl. conftest fix + preview-model probe |
-| 1 | `02` | bug-fixes-and-cleanup | merged | version_2_bug-fixes-and-cleanup | [#2](https://github.com/bluezoo/video-ad-optimization-agent/pull/2) | 2026-07-16 | merged e0a0a52; incl. DB-isolation fix + test de-vacuation discoveries |
-| 2 | `03` | metrics-glossary-and-terminology | merged | version_2_metrics-glossary | [#3](https://github.com/bluezoo/video-ad-optimization-agent/pull/3) | 2026-07-16 | merged 2bb2452; docs/METRICS.md is the metrics source of truth; demo skipped by design (docs-only) |
-| 3 | `04` | centralize-rpi-metrics | merged | version_2_centralize-rpi-metrics | #4 | 2026-07-16 | squash commit a29f182; demo F2 PASS; final review clean |
-| 4 | `05` | deterministic-demo-data | not started | - | - | 2026-07-13 | depends on Phase 3 |
-| 5 | `06` | app-mode-config-skeleton | not started | - | - | 2026-07-13 | - |
-| 6 | `07` | rpi-across-creatives-chart | not started | - | - | 2026-07-13 | depends on Phases 3, 4 |
-| 7 | `08` | product-schema-generalization | not started | - | - | 2026-07-13 | depends on Phase 1 |
-| 8 | `09` | prompt-and-agent-generalization | not started | - | - | 2026-07-13 | depends on Phase 7 |
-| 9 | `10` | playout-attribution | not started | - | - | 2026-07-13 | depends on Phases 3, 4, 7 |
-| 10 | `11` | live-bluezoo-adapter | not started | - | - | 2026-07-13 | depends on Phases 5, 9; blocked on open questions 1, 2 |
-| 11 | `12` | live-pos-adapter | not started | - | - | 2026-07-13 | depends on Phases 3, 5, 10; blocked on open questions 3, 4 |
-| 12 | `13` | production-hardening-live-mode | not started | - | - | 2026-07-13 | depends on Phases 10, 11 |
-| 13a | `14a` | image-model-upgrade-nano-banana | not started | - | - | 2026-07-13 | depends on Phase 0 only |
-| 13b | `14b` | video-model-upgrade-omni-flash | not started | - | - | 2026-07-13 | depends on Phase 0, ideally after 13a |
-| — | `—` | replan-data-track (docs only) | PR open | version_2_replan-data-track | [#5](https://github.com/bluezoo/video-ad-optimization-agent/pull/5) | 2026-07-16 | amends Phases 4/5/7/9/10, splits 10 into 10a/10b, adds Phase 14 (`15-product-onboarding.md`) per sibling-repo reassessment (.docs/.context/2026-07-16-sibling-repo-reassessment.md); on merge: split Phase 10 row into 10a/10b + add Phase 14 row |
+| 1 | `01` | emergency-model-currency-fix | merged | version_2_model-currency-fix | [#1](https://github.com/bluezoo/video-ad-optimization-agent/pull/1) | 2026-07-14 | merged 9f12738; incl. conftest fix + preview-model probe |
+| 2 | `02` | bug-fixes-and-cleanup | merged | version_2_bug-fixes-and-cleanup | [#2](https://github.com/bluezoo/video-ad-optimization-agent/pull/2) | 2026-07-16 | merged e0a0a52; incl. DB-isolation fix + test de-vacuation discoveries |
+| 3 | `03` | metrics-glossary-and-terminology | merged | version_2_metrics-glossary | [#3](https://github.com/bluezoo/video-ad-optimization-agent/pull/3) | 2026-07-16 | merged 2bb2452; docs/METRICS.md is the metrics source of truth; demo skipped by design (docs-only) |
+| 4 | `04` | centralize-rpi-metrics | merged | version_2_centralize-rpi-metrics | #4 | 2026-07-16 | squash commit a29f182; demo F2 PASS; final review clean |
+| 5 | `05` | deterministic-demo-data | not started | - | - | 2026-07-13 | depends on Phase 4 |
+| 6 | `06` | app-mode-config-skeleton | not started | - | - | 2026-07-13 | - |
+| 7 | `07` | rpi-across-creatives-chart | not started | - | - | 2026-07-13 | depends on Phases 4, 5 |
+| 8 | `08` | product-schema-generalization | not started | - | - | 2026-07-13 | depends on Phase 2 |
+| 9 | `09` | prompt-and-agent-generalization | not started | - | - | 2026-07-13 | depends on Phase 8 |
+| 10 | `10` | playout-attribution | not started | - | - | 2026-07-13 | depends on Phases 4, 5, 8 |
+| 11 | `11` | live-bluezoo-adapter | not started | - | - | 2026-07-13 | depends on Phases 6, 10; blocked on open questions 1, 2 |
+| 12 | `12` | live-pos-adapter | not started | - | - | 2026-07-13 | depends on Phases 4, 6, 11; blocked on open questions 3, 4 |
+| 13 | `13` | production-hardening-live-mode | not started | - | - | 2026-07-13 | depends on Phases 11, 12 |
+| 14a | `14a` | image-model-upgrade-nano-banana | not started | - | - | 2026-07-13 | depends on Phase 1 only |
+| 14b | `14b` | video-model-upgrade-omni-flash | not started | - | - | 2026-07-13 | depends on Phase 1, ideally after 14a |
+| — | `—` | replan-data-track (docs only) | PR open | version_2_replan-data-track | [#5](https://github.com/bluezoo/video-ad-optimization-agent/pull/5) | 2026-07-16 | amends Phases 5/6/8/10/11, splits 11 into 11a/11b, adds Phase 15 (`15-product-onboarding.md`); scope grew at owner request: 1-based phase renumbering (phase = doc prefix) + donor mimic verified against live BlueZoo published docs (see working-docs/replan-data-track/bluezoo-mapping-verification.md); on merge: split Phase 11 row into 11a/11b + add Phase 15 row |

@@ -1,0 +1,42 @@
+# BlueZoo mapping verification — donor schema vs. live API docs (2026-07-16)
+
+Owner asked: *"verify with the BlueZoo API first if the system we are planning and adapting from the other repo is a good and correct mapping in the first place, before we implement."*
+
+Method: three independent research passes (live `api.bluezoo.io` published docs — a Postman page containing the Data Warehouse API, Real-time API, and deprecated Fetch API, 185k chars fetched in full; the donor repo's schema read via `git show` on `feat/plan3-slice1-bq-mvp` without touching its dirty tree; this plan's own assumptions), compared field-by-field by a judge, then adversarially re-verified through three lenses (evidence, completeness, decision). All three refuters upheld the verdict. Phase numbers below use the **new 1-based numbering** (phase = doc prefix).
+
+## Verdict: PARTIAL — proceed with port-time corrections
+
+The donor is a genuinely BlueZoo-derived, well-informed adaptation. Confirmed exactly against the live docs: the 14-table Data Warehouse inventory, the 106-bin dwell histogram count and grain layout (30×1m + 15×2m + 24×5m + 20×15m + 16×1h + open-ended), the 15-minute slot grain, FLOAT64 count types, the exact `sensor_visits` count column names, `cuv_freq_1..10`, the bare-table-name SQL discipline (donor's QueryGuard enforces what BlueZoo's examples show), and the Real-time endpoint names. **Nothing found is a blocker; Phase 5's port, Phase 10's schema adoption, and Phase 11a's seam all remain sound.** But the donor is not byte-faithful — do not port it verbatim.
+
+## Must-fix during the port (Phase 5 / Phase 10)
+
+1. **Dwell bin names: regenerate in HHMM encoding.** 61 of 106 donor bin names use minutes encoding (`distribution_bin_0060_to_0065`); BlueZoo's actual names are HHMM (`distribution_bin_0100_to_0105`, …, `_2300_to_2400`); the boundary bin is `_0058_to_0100`, not `_0058_to_0060`. Also fix the in-memory provider's midpoint decoder, which assumes minutes. (The correct names are now known and regeneration is free at port time; literal names minimize `run_metric_query` escape-hatch divergence.)
+2. **Rename bare `campaign_id` → `ad_campaign_id` on all five tables.** BlueZoo's own `campaign_id` (on `group_flow_transition`) means their unrelated *flow-campaign* concept — identical name, opposite meaning, on the exact table `docs/METRICS.md` warns about. Also: the donor spec's claim that BlueZoo stamps campaign on `group_uv_*` is contradicted by the docs (UV tables are `group_id`-keyed, no campaign column); correct that prose when porting.
+3. **Impressions = inner-only.** Donor providers compute impressions as `incoming_inner + incoming_outer`; BlueZoo's docs define inner-range visits as impressions (outer ≈ 100 m passersby). The plan (05) already mandates inner-only — follow the plan, not the donor code. Replace the hard-coded `0.05` literal in the donor's `top_videos_by_revenue` SQL with the single canonical revenue constant (the constant is otherwise duplicated across both providers).
+4. **Circulation stays provenance-flagged synthetic.** Donor hard-wires `circulation = outgoing_outer_count` — exactly the candidate mapping Q5 and METRICS.md forbid building on ("circulation" appears zero times in the entire API docs). Do not port that binding into models/providers as fact.
+5. **Document the `store_visits` merge.** Donor merges BlueZoo's two separate tables (`sensor_visits` events + `sensor_visitors` occupancy min/avg/max) into one. Acceptable internal denormalization, but the Phase 11a DTO/seam must not assume one source table — the live adapter reads two. Keep `BlueZooVisitInterval` scoped to `sensor_visits` fields only (already the case in doc 10).
+
+Smaller alignments in the same pass: `min_/max_visitors_*` → BlueZoo's `minimum_/maximum_visitors_*`; `cuv_freq_*` INT64 → FLOAT64 (BlueZoo extrapolates from sampled MACs); note that `store_dwell.total_visits` really means visits that *ended* in the slot (inner-only), and that per-pair `average_journey_duration_seconds` is a donor invention (BlueZoo's journey duration is keyed by `number_of_groups_visited`, not per pair). **Pin the donor revision read by the port** — its tree is dirty on exactly these files (committed HEAD `b6e3302` vs. working tree differ on `mock_bigquery.py`); record which revision each ported file came from.
+
+**Naming policy (write into the port spec):** BlueZoo-literal *column* names inside deliberately renamed *tables* (`store_` ↔ `sensor_`, `campaign_uv_daily` ↔ `group_uv_daily`, `ad_campaign_id` ↔ n/a), with every divergence enumerated in one mapping table — so the column-fidelity standard doesn't silently conflict with the accepted table renames.
+
+## Q17 tightened (confirmed fact, was a hope)
+
+The documented BlueZoo surface offers **no sub-15-minute visit counts anywhere**: Data Warehouse resolution is quarter-hour; Real-time `get_visits` returns only the last 8 *full* 15-minute slots; `get_occupancy_count` is momentary occupancy; the only per-minute table (`sensor_visitors_per_minute`, opt-in, outside the 14 listed tables) is occupancy, not visits. Per-ad-play windows shorter than 15 min therefore cannot be measured from any documented endpoint — attribution must apportion 15-min slots across overlapping plays, use per-minute occupancy as a proxy (requires BlueZoo enabling the opt-in), or BlueZoo must confirm an undocumented capability (raw events / BigQuery dataset-share).
+
+## Remaining unknowns → asks for BlueZoo (block Phase 11b only)
+
+- Published-docs-vs-live drift: no authenticated call was made (no AccessKey); ground truth is the published Postman docs. A live `desc_table`/`run_query` round-trip should re-confirm column lists (docs show internal inconsistencies, e.g. `cuv` in prose but not in the example response).
+- `run_query` SQL dialect (BigQuery is inference from type names, never stated) and the canonical base URL — three hostnames coexist in the docs (`hermes.apollo.bluezoo.io`, `apollo-api.bluefoxengage.com`, `morpheus-api.bluefoxengage.com`).
+- Whether daily UV buckets (`group_uv_daily`) are cut on UTC or sensor-local days (`time_offset` is a timezone-offset field, not an identity column). The mimic documents UTC; the join is date-keyed, so this matters for live alignment.
+- UV semantics: daily unique-visitor counts are non-additive across days (that's why BlueZoo ships the weekly/monthly/custom rollups the donor cut) — never sum `campaign_uv_daily` for reach; and live per-ad-campaign UV presupposes BlueZoo-side *group* configuration mirroring each campaign's store set (adjacent to Q6/Q11).
+- Dwell bin values: 0–1 shares (donor's Dirichlet) or 0–100 percentages (docs say "percentage" without numeric examples) — affects the cached-real conformer's normalization.
+- `run_query` row caps / rate limits (the donor's LIMIT-10 000 clamp is an unconfirmed guess); whether `valid=false` rows should be excluded from impression aggregation; `group_convert`/`group_dwell` schemas (exist in `list_tables`, zero documentation — the donor cut them silently, which was the only defensible choice); `sensor_dwell.distribution_weight` semantics (present in examples, undescribed).
+
+## Where this landed in the plan
+
+- `05-deterministic-demo-data.md` — port-corrections amendment (items 1–5 + smaller alignments + revision pinning + naming policy).
+- `10-playout-attribution.md` — 1↔2 table mapping, naming policy, Q17 apportionment consequence.
+- `11-live-bluezoo-adapter.md` — mimic validation status (published docs verified 2026-07-16), Phase 11b checklist additions.
+- `99-open-questions.md` — Q2 narrowed further, Q6/Q11 refined, Q17 rewritten as confirmed fact, new Q18 (batched schema-semantics confirmations).
+- `WORK_LOG.md` — DISCOVERY entry.

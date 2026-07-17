@@ -13,7 +13,7 @@
 - Branch `version_2_metrics-glossary`, worktree `.claude/worktrees/version_2_metrics-glossary`.
 - **Zero changes under `app/`** — this phase touches no runtime code path; `make test` must pass unchanged.
 - **README.md and DEMO_GUIDE.md are never edited** (owner-approved divergence from the phase doc's literal Step 2: links go in SETUP_INSTRUCTIONS.md + CLAUDE.md instead).
-- `docs/METRICS.md` contains **no fenced code blocks** — definitions are prose; the only executable expression of a definition will be Phase 3's `compute_rpi()`.
+- `docs/METRICS.md` contains **no fenced code blocks** — definitions are prose; the only executable expression of a definition will be Phase 4's `compute_rpi()`.
 - Circulation and dwell time are written as **"BlueZoo mapping unresolved"** — do not upgrade the candidate mappings to fact.
 - No `Co-Authored-By: Claude` or AI-attribution trailers in commits.
 
@@ -34,14 +34,14 @@
 - Create: `docs/METRICS.md`
 
 **Interfaces:**
-- Produces: `docs/METRICS.md` at exactly that path — Task 2's links and Phase 3's plan reference it by this path.
+- Produces: `docs/METRICS.md` at exactly that path — Task 2's links and Phase 4's plan reference it by this path.
 
 - [ ] **Step 1: Create the file with exactly this content**
 
 ````markdown
 # Metrics Glossary
 
-**This is the single source of truth for what every metric in this app means.** Read it before touching any metric-related code. Phase 3 (`.docs/version2-plan/04-centralize-rpi-metrics.md`) turns the RPI rule below into the one shared implementation (`compute_rpi()`); until then, no code file is authoritative — this document is.
+**This is the single source of truth for what every metric in this app means.** Read it before touching any metric-related code. Phase 4 (`.docs/version2-plan/04-centralize-rpi-metrics.md`) turns the RPI rule below into the one shared implementation (`compute_rpi()`); until then, no code file is authoritative — this document is.
 
 Definitions are aligned to BlueZoo's own vocabulary wherever BlueZoo defines the term (quotes below were verified against the live BlueZoo Data Warehouse API docs at `api.bluezoo.io`, fetched 2026-07-16). Where a mapping is *not* confirmed, this document says so explicitly rather than guessing.
 
@@ -67,7 +67,7 @@ In this app: the `video_metrics.revenue` column (mock-generated in demo mode).
 
 This is the app's primary KPI, and it is BlueZoo's own coined, marketed metric. The client's operational framing (from the project README): retailers normalize each store's point-of-sale revenue for the advertised product by the number of impressions delivered for that store's ad during a day.
 
-**The one non-negotiable computation rule: RPI over any multi-period window is the *ratio of sums, never the sum (or average) of per-period ratios*.** A weekly RPI is sum(revenue over the week) ÷ sum(impressions over the week) — it is *not* the sum or mean of seven daily RPI values. Summing ratios produces a number with no meaning (this exact bug existed in the weekly bar chart and is fixed by Phase 3's centralization). Any code that aggregates RPI across days, videos, campaigns, or stores must recompute from the summed numerator and denominator.
+**The one non-negotiable computation rule: RPI over any multi-period window is the *ratio of sums, never the sum (or average) of per-period ratios*.** A weekly RPI is sum(revenue over the week) ÷ sum(impressions over the week) — it is *not* the sum or mean of seven daily RPI values. Summing ratios produces a number with no meaning (this exact bug existed in the weekly bar chart and is fixed by Phase 4's centralization). Any code that aggregates RPI across days, videos, campaigns, or stores must recompute from the summed numerator and denominator.
 
 Derived convenience form: revenue per 1,000 impressions (`RPI × 1000`, a CPM-style figure) — same rule applies.
 
@@ -79,9 +79,9 @@ The `video_metrics.circulation` column exists in this app's schema and is popula
 
 ## Dwell time
 
-**App-local scalar average; BlueZoo alignment requires an aggregation rule, unresolved until Phase 10.**
+**App-local scalar average; BlueZoo alignment requires an aggregation rule, unresolved until Phase 11.**
 
-This app's `video_metrics.dwell_time_seconds` column stores **one scalar average per video per day**. BlueZoo's `sensor_dwell` is *not* that: it is "a distribution of visit durations per 15-minute slots" — i.e., visit-duration *bins*, not a single number. Mapping the distribution onto our scalar requires a defined, documented aggregation rule (e.g., a weighted mean across bins) that must be validated against a real BlueZoo response before it is written down as fact — that validation belongs to Phase 10 (`.docs/version2-plan/11-live-bluezoo-adapter.md`). Until then, treat our column as demo-mode synthetic data with intentionally unresolved provenance.
+This app's `video_metrics.dwell_time_seconds` column stores **one scalar average per video per day**. BlueZoo's `sensor_dwell` is *not* that: it is "a distribution of visit durations per 15-minute slots" — i.e., visit-duration *bins*, not a single number. Mapping the distribution onto our scalar requires a defined, documented aggregation rule (e.g., a weighted mean across bins) that must be validated against a real BlueZoo response before it is written down as fact — that validation belongs to Phase 11 (`.docs/version2-plan/11-live-bluezoo-adapter.md`). Until then, treat our column as demo-mode synthetic data with intentionally unresolved provenance.
 
 ## Appendix: BlueZoo table map (do-not-conflate notes)
 
@@ -89,8 +89,8 @@ This app's `video_metrics.dwell_time_seconds` column stores **one scalar average
 |---|---|---|
 | `sensor_visits` | Inner-zone visit counts — "also known as impressions" (BlueZoo's own caption) | **= our impressions.** The one confirmed 1:1 mapping. |
 | `sensor_visitors` | Occupancy (min/avg/max) per 15-minute period | *Not* visits: occupancy is a point-in-time count, visits are events. Candidate (unconfirmed) relative of circulation. |
-| `sensor_dwell` | Distribution of visit-duration bins per 15-minute slot | No direct mapping to our scalar `dwell_time_seconds` — needs an aggregation rule (Phase 10). |
-| `sensor_visitors_per_minute` | Fine-grained occupancy time series | Unused today; candidate input for playout attribution (Phase 9). |
+| `sensor_dwell` | Distribution of visit-duration bins per 15-minute slot | No direct mapping to our scalar `dwell_time_seconds` — needs an aggregation rule (Phase 11). |
+| `sensor_visitors_per_minute` | Fine-grained occupancy time series | Unused today; candidate input for playout attribution (Phase 10). |
 | `group_uv_daily/weekly/monthly/custom` | Unique visitor counts, deduplicated over a period | "Unique reach" — a *different* metric from impressions; never conflate deduplicated visitors with visit counts. See open question 2. |
 | `group_flow_transition/correlation/duration/segmentation` | Cross-zone traffic-flow journeys | Carries a `campaign_id` field that is **BlueZoo's own "flow campaign" concept — unrelated to this app's ad campaigns.** When mapping BlueZoo data, never reuse the bare name `campaign_id` for this app's ad-campaign id; pick a distinct field name (e.g. `ad_campaign_id`) to avoid collision. |
 | `sensor_pulses` | Sensor telemetry/health (uptime, connectivity) | Not audience data — must never appear in any impressions/revenue rollup. |
@@ -144,7 +144,7 @@ In `CLAUDE.md`, immediately after the paragraph beginning `Key source layout:` (
 In `.docs/version2-plan/03-metrics-glossary-and-terminology.md`, directly below the line `2. Link docs/METRICS.md from README.md, replacing any ad-hoc metric explanations currently scattered in code comments.` add:
 
 ```markdown
-   > **Amended (workstream 03, 2026-07-16):** README.md is client-facing and stays untouched per the repo's standing rule (CLAUDE.md "Repo etiquette"), so the link went into `SETUP_INSTRUCTIONS.md` (new "Metrics glossary" section) and `CLAUDE.md` (project-overview pointer) instead. Code-comment/prompt cleanup is deferred to Phase 3's centralization — this phase changed nothing under `app/`, keeping the "no runtime code path touched" validation literally true.
+   > **Amended (workstream 03, 2026-07-16):** README.md is client-facing and stays untouched per the repo's standing rule (CLAUDE.md "Repo etiquette"), so the link went into `SETUP_INSTRUCTIONS.md` (new "Metrics glossary" section) and `CLAUDE.md` (project-overview pointer) instead. Code-comment/prompt cleanup is deferred to Phase 4's centralization — this phase changed nothing under `app/`, keeping the "no runtime code path touched" validation literally true.
 ```
 
 - [ ] **Step 4: Verify zero behavior change and link integrity**
