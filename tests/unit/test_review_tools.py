@@ -27,8 +27,6 @@ Tests the 10 HITL review-related tools:
 - generate_additional_metrics
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
 
 
 class TestGetVideoReviewTable:
@@ -245,12 +243,6 @@ class TestGetActivationSummary:
 
         result = get_activation_summary()
 
-        # Should have status categories
-        result_str = str(result).lower()
-        statuses = ["generated", "activated", "paused", "archived"]
-
-        # At least some statuses should be mentioned
-        found = sum(1 for s in statuses if s in result_str)
         # May be 0 if no videos, but structure should exist
         assert result is not None
 
@@ -265,7 +257,7 @@ class TestGenerateAdditionalMetrics:
         result = generate_additional_metrics(video_id=1, days=7)
 
         # Should succeed or report video not found
-        assert "success" in result or "metrics" in str(result).lower() or "error" in result or "not found" in str(result).lower()
+        assert "status" in result and (result["status"] == "success" or result["status"] == "error")
 
     def test_generate_additional_metrics_default_days(self, test_db, mock_storage_module):
         """generate_additional_metrics should use default days if not specified."""

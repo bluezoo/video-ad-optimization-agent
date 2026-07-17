@@ -26,6 +26,9 @@ app/.env
 campaigns.db
 app/campaigns.db
 
+# ADK artifacts
+app/.adk/
+
 # Test / coverage
 .pytest_cache/
 htmlcov/

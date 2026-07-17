@@ -24,8 +24,6 @@ Product-Centric Model:
     - Same product at different stores = different campaigns
 """
 
-import json
-from typing import Optional
 from ..database.db import get_db_cursor, get_product
 
 
@@ -34,13 +32,19 @@ def create_campaign(
     store_name: str,
     city: str,
     state: str,
-    name: Optional[str] = None,
-    description: Optional[str] = None
+    name: str | None = None,
+    description: str | None = None
 ) -> dict:
     """Create a new product-centric ad campaign.
 
     Each campaign is tied to one product at one store location.
     The campaign name is auto-generated from product and store if not provided.
+    The campaign category is derived from the product's category via a
+    hardcoded mapping (dress→summer, top→essentials, pants→professional,
+    skirt→formal, outerwear→essentials); any unmapped product category
+    silently falls back to "essentials". Valid categories are enforced by
+    the CHECK constraint on campaigns.category (app/database/db.py) and
+    mirrored in config.CAMPAIGN_CATEGORIES.
 
     Args:
         product_id: The product ID from products table (use list_products to browse)
@@ -117,7 +121,7 @@ def create_campaign(
         }
 
 
-def list_campaigns(status: Optional[str] = None, product_id: Optional[int] = None) -> dict:
+def list_campaigns(status: str | None = None, product_id: int | None = None) -> dict:
     """List all campaigns, optionally filtered by status or product.
 
     Args:
@@ -294,9 +298,9 @@ def get_campaign(campaign_id: int) -> dict:
 
 def update_campaign(
     campaign_id: int,
-    name: Optional[str] = None,
-    description: Optional[str] = None,
-    status: Optional[str] = None
+    name: str | None = None,
+    description: str | None = None,
+    status: str | None = None
 ) -> dict:
     """Update campaign properties.
 

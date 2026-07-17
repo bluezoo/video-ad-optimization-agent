@@ -14,16 +14,13 @@
 
 """Google Maps tools for campaign location visualization."""
 
-import json
-import os
 import time
-from typing import Optional
 
 from google import genai
-from google.genai import types
 from google.adk.tools import ToolContext
+from google.genai import types
 
-from ..config import GOOGLE_MAPS_API_KEY, IMAGE_GENERATION, GCS_BUCKET
+from ..config import GOOGLE_MAPS_API_KEY, IMAGE_GENERATION
 from ..database.db import get_db_cursor
 
 
@@ -54,6 +51,8 @@ def get_campaign_locations() -> dict:
     gmaps = googlemaps.Client(key=api_key)
 
     with get_db_cursor() as cursor:
+        # Current schema: campaign_videos + video_metrics (HITL workflow).
+        # ad_count = activated videos; metrics only exist for activated videos.
         cursor.execute('''
             SELECT
                 c.id,
@@ -62,12 +61,12 @@ def get_campaign_locations() -> dict:
                 c.city,
                 c.state,
                 c.status,
-                COUNT(DISTINCT ca.id) as ad_count,
-                SUM(cm.revenue) as total_revenue,
-                SUM(cm.impressions) as total_impressions
+                COUNT(DISTINCT CASE WHEN cv.status = 'activated' THEN cv.id END) as ad_count,
+                SUM(vm.revenue) as total_revenue,
+                SUM(vm.impressions) as total_impressions
             FROM campaigns c
-            LEFT JOIN campaign_ads ca ON c.id = ca.campaign_id
-            LEFT JOIN campaign_metrics cm ON c.id = cm.campaign_id
+            LEFT JOIN campaign_videos cv ON c.id = cv.campaign_id
+            LEFT JOIN video_metrics vm ON cv.id = vm.video_id AND cv.status = 'activated'
             GROUP BY c.id
         ''')
 
@@ -89,7 +88,7 @@ def get_campaign_locations() -> dict:
                     geocode_cache[location_key] = {"lat": lat, "lng": lng}
                 else:
                     geocode_cache[location_key] = None
-            except Exception as e:
+            except Exception:
                 geocode_cache[location_key] = None
 
         coords = geocode_cache.get(location_key)
@@ -380,7 +379,7 @@ def get_google_maps_directions_url(
     Returns:
         Google Maps directions URL
     """
-    url = f"https://www.google.com/maps/dir/?api=1"
+    url = "https://www.google.com/maps/dir/?api=1"
     url += f"&origin={origin[0]},{origin[1]}"
     url += f"&destination={destination[0]},{destination[1]}"
     url += f"&travelmode={mode}"
@@ -455,7 +454,7 @@ def get_campaign_map_data(
         if not campaigns:
             return {
                 "status": "error",
-                "message": f"No campaigns found" + (f" for id {campaign_id}" if campaign_id else "")
+                "message": "No campaigns found" + (f" for id {campaign_id}" if campaign_id else "")
             }
 
         locations = []
@@ -857,7 +856,7 @@ Minimal style. 16:9 ratio. Data only - no decoration."""
 
 async def generate_map_visualization(
     visualization_type: str = "performance_map",
-    metric: str = "revenue",
+    metric: str = "revenue_per_impression",
     style: str = "infographic",
     tool_context: ToolContext = None
 ) -> dict:
@@ -883,7 +882,7 @@ async def generate_map_visualization(
     Returns:
         Dictionary with visualization details and artifact info
     """
-    print(f"[DEBUG MAP VIZ] Starting generate_map_visualization")
+    print("[DEBUG MAP VIZ] Starting generate_map_visualization")
     print(f"[DEBUG MAP VIZ] visualization_type={visualization_type}, metric={metric}, style={style}")
 
     valid_types = ["performance_map", "regional_comparison", "category_by_region",
@@ -911,7 +910,7 @@ async def generate_map_visualization(
 
     # Fetch all campaign data with metrics (in-store retail media metrics)
     # Uses NEW schema: video_metrics + campaign_videos (HITL workflow)
-    print(f"[DEBUG MAP VIZ] Step 1: Fetching campaign data from database...")
+    print("[DEBUG MAP VIZ] Step 1: Fetching campaign data from database...")
     with get_db_cursor() as cursor:
         cursor.execute('''
             SELECT
@@ -1013,7 +1012,7 @@ async def generate_map_visualization(
                 regional_data[region]["revenue"] / regional_data[region]["impressions"], 4
             ) if regional_data[region]["impressions"] > 0 else 0
 
-    print(f"[DEBUG MAP VIZ] Step 3: Data aggregation complete")
+    print("[DEBUG MAP VIZ] Step 3: Data aggregation complete")
     print(f"[DEBUG MAP VIZ]   - Total revenue: ${total_revenue:,.2f}")
     print(f"[DEBUG MAP VIZ]   - Total impressions: {total_impressions:,}")
     print(f"[DEBUG MAP VIZ]   - Regions: {list(regional_data.keys())}")
@@ -1172,9 +1171,6 @@ Create a beautiful visualization for fashion retail strategy."""
             market_index = demo.get('fashion_market_index', 50)
             population = demo.get('population', 'N/A')
 
-            # Calculate opportunity score (market index - current penetration)
-            opportunity_score = market_index - (current_revenue / 1000) if current_revenue else market_index
-
             opportunity_desc += f"- {loc}:\n"
             opportunity_desc += f"  Population: {population:,} | Market Index: {market_index}/100\n"
             opportunity_desc += f"  Current Revenue: ${current_revenue:,.2f}\n"
@@ -1265,7 +1261,7 @@ STYLE:
 
 Create a visually striking revenue heatmap suitable for executive dashboards."""
 
-    print(f"[DEBUG MAP VIZ] Step 5: Complete prompt being sent to Gemini 3 Pro Image:")
+    print("[DEBUG MAP VIZ] Step 5: Complete prompt being sent to Gemini 3 Pro Image:")
     print(f"[DEBUG MAP VIZ] {'='*60}")
     print(visualization_prompt[:500] + "..." if len(visualization_prompt) > 500 else visualization_prompt)
     print(f"[DEBUG MAP VIZ] {'='*60}")
@@ -1308,7 +1304,7 @@ Create a visually striking revenue heatmap suitable for executive dashboards."""
         timestamp = int(time.time())
         filename = f"map_{visualization_type}_{style}_{metric}_{timestamp}.png"
 
-        print(f"[DEBUG MAP VIZ] Step 7: Saving artifact...")
+        print("[DEBUG MAP VIZ] Step 7: Saving artifact...")
         if tool_context:
             print(f"[DEBUG MAP VIZ]   - Filename: {filename}")
             image_bytes = generated_image.inline_data.data
@@ -1321,7 +1317,7 @@ Create a visually striking revenue heatmap suitable for executive dashboards."""
             artifact_saved = False
             version = None
 
-        print(f"[DEBUG MAP VIZ] Step 8: SUCCESS - Map visualization complete!")
+        print("[DEBUG MAP VIZ] Step 8: SUCCESS - Map visualization complete!")
 
         return {
             "status": "success",

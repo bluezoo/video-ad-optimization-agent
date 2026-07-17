@@ -85,8 +85,9 @@ else:
 APP_NAME = "ad_campaign_agent"
 APP_DESCRIPTION = "Fashion retail ad campaign management agent with video generation"
 
-# Campaign categories
-CAMPAIGN_CATEGORIES = ["summer", "formal", "professional", "essentials"]
+# Campaign categories — mirrors the CHECK constraint on campaigns.category
+# in app/database/db.py (the source of truth). Keep the two in sync.
+CAMPAIGN_CATEGORIES = ["summer", "formal", "professional", "essentials", "holiday"]
 
 # Campaign statuses
 CAMPAIGN_STATUSES = ["draft", "active", "paused", "completed"]

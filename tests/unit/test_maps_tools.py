@@ -20,8 +20,9 @@ Tests the Google Maps integration tools:
 - generate_map_visualization (requires LLM, marked slow)
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 
 class TestGetCampaignMapData:
@@ -42,11 +43,6 @@ class TestGetCampaignMapData:
 
         result = get_campaign_map_data()
 
-        # Check for Google Maps links
-        result_str = str(result)
-        # Should have maps.google.com or google.com/maps links
-        has_maps_link = "maps.google" in result_str or "google.com/maps" in result_str or "maps_url" in result_str
-
         # May not have links if no campaigns, but structure should exist
         assert result is not None
 
@@ -55,10 +51,6 @@ class TestGetCampaignMapData:
         from app.tools.maps_tools import get_campaign_map_data
 
         result = get_campaign_map_data()
-
-        # Should have coordinate data
-        result_str = str(result).lower()
-        has_coords = "lat" in result_str or "lng" in result_str or "longitude" in result_str
 
         assert result is not None
 
@@ -113,51 +105,96 @@ class TestGenerateStaticMap:
             assert result is not None
 
 
-@pytest.mark.slow
-@pytest.mark.integration
 class TestGenerateMapVisualization:
-    """Tests for generate_map_visualization tool (requires LLM)."""
+    """Tests for generate_map_visualization tool (LLM call is mocked)."""
 
-    def test_generate_map_visualization_performance_map(self, test_db, mock_storage_module):
-        """generate_map_visualization should create performance map."""
+    async def test_generate_map_visualization_performance_map(
+        self, test_db, mock_storage_module
+    ):
         with patch("google.genai.Client") as mock_client:
-            mock_instance = MagicMock()
-            mock_client.return_value = mock_instance
-            mock_instance.models.generate_content.return_value = MagicMock(
-                text="Map generated successfully"
+            mock_client.return_value.models.generate_content.side_effect = (
+                RuntimeError("mocked API failure")
+            )
+            from app.tools.maps_tools import generate_map_visualization
+
+            result = await generate_map_visualization(
+                visualization_type="performance_map"
             )
 
-            from app.tools.maps_tools import generate_map_visualization
+            assert result["status"] == "error"
+            assert "mocked API failure" in result["message"]
 
-            result = generate_map_visualization(visualization_type="performance_map")
-
-            assert result is not None
-
-    def test_generate_map_visualization_regional_comparison(self, test_db, mock_storage_module):
-        """generate_map_visualization should create regional comparison."""
+    async def test_generate_map_visualization_regional_comparison(
+        self, test_db, mock_storage_module
+    ):
         with patch("google.genai.Client") as mock_client:
-            mock_instance = MagicMock()
-            mock_client.return_value = mock_instance
-
+            mock_client.return_value.models.generate_content.side_effect = (
+                RuntimeError("mocked API failure")
+            )
             from app.tools.maps_tools import generate_map_visualization
 
-            result = generate_map_visualization(visualization_type="regional_comparison")
+            result = await generate_map_visualization(
+                visualization_type="regional_comparison"
+            )
 
-            assert result is not None
+            assert result["status"] == "error"
+            assert "mocked API failure" in result["message"]
 
-    def test_generate_map_visualization_styles(self, test_db, mock_storage_module):
-        """generate_map_visualization should support different styles."""
-        from app.tools.maps_tools import generate_map_visualization
+    async def test_generate_map_visualization_styles(
+        self, test_db, mock_storage_module
+    ):
+        with patch("google.genai.Client") as mock_client:
+            mock_client.return_value.models.generate_content.side_effect = (
+                RuntimeError("mocked API failure")
+            )
+            from app.tools.maps_tools import generate_map_visualization
 
-        styles = ["infographic", "artistic", "simple"]
+            for style in ["infographic", "artistic", "simple"]:
+                result = await generate_map_visualization(style=style)
+                assert "Invalid style" not in result.get("message", ""), style
+                assert result["status"] == "error"
+                assert "mocked API failure" in result["message"], style
 
-        for style in styles:
-            try:
-                result = generate_map_visualization(
-                    visualization_type="performance_map",
-                    style=style
-                )
-                assert result is not None
-            except Exception:
-                # May fail without LLM
-                pass
+    async def test_default_metric_is_valid(self, test_db, mock_storage_module):
+        """Calling with default metric must not trip the valid_metrics check.
+
+        Regression: default was "revenue", which the tool itself rejects.
+        """
+        with patch("google.genai.Client") as mock_client:
+            mock_client.return_value.models.generate_content.side_effect = (
+                RuntimeError("mocked API failure")
+            )
+            from app.tools.maps_tools import generate_map_visualization
+
+            result = await generate_map_visualization()
+
+            assert "Invalid metric" not in result.get("message", "")
+
+
+class TestGetCampaignLocationsCurrentSchema:
+    """get_campaign_locations must read campaign_videos/video_metrics,
+    not the legacy campaign_ads/campaign_metrics tables (which are empty)."""
+
+    def test_locations_report_real_video_metrics(self, test_db):
+        with patch("app.tools.maps_tools.GOOGLE_MAPS_API_KEY", "test-key"), \
+             patch("googlemaps.Client") as mock_gmaps:
+            mock_gmaps.return_value.geocode.return_value = [
+                {"geometry": {"location": {"lat": 34.05, "lng": -118.24}}}
+            ]
+            from app.tools.maps_tools import get_campaign_locations
+
+            result = get_campaign_locations()
+
+            assert "locations" in result
+            # Demo data has activated videos with 30 days of metrics on the
+            # pre-loaded campaigns — the legacy tables are empty, so any
+            # non-zero count proves the query reads the current schema.
+            campaigns_with_ads = [
+                loc for loc in result["locations"]
+                if loc["metrics"]["ad_count"] > 0
+            ]
+            assert len(campaigns_with_ads) >= 1
+            assert any(
+                loc["metrics"]["total_impressions"] > 0
+                for loc in campaigns_with_ads
+            )

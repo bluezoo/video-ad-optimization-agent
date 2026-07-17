@@ -22,8 +22,7 @@ Tests the 5 analytics-related tools (non-visualization):
 - generate_metrics_visualization (requires LLM, marked slow)
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 
 class TestGetCampaignMetrics:
@@ -174,46 +173,89 @@ class TestCompareCampaigns:
         assert result is not None
 
 
-@pytest.mark.slow
-@pytest.mark.integration
 class TestGenerateMetricsVisualization:
-    """Tests for generate_metrics_visualization tool (requires LLM)."""
+    """Tests for generate_metrics_visualization tool (LLM call is mocked)."""
 
-    def test_generate_metrics_visualization_trendline(self, test_db, mock_storage_module):
-        """generate_metrics_visualization should create trendline chart."""
+    async def test_generate_metrics_visualization_trendline(
+        self, test_db, mock_storage_module
+    ):
+        """Tool runs the full pre-API pipeline and returns the graceful
+        error dict when the (mocked) image API fails."""
         with patch("google.genai.Client") as mock_client:
-            mock_instance = MagicMock()
-            mock_client.return_value = mock_instance
-            mock_instance.models.generate_content.return_value = MagicMock(
-                text="Chart generated successfully"
+            mock_client.return_value.models.generate_content.side_effect = (
+                RuntimeError("mocked API failure")
             )
-
             from app.tools.metrics_tools import generate_metrics_visualization
 
-            result = generate_metrics_visualization(
+            result = await generate_metrics_visualization(
                 campaign_id=1,
                 chart_type="trendline",
-                metric="revenue_per_impression"
+                metric="revenue_per_impression",
             )
 
-            # Should return result or handle gracefully
-            assert result is not None
+            assert result["status"] == "error"
+            assert "mocked API failure" in result["message"]
 
-    def test_generate_metrics_visualization_types(self, test_db):
-        """Should support multiple visualization types."""
-        from app.tools.metrics_tools import generate_metrics_visualization
-
+    async def test_generate_metrics_visualization_types(
+        self, test_db, mock_storage_module
+    ):
+        """All four chart types pass validation and reach the API stage."""
         chart_types = ["trendline", "bar_chart", "comparison", "infographic"]
 
-        for chart_type in chart_types:
-            # Just verify function accepts the type
-            try:
-                result = generate_metrics_visualization(
+        with patch("google.genai.Client") as mock_client:
+            mock_client.return_value.models.generate_content.side_effect = (
+                RuntimeError("mocked API failure")
+            )
+            from app.tools.metrics_tools import generate_metrics_visualization
+
+            for chart_type in chart_types:
+                result = await generate_metrics_visualization(
                     campaign_id=1,
                     chart_type=chart_type,
-                    metric="impressions"
+                    metric="impressions",
                 )
-                assert result is not None
-            except Exception:
-                # May fail without LLM, but should accept the parameters
-                pass
+                assert "Invalid chart_type" not in result.get("message", ""), chart_type
+                assert result["status"] == "error"
+                assert "mocked API failure" in result["message"], chart_type
+
+    async def test_default_metric_is_valid(self, test_db, mock_storage_module):
+        """Calling with default metric must not trip the valid_metrics check.
+
+        Regression: default was "revenue", which the tool itself rejects.
+        The mocked client raises so the test never makes a real API call —
+        reaching the mocked-API error proves validation passed.
+        """
+        with patch("google.genai.Client") as mock_client:
+            mock_client.return_value.models.generate_content.side_effect = (
+                RuntimeError("mocked API failure")
+            )
+            from app.tools.metrics_tools import generate_metrics_visualization
+
+            result = await generate_metrics_visualization(campaign_id=1)
+
+            assert "Invalid metric" not in result.get("message", "")
+
+    async def test_no_metrics_campaign_returns_clean_error(self, test_db):
+        """A campaign with zero activated-video metrics must get a clean
+        error response, not TypeError.
+
+        Regression: get_campaign_metrics returns summary=None with
+        status="success" when no rows have impressions; a debug print
+        dereferenced summary['total_impressions'] before the empty guard.
+        """
+        from app.tools.campaign_tools import create_campaign
+        from app.tools.metrics_tools import generate_metrics_visualization
+
+        created = create_campaign(
+            product_id=1,
+            store_name="No Metrics Test Store",
+            city="Austin",
+            state="TX",
+        )
+        assert created["status"] == "success"
+        campaign_id = created["campaign"]["id"]
+
+        result = await generate_metrics_visualization(campaign_id=campaign_id)
+
+        assert result["status"] == "error"
+        assert "No metrics data available" in result["message"]

@@ -20,9 +20,6 @@ simulating the demo scenarios to ensure the system works end-to-end.
 Run with: pytest tests/e2e -v -m "not slow"
 """
 
-import asyncio
-import os
-from typing import Any
 
 import pytest
 
@@ -148,7 +145,7 @@ class TestCreativeGenerationWorkflow:
 
     @pytest.mark.slow
     @pytest.mark.veo
-    def test_video_generation_flow(self, shared_test_db, mock_storage_module):
+    async def test_video_generation_flow(self, shared_test_db, mock_storage_module):
         """Scene 2.2: Generate a video (requires Veo API).
 
         This test validates the full video generation flow:
@@ -161,21 +158,25 @@ class TestCreativeGenerationWorkflow:
 
         # Get campaign details
         campaign = get_campaign(campaign_id=1)
-        assert campaign is not None
+        assert campaign.get("status") != "error", campaign
 
         # Generate video (this is slow - 2-3 minutes)
-        result = generate_video_from_product(
+        result = await generate_video_from_product(
             campaign_id=1,
-            model_ethnicity="european",
-            setting="studio",
-            mood="elegant",
-            lighting="soft",
-            activity="posing",
+            product_id=1,
+            variation={
+                "name": "european-studio-elegant",
+                "model_ethnicity": "european",
+                "setting": "studio",
+                "mood": "elegant",
+                "lighting": "soft",
+                "activity": "posing",
+            },
         )
 
         # Verify result
-        assert "video" in result or "error" in result
-        if "video" in result:
+        assert result["status"] in ("success", "error"), result
+        if result["status"] == "success":
             video = result["video"]
             assert video["status"] == "generated"
 
@@ -295,19 +296,22 @@ class TestAnalyticsWorkflow:
             assert isinstance(result["comparisons"], list)
 
     @pytest.mark.slow
-    def test_chart_generation(self, shared_test_db):
+    async def test_chart_generation(self, shared_test_db):
         """Scene 4.2: Generate metrics visualization."""
         from app.tools.metrics_tools import generate_metrics_visualization
 
-        result = generate_metrics_visualization(
+        result = await generate_metrics_visualization(
             campaign_id=1,
             chart_type="trendline",
-            metric="rpi",
+            metric="revenue_per_impression",
             days=30,
         )
 
-        # Should return chart or error
-        assert "chart_url" in result or "error" in result
+        # Real image-generation call: success carries the visualization
+        # payload; a clean error dict is also acceptable in e2e.
+        assert result["status"] in ("success", "error"), result
+        if result["status"] == "success":
+            assert "visualization" in result
 
 
 class TestGeographicIntelligenceWorkflow:
@@ -358,14 +362,15 @@ class TestGeographicIntelligenceWorkflow:
             assert "city" in location
 
     @pytest.mark.slow
-    def test_map_visualization(self, shared_test_db):
+    async def test_map_visualization(self, shared_test_db):
         """Scene 5.2: Generate map visualization."""
         from app.tools.maps_tools import generate_map_visualization
 
-        result = generate_map_visualization(style="infographic")
+        result = await generate_map_visualization(style="infographic")
 
-        # Should return map or error
-        assert "map_url" in result or "error" in result
+        assert result["status"] in ("success", "error"), result
+        if result["status"] == "success":
+            assert "visualization" in result
 
 
 class TestOptimizationWorkflow:
@@ -422,8 +427,8 @@ class TestMultiAgentWorkflow:
 
     def test_product_then_review_flow(self, shared_test_db):
         """Cross-agent workflow: Media -> Review."""
-        from app.tools.video_tools import list_products, list_campaign_videos
         from app.tools.review_tools import get_video_review_table
+        from app.tools.video_tools import list_campaign_videos, list_products
 
         # Step 1: List products (Media Agent)
         products = list_products()
@@ -486,7 +491,7 @@ class TestDataConsistency:
 
         # Verify each campaign references a valid product
         for campaign in campaigns["campaigns"]:
-            if "product_id" in campaign:
+            if "product_id" in campaign and campaign["product_id"] is not None:
                 assert campaign["product_id"] in product_ids
 
     def test_video_campaign_consistency(self, shared_test_db):
@@ -495,7 +500,6 @@ class TestDataConsistency:
         from app.tools.video_tools import list_campaign_videos
 
         campaigns = list_campaigns()
-        campaign_ids = {c["id"] for c in campaigns["campaigns"]}
 
         # Check videos for first campaign
         if campaigns["campaigns"]:
