@@ -1,0 +1,84 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- /Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_centralize-rpi-metrics/.venv/bin/python3.12
+cachedir: .pytest_cache
+rootdir: /Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_centralize-rpi-metrics
+configfile: pytest.ini
+plugins: mock-3.15.1, cov-7.1.0, asyncio-1.4.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collecting ... collected 65 items
+
+tests/unit/test_metrics_tools.py::TestGetCampaignMetrics::test_get_campaign_metrics_valid_campaign PASSED [  1%]
+tests/unit/test_metrics_tools.py::TestGetCampaignMetrics::test_get_campaign_metrics_date_range PASSED [  3%]
+tests/unit/test_metrics_tools.py::TestGetCampaignMetrics::test_get_campaign_metrics_invalid_campaign PASSED [  4%]
+tests/unit/test_metrics_tools.py::TestGetCampaignMetrics::test_get_campaign_metrics_structure PASSED [  6%]
+tests/unit/test_metrics_tools.py::TestGetCampaignMetrics::test_no_data_returns_error_status PASSED [  7%]
+tests/unit/test_metrics_tools.py::TestGetCampaignMetrics::test_summary_rpi_is_ratio_of_sums PASSED [  9%]
+tests/unit/test_metrics_tools.py::TestGetTopPerformingAds::test_get_top_performing_ads_default PASSED [ 10%]
+tests/unit/test_metrics_tools.py::TestGetTopPerformingAds::test_get_top_performing_ads_by_rpi PASSED [ 12%]
+tests/unit/test_metrics_tools.py::TestGetTopPerformingAds::test_get_top_performing_ads_by_impressions PASSED [ 13%]
+tests/unit/test_metrics_tools.py::TestGetTopPerformingAds::test_get_top_performing_ads_limit PASSED [ 15%]
+tests/unit/test_metrics_tools.py::TestGetTopPerformingAds::test_optional_filters_narrow_results PASSED [ 16%]
+tests/unit/test_metrics_tools.py::TestGetTopPerformingAds::test_returned_rpi_is_thin_wrapper_over_compute_rpi PASSED [ 18%]
+tests/unit/test_metrics_tools.py::TestGetCampaignInsights::test_get_campaign_insights_valid_campaign PASSED [ 20%]
+tests/unit/test_metrics_tools.py::TestGetCampaignInsights::test_get_campaign_insights_invalid_campaign PASSED [ 21%]
+tests/unit/test_metrics_tools.py::TestGetCampaignInsights::test_date_scoping_excludes_old_metrics PASSED [ 23%]
+tests/unit/test_metrics_tools.py::TestGetCampaignInsights::test_trend_compares_rpi_not_revenue PASSED [ 24%]
+tests/unit/test_metrics_tools.py::TestGetCampaignInsights::test_best_day_groups_by_day_not_row PASSED [ 26%]
+tests/unit/test_metrics_tools.py::TestCompareCampaigns::test_compare_campaigns_multiple PASSED [ 27%]
+tests/unit/test_metrics_tools.py::TestCompareCampaigns::test_compare_campaigns_two PASSED [ 29%]
+tests/unit/test_metrics_tools.py::TestCompareCampaigns::test_compare_campaigns_single PASSED [ 30%]
+tests/unit/test_metrics_tools.py::TestCompareCampaigns::test_compare_campaigns_empty PASSED [ 32%]
+tests/unit/test_metrics_tools.py::TestCompareCampaigns::test_comparison_rpi_is_thin_wrapper PASSED [ 33%]
+tests/unit/test_metrics_tools.py::TestGenerateMetricsVisualization::test_generate_metrics_visualization_trendline PASSED [ 35%]
+tests/unit/test_metrics_tools.py::TestGenerateMetricsVisualization::test_generate_metrics_visualization_types PASSED [ 36%]
+tests/unit/test_metrics_tools.py::TestGenerateMetricsVisualization::test_default_metric_is_valid PASSED [ 38%]
+tests/unit/test_metrics_tools.py::TestGenerateMetricsVisualization::test_no_metrics_campaign_returns_clean_error PASSED [ 40%]
+tests/unit/test_campaign_tools.py::TestListCampaigns::test_list_campaigns_returns_all PASSED [ 41%]
+tests/unit/test_campaign_tools.py::TestListCampaigns::test_list_campaigns_structure PASSED [ 43%]
+tests/unit/test_campaign_tools.py::TestListCampaigns::test_list_campaigns_includes_product_info PASSED [ 44%]
+tests/unit/test_campaign_tools.py::TestGetCampaign::test_get_campaign_valid_id PASSED [ 46%]
+tests/unit/test_campaign_tools.py::TestGetCampaign::test_get_campaign_invalid_id PASSED [ 47%]
+tests/unit/test_campaign_tools.py::TestGetCampaign::test_get_campaign_includes_location PASSED [ 49%]
+tests/unit/test_campaign_tools.py::TestGetCampaign::test_metrics_summary_rpi_is_thin_wrapper PASSED [ 50%]
+tests/unit/test_campaign_tools.py::TestCreateCampaign::test_create_campaign_basic PASSED [ 52%]
+tests/unit/test_campaign_tools.py::TestCreateCampaign::test_create_campaign_generates_name PASSED [ 53%]
+tests/unit/test_campaign_tools.py::TestCreateCampaign::test_create_campaign_invalid_product PASSED [ 55%]
+tests/unit/test_campaign_tools.py::TestUpdateCampaign::test_update_campaign_status PASSED [ 56%]
+tests/unit/test_campaign_tools.py::TestUpdateCampaign::test_update_campaign_invalid_status PASSED [ 58%]
+tests/unit/test_campaign_tools.py::TestUpdateCampaign::test_update_campaign_invalid_id PASSED [ 60%]
+tests/unit/test_campaign_tools.py::TestGetCampaignLocations::test_get_campaign_locations_returns_all PASSED [ 61%]
+tests/unit/test_campaign_tools.py::TestGetCampaignLocations::test_get_campaign_locations_has_coordinates SKIPPED [ 63%]
+tests/unit/test_campaign_tools.py::TestSearchNearbyStores::test_search_nearby_stores_with_mock PASSED [ 64%]
+tests/unit/test_campaign_tools.py::TestGetLocationDemographics::test_get_location_demographics PASSED [ 66%]
+tests/unit/test_review_tools.py::TestGetVideoReviewTable::test_get_video_review_table_returns_table PASSED [ 67%]
+tests/unit/test_review_tools.py::TestGetVideoReviewTable::test_get_video_review_table_filter_by_status PASSED [ 69%]
+tests/unit/test_review_tools.py::TestGetVideoReviewTable::test_get_video_review_table_filter_by_campaign PASSED [ 70%]
+tests/unit/test_review_tools.py::TestGetVideoDetails::test_get_video_details_valid_id PASSED [ 72%]
+tests/unit/test_review_tools.py::TestGetVideoDetails::test_get_video_details_invalid_id PASSED [ 73%]
+tests/unit/test_review_tools.py::TestGetVideoDetails::test_rpi_is_thin_wrapper FAILED [ 75%]
+tests/unit/test_review_tools.py::TestListPendingVideos::test_list_pending_videos PASSED [ 76%]
+tests/unit/test_review_tools.py::TestActivateVideo::test_activate_video_generates_metrics PASSED [ 78%]
+tests/unit/test_review_tools.py::TestActivateVideo::test_activate_video_invalid_id PASSED [ 80%]
+tests/unit/test_review_tools.py::TestActivateBatch::test_activate_batch_multiple PASSED [ 81%]
+tests/unit/test_review_tools.py::TestActivateBatch::test_activate_batch_empty_list PASSED [ 83%]
+tests/unit/test_review_tools.py::TestActivateBatch::test_activate_batch_partial_success PASSED [ 84%]
+tests/unit/test_review_tools.py::TestPauseVideo::test_pause_video PASSED [ 86%]
+tests/unit/test_review_tools.py::TestPauseVideo::test_pause_video_invalid_id PASSED [ 87%]
+tests/unit/test_review_tools.py::TestArchiveVideo::test_archive_video PASSED [ 89%]
+tests/unit/test_review_tools.py::TestArchiveVideo::test_archive_video_with_reason PASSED [ 90%]
+tests/unit/test_review_tools.py::TestGetVideoStatus::test_get_video_status_valid_id PASSED [ 92%]
+tests/unit/test_review_tools.py::TestGetVideoStatus::test_get_video_status_invalid_id PASSED [ 93%]
+tests/unit/test_review_tools.py::TestGetActivationSummary::test_get_activation_summary PASSED [ 95%]
+tests/unit/test_review_tools.py::TestGetActivationSummary::test_get_activation_summary_has_status_counts PASSED [ 96%]
+tests/unit/test_review_tools.py::TestGenerateAdditionalMetrics::test_generate_additional_metrics PASSED [ 98%]
+tests/unit/test_review_tools.py::TestGenerateAdditionalMetrics::test_generate_additional_metrics_default_days PASSED [100%]
+
+=================================== FAILURES ===================================
+_________________ TestGetVideoDetails.test_rpi_is_thin_wrapper _________________
+tests/unit/test_review_tools.py:142: in test_rpi_is_thin_wrapper
+    metrics = result["video"]["metrics"]
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'metrics'
+=========================== short test summary info ============================
+FAILED tests/unit/test_review_tools.py::TestGetVideoDetails::test_rpi_is_thin_wrapper - KeyError: 'metrics'
+=================== 1 failed, 63 passed, 1 skipped in 0.25s ====================

@@ -503,9 +503,9 @@ class TestWeeklyAggregation:
         from app.tools.metrics_tools import generate_metrics_visualization
 
         rows = []
-        for n in range(14, 7, -1):  # week 1 (older 7 days): unequal days
+        for n in range(13, 6, -1):  # week 1 (older 7 days): daily RPI 0.01
             rows.append({"metric_date": _days_ago(n), "impressions": 1000, "revenue": 10.0})
-        for n in range(7, 0, -1):  # week 2
+        for n in range(6, -1, -1):  # week 2 (newer 7 days): daily RPI 0.1
             rows.append({"metric_date": _days_ago(n), "impressions": 500, "revenue": 50.0})
         made = _make_campaign_with_metrics(rows)
 
@@ -513,25 +513,25 @@ class TestWeeklyAggregation:
             mock_client.return_value.models.generate_content.side_effect = (
                 RuntimeError("mocked API failure")
             )
+            # days=30 with only 14 days of data: the SQLite UTC date('now')
+            # boundary sits far outside the seeded rows, so all 14 rows are
+            # always in-window regardless of local-vs-UTC date divergence.
             result = await generate_metrics_visualization(
                 campaign_id=made["campaign_id"],
                 chart_type="bar_chart",
                 metric="revenue_per_impression",
-                days=14,
+                days=30,
             )
             assert result["status"] == "error"  # mocked API — expected
 
             call = mock_client.return_value.models.generate_content.call_args
             prompt = call.kwargs["contents"][0]
 
-        # Week 1: 6 days @ 1000 imp, 10 rev + 1 day @ 500 imp, 50 rev
-        # = 6500 imp, 110 rev → 0.0169
-        # Week 2: 6 days @ 500 imp, 50 rev
-        # = 3000 imp, 300 rev → 0.1
-        week1_rpi = compute_rpi(110.0, 6500)  # 0.0169
-        week2_rpi = compute_rpi(300.0, 3000)  # 0.1
+        week1_rpi = compute_rpi(70.0, 7000)   # 0.01
+        week2_rpi = compute_rpi(350.0, 3500)  # 0.1
         assert f"${week1_rpi:.4f}" in prompt
         assert f"${week2_rpi:.4f}" in prompt
-        # The buggy sums (0.077 and 0.70) must NOT appear as weekly values
-        assert "$0.0770" not in prompt
+        # The buggy sums of daily ratios (7×0.01=0.07 and 7×0.1=0.70) must
+        # NOT appear as weekly values
+        assert "$0.0700" not in prompt
         assert "$0.7000" not in prompt

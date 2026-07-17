@@ -835,19 +835,6 @@ async def generate_metrics_visualization(
     summary = metrics_result["summary"]
     daily_metrics = metrics_result["daily_metrics"]
 
-    # Guard BEFORE any summary deref: get_campaign_metrics returns
-    # summary=None (status still "success") when no activated-video rows
-    # have impressions in the window.
-    if not daily_metrics or not summary:
-        return {
-            "status": "error",
-            "message": (
-                f"No metrics data available for campaign {campaign_id}. "
-                "Metrics only exist for activated videos — use the Review "
-                "Agent to activate videos first."
-            )
-        }
-
     print("[DEBUG VIZ] Step 2: Data received from DB:")
     print(f"[DEBUG VIZ]   - Campaign: {campaign_name}")
     print(f"[DEBUG VIZ]   - Total daily records: {len(daily_metrics)}")
