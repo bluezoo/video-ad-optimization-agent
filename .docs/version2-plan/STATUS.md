@@ -20,9 +20,11 @@ Update rows in place as a workstream progresses; don't append new rows for the s
 | 8 | `08` | product-schema-generalization | not started | - | - | 2026-07-13 | depends on Phase 2 |
 | 9 | `09` | prompt-and-agent-generalization | not started | - | - | 2026-07-13 | depends on Phase 8 |
 | 10 | `10` | playout-attribution | not started | - | - | 2026-07-13 | depends on Phases 4, 5, 8 |
-| 11 | `11` | live-bluezoo-adapter | not started | - | - | 2026-07-13 | depends on Phases 6, 10; blocked on open questions 1, 2 |
+| 11a | `11` | audience-provider-seam (port) | not started | - | - | 2026-07-16 | depends on Phases 5, 6, 10; not blocked on any open question |
+| 11b | `11` | live-bluezoo-adapter (conformer) | not started | - | - | 2026-07-16 | depends on 11a; blocked on open questions 1, 2 (mimic already validated against published docs — see Q2/Q18) |
 | 12 | `12` | live-pos-adapter | not started | - | - | 2026-07-13 | depends on Phases 4, 6, 11; blocked on open questions 3, 4 |
 | 13 | `13` | production-hardening-live-mode | not started | - | - | 2026-07-13 | depends on Phases 11, 12 |
 | 14a | `14a` | image-model-upgrade-nano-banana | not started | - | - | 2026-07-13 | depends on Phase 1 only |
 | 14b | `14b` | video-model-upgrade-omni-flash | not started | - | - | 2026-07-13 | depends on Phase 1, ideally after 14a |
-| — | `—` | replan-data-track (docs only) | PR open | version_2_replan-data-track | [#5](https://github.com/bluezoo/video-ad-optimization-agent/pull/5) | 2026-07-16 | amends Phases 5/6/8/10/11, splits 11 into 11a/11b, adds Phase 15 (`15-product-onboarding.md`); scope grew at owner request: 1-based phase renumbering (phase = doc prefix) + donor mimic verified against live BlueZoo published docs (see working-docs/replan-data-track/bluezoo-mapping-verification.md); on merge: split Phase 11 row into 11a/11b + add Phase 15 row |
+| 15 | `15` | product-onboarding | not started | - | - | 2026-07-16 | depends on Phases 8, 9, 11a |
+| — | `—` | replan-data-track (docs only) | merged | version_2_replan-data-track | [#5](https://github.com/bluezoo/video-ad-optimization-agent/pull/5) | 2026-07-17 | merged a4e0e76 (squash); replan + 1-based renumbering + BlueZoo mimic verification (working-docs/replan-data-track/bluezoo-mapping-verification.md); 11a/11b + Phase 15 rows added above |

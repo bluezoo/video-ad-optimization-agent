@@ -17,3 +17,6 @@ Phase numbers now equal doc filename prefixes (old N → N+1; 10a/10b → 11a/11
 
 ## 2026-07-16 — post-renumber/post-amendment audit (4 parallel auditors) + fixes
 Audit over dependency graph, plan-folder stragglers, repo-wide stragglers, and amendment coherence. Caught and fixed: 4 double-mapped overview items (pre-renumber text already used prefix-style numbers, the +1 pass broke them), 4 unmapped bare tokens (STATUS row, 15-product deps list, replan working-doc/WORK_LOG), 8 hyphenated `Phase-N` forms the space-based regex missed (incl. one code comment in metrics_tools.py), 3 stale prose spots contradicting the new sub-15-min refutation (docs 10/11), the 11b dependencies line, Q11 refinement note, and 3 nits (13's deps precision, 11a's deps list, distribution_weight in the verification record). Everything else verified clean (dep graph 00↔phase docs fully cross-checked; STATUS Phase=Doc on all rows; systematic-debugging untouched). Unit tests: 114 passed, 1 skipped.
+
+## 2026-07-17 — finished: PR #5 merged
+Squash-merged into version_2 as a4e0e76 (owner-confirmed). Post-merge STATUS updates applied: replan row → merged; Phase 11 row split into 11a/11b; Phase 15 row added. Remote + local branch deleted, worktree removed. Next up per the plan: Phase 5 (generator port, with the verified port corrections) — or Phase 6/8, which are also unblocked.
