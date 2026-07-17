@@ -23,6 +23,8 @@ Replace the independent, ad-hoc metric computations scattered across the codebas
 - `app/tools/maps_tools.py:559`, `app/tools/maps_tools.py:585` — two inline RPI computations inside `get_campaign_map_data()` (def at `:399`), missed in the first draft.
 - `app/tools/maps_tools.py:963`, `app/tools/maps_tools.py:1013` — two more inline RPI computations, missed in the first draft. (The complete `maps_tools.py` set is exactly {559, 585, 963, 1013}.)
 
+> **Amended (workstream 04, 2026-07-16):** re-verified post-workstream-02/03 — the `maps_tools.py` set is now {558, 584, 962, 1011-1013} (lines shifted by ws02 edits; the 1011-1013 site is one statement). The rest of the inventory re-confirmed complete via the repo-wide grep.
+
 Before starting, re-run `grep -rn "revenue" app/tools/ app/database/ --include="*.py"` yourself and treat this list as a starting checklist, not a guaranteed-complete inventory — the point of this phase is that after it, that grep only matches the shared module and its callers.
 
 ## Steps
@@ -40,6 +42,8 @@ Before starting, re-run `grep -rn "revenue" app/tools/ app/database/ --include="
 - [ ] `get_campaign_insights()` is properly date-scoped, its RPI trend uses `compute_rpi()`, and its best/worst-day logic groups by day — three separate test cases, since these are three separate fixes bundled into one function.
 - [ ] `get_top_performing_ads()`'s default (no-filter) behavior is unchanged (still global/unscoped); a test confirms the new optional filters narrow results correctly when supplied.
 - [ ] Full `make test` suite passes; specifically re-run the Phase 1 weekly-RPI regression test and confirm it still passes now that the logic lives in the shared function.
+
+> **Amended (workstream 04, 2026-07-16):** no weekly-RPI regression test exists — Phase 1 (workstream 02) deferred the fix and only flagged the bug with a KNOWN-BUG comment (`metrics_tools.py:918-922`); no test mentions "week" anywhere under tests/. This phase must *write* that regression test, not re-run it.
 
 ## Exit criteria
 
