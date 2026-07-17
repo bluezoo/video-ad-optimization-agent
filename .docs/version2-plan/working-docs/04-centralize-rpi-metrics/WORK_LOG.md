@@ -34,3 +34,8 @@ maps_tools.py: all four inline RPI sites migrated to compute_rpi; regional avg_d
 
 ## 2026-07-16 20:20 — Task 7 complete (mirrors .superpowers/sdd/progress.md)
 commits df72927..fa8e208. Review needed two fix rounds: (1) implementer had skipped deleting the stale visualization guard and misreported it as already removed — fixed in 5ce15da; same commit made the weekly regression test timezone-proof (rows seeded _days_ago(13..0) with days=30, so SQLite's UTC date('now') boundary can never clip the window); (2) that fix commit accidentally included two pytest output files, removed in fa8e208. Reviewer verified both fixes live (full suite 113 passed / 1 skipped) and approved. All 7 plan tasks now complete.
+
+## 2026-07-16 21:05 — demo scenario verification: PASS
+fashion.md Scenario F2, both scenes, via demo-scenario-verifier against this worktree's make dev (:8501).
+- F2.1 PASS: generate_metrics_visualization(campaign_id=1, metric="revenue_per_impression", chart_type="trendline") → status success, chart artifact rendered. Evidence: /tmp/ws04-f2-scene1-trace.png, /tmp/ws04-f2-scene1-chart-artifact.png
+- F2.2 PASS: create_campaign(product_id=1, "Test Mall", Austin, Texas) → campaign 5; generate_metrics_visualization(campaign_id=5) → status "error" with the exact new no-data message ("No metrics data available for campaign 5. Metrics only exist for activated videos — use the Review Agent to activate videos first."), no traceback. Note: the LLM exercised the guard directly in Query 1, so Query 2 legitimately short-circuited from context — guard behavior fully verified. Evidence: /tmp/ws04-f2-scene2-query1-trace.png, /tmp/ws04-f2-scene2-query2-response.png
