@@ -16,6 +16,8 @@
 make install        # creates .venv, installs app/requirements.txt
 ```
 
+**Note (workstream 05):** numpy (`>=1.26.0`) is now a direct dependency for deterministic demo-data generation; after pulling, existing environments need `make install` (or `pip install "numpy>=1.26.0"`) to update.
+
 ## Environment
 
 Create `app/.env` with one of:
