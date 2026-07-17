@@ -42,3 +42,6 @@ fashion.md Scenario F2, both scenes, via demo-scenario-verifier against this wor
 
 ## 2026-07-16 21:40 — final whole-branch review: Ready to merge
 Full-branch review (925bdbd..dc5e883, 22 commits): zero Critical, zero Important. Two Minor notes, both non-blocking: (1) _make_campaign_with_metrics helper duplicated across 4 test files — plan-acknowledged tradeoff, candidate for a future conftest.py extraction; (2) _aggregate_week's sum fallback is correct for all valid metrics today. Reviewer independently verified: exit-criteria grep clean (only docstrings/comments), get_top_performing_ads no-arg SQL identical to base, date filters in LEFT JOIN ON clauses, guard deletion safe, 135 tests pass.
+
+## 2026-07-16 21:55 — finish: merged
+PR #4 squash-merged into version_2 (commit a29f182). Worktree and branch (local + remote) cleaned up. Verification record: make test green (135 passed / 2 skipped unit+e2e, 5 passed integration), demo scenario fashion F2 both scenes PASS, final whole-branch review Ready to merge (zero Critical/Important; two non-blocking Minor notes logged above). Workstream 04 complete.
