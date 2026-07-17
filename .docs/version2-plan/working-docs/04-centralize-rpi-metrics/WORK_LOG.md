@@ -28,3 +28,6 @@ get_campaign_insights repaired (commit 9f35d5b): days param with all three queri
 
 ## 2026-07-16 — Task 5 complete (SDD task ledger mirror)
 compare_campaigns, get_campaign, get_video_details migrated to compute_rpi with parity tests (commit 680a09b); mock generators verified division-free and untouched; phase doc Step 5 amended as vacuous. Implementer corrected the plan's guessed return nesting (metrics_summary/metrics are top-level keys). Review approved.
+
+## 2026-07-16 — Task 6 complete (SDD task ledger mirror)
+maps_tools.py: all four inline RPI sites migrated to compute_rpi; regional avg_dwell_time now impressions-weighted via compute_weighted_average (deliberate output fix); dwell_rows helper key deleted per-region so it never leaks into prompt formatting (commit 017a148). Review approved, no issues.
