@@ -13,3 +13,6 @@ Branch `version_2_metrics-glossary` created off `version_2` (1fb1d77, post-works
 - README.md metric prose located (lines 9, 31-32, 53, 57 — incl. the client's operational RPI definition at line 9); agent.py:308 carries the RPI formula in the analytics prompt.
 - docs/METRICS.md does not exist; nothing references it yet.
 - DIVERGENCE: phase doc Step 2 says "link from README.md" — conflicts with the standing README-untouched rule (CLAUDE.md). Resolution to propose: link from SETUP_INSTRUCTIONS.md + CLAUDE.md pointer instead; amend phase doc with provenance on approval.
+
+## 2026-07-16 — working doc approved (checkpoint 2)
+Owner approved the six-dimension restatement: docs/METRICS.md glossary (five definitions, circulation/dwell marked unresolved, BlueZoo table appendix), links via SETUP_INSTRUCTIONS.md + CLAUDE.md — README stays untouched (divergence resolved in favor of the standing rule; phase doc to be amended with provenance) — zero changes under app/, demo-scenario step explicitly skipped as docs-only. Next: writing-plans.
