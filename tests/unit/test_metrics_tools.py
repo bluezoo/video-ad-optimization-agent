@@ -198,6 +198,47 @@ class TestGetTopPerformingAds:
         if "ads" in result and result["ads"]:
             assert len(result["ads"]) <= 3
 
+    def test_optional_filters_narrow_results(self, test_db):
+        """campaign_id restricts to one campaign; days excludes old metrics;
+        the default stays global/all-time."""
+        from app.tools.metrics_tools import get_top_performing_ads
+
+        recent = _make_campaign_with_metrics(
+            [{"metric_date": _days_ago(1), "impressions": 100, "revenue": 90.0}]
+        )
+        old = _make_campaign_with_metrics(
+            [{"metric_date": _days_ago(60), "impressions": 100, "revenue": 80.0}]
+        )
+
+        unfiltered = get_top_performing_ads(limit=100)
+        assert unfiltered["status"] == "success"
+        returned_campaigns = {a["campaign"]["id"] for a in unfiltered["top_ads"]}
+        assert recent["campaign_id"] in returned_campaigns
+        assert old["campaign_id"] in returned_campaigns  # all-time default
+
+        scoped = get_top_performing_ads(limit=100, campaign_id=recent["campaign_id"])
+        assert {a["campaign"]["id"] for a in scoped["top_ads"]} == {recent["campaign_id"]}
+
+        windowed = get_top_performing_ads(limit=100, days=30)
+        windowed_campaigns = {a["campaign"]["id"] for a in windowed["top_ads"]}
+        assert recent["campaign_id"] in windowed_campaigns
+        assert old["campaign_id"] not in windowed_campaigns
+
+    def test_returned_rpi_is_thin_wrapper_over_compute_rpi(self, test_db):
+        """Every returned RPI equals compute_rpi over the ad's own totals."""
+        from app.tools.metrics_shared import compute_rpi
+        from app.tools.metrics_tools import get_top_performing_ads
+
+        result = get_top_performing_ads(limit=100)
+        assert result["status"] == "success"
+        assert result["top_ads"], "demo DB should have activated ads with metrics"
+        for ad in result["top_ads"]:
+            m = ad["metrics"]
+            assert m["revenue_per_impression"] == compute_rpi(
+                m["total_revenue"], m["total_impressions"]
+            )
+            assert m["revenue_per_impression"] == m[result["ranked_by"]]
+
 
 class TestGetCampaignInsights:
     """Tests for get_campaign_insights tool."""

@@ -294,21 +294,29 @@ def get_campaign_metrics(campaign_id: int, days: int = 30) -> dict:
         }
 
 
-def get_top_performing_ads(metric: str = "revenue_per_impression", limit: int = 5) -> dict:
+def get_top_performing_ads(
+    metric: str = "revenue_per_impression",
+    limit: int = 5,
+    campaign_id: int = None,
+    days: int = None,
+) -> dict:
     """Get top performing video ads across all campaigns.
 
     Identifies the best ads and their key characteristics for insights.
     Uses NEW schema: video_metrics + campaign_videos + products (HITL workflow).
-    Only includes activated videos.
+    Only includes activated videos. By default the ranking is global (all
+    campaigns, all time); the optional filters narrow it when provided.
 
     Args:
         metric: Metric to rank by - one of: revenue_per_impression, impressions, dwell_time, circulation
         limit: Number of top ads to return
+        campaign_id: Optional - restrict ranking to one campaign
+        days: Optional - restrict ranking to the last N days of metrics
 
     Returns:
         Dictionary with top ads and their characteristics
     """
-    print(f"[DEBUG get_top_performing_ads] Starting with metric={metric}, limit={limit}")
+    print(f"[DEBUG get_top_performing_ads] Starting with metric={metric}, limit={limit}, campaign_id={campaign_id}, days={days}")
     valid_metrics = ["revenue_per_impression", "impressions", "dwell_time", "circulation"]
     if metric not in valid_metrics:
         return {
@@ -316,7 +324,8 @@ def get_top_performing_ads(metric: str = "revenue_per_impression", limit: int = 
             "message": f"Invalid metric. Must be one of: {', '.join(valid_metrics)}"
         }
 
-    # RPI must be computed, not a direct column
+    # SQL ratio-of-sums used for ORDER BY ranking only — every RPI value
+    # RETURNED to the caller comes from compute_rpi() (see the loop below).
     metric_column_map = {
         "revenue_per_impression": "SUM(vm.revenue) / NULLIF(SUM(vm.impressions), 0)",
         "impressions": "SUM(vm.impressions)",
@@ -325,6 +334,17 @@ def get_top_performing_ads(metric: str = "revenue_per_impression", limit: int = 
     }
 
     with get_db_cursor() as cursor:
+        vm_join = "LEFT JOIN video_metrics vm ON cv.id = vm.video_id"
+        params: list = []
+        if days:
+            vm_join += " AND vm.metric_date >= date('now', ?)"
+            params.append(f"-{days} days")
+        where_clause = "WHERE cv.status = 'activated'"
+        if campaign_id:
+            where_clause += " AND cv.campaign_id = ?"
+            params.append(campaign_id)
+        params.append(limit)
+
         cursor.execute(f'''
             SELECT
                 cv.id as video_id,
@@ -348,13 +368,13 @@ def get_top_performing_ads(metric: str = "revenue_per_impression", limit: int = 
             FROM campaign_videos cv
             JOIN campaigns c ON cv.campaign_id = c.id
             LEFT JOIN products p ON cv.product_id = p.id
-            LEFT JOIN video_metrics vm ON cv.id = vm.video_id
-            WHERE cv.status = 'activated'
+            {vm_join}
+            {where_clause}
             GROUP BY cv.id
             HAVING metric_value IS NOT NULL AND total_revenue > 0
             ORDER BY metric_value DESC
             LIMIT ?
-        ''', (limit,))
+        ''', params)
 
         top_ads = []
         for row in cursor.fetchall():
@@ -362,8 +382,7 @@ def get_top_performing_ads(metric: str = "revenue_per_impression", limit: int = 
             variation_params = json.loads(row["variation_params"]) if row["variation_params"] else {}
             total_impressions = int(row["total_impressions"]) if row["total_impressions"] else 0
             total_revenue = round(row["total_revenue"], 2) if row["total_revenue"] else 0
-            # Compute RPI
-            rpi = round(total_revenue / total_impressions, 4) if total_impressions > 0 else 0
+            rpi = compute_rpi(total_revenue, total_impressions)
 
             top_ads.append({
                 "rank": len(top_ads) + 1,
@@ -381,10 +400,12 @@ def get_top_performing_ads(metric: str = "revenue_per_impression", limit: int = 
                     "style": row["product_style"]
                 },
                 "metrics": {
-                    f"{metric}": round(row["metric_value"], 4) if row["metric_value"] else 0,
+                    f"{metric}": rpi if metric == "revenue_per_impression"
+                    else (round(row["metric_value"], 4) if row["metric_value"] else 0),
                     "total_impressions": total_impressions,
                     "average_dwell_time": round(row["avg_dwell_time"], 1) if row["avg_dwell_time"] else 0,
                     "total_circulation": int(row["total_circulation"]) if row["total_circulation"] else 0,
+                    "total_revenue": total_revenue,
                     "revenue_per_impression": rpi
                 },
                 "characteristics": {
