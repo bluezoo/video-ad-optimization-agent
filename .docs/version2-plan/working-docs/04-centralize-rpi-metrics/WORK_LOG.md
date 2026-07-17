@@ -19,3 +19,6 @@ app/tools/metrics_shared.py + tests/unit/test_metrics_shared.py (11 tests) + MET
 
 ## 2026-07-16 — Task 2 complete (SDD task ledger mirror)
 get_campaign_metrics migrated to compute_rpi; daily rows now carry revenue; no-data normalized to status-error with the ws02 message (commit f3558e2); pre-existing visualization no-data test still green; review approved, no issues.
+
+## 2026-07-16 — Task 3 complete (SDD task ledger mirror)
+get_top_performing_ads: optional campaign_id/days filters (days in JOIN ON clause, default behavior verified identical), returned RPI via compute_rpi (commit 86b5fc2). Additive note: per-ad metrics dict gained total_revenue (plan's parity test referenced it; original dict lacked it). Review approved, no issues.
