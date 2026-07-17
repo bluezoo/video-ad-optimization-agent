@@ -23,6 +23,53 @@ Tests the 5 analytics-related tools (non-visualization):
 """
 
 from unittest.mock import patch
+from datetime import date, timedelta
+
+
+def _make_campaign_with_metrics(rows, num_videos=1):
+    """Create a campaign with activated video(s) and controlled metric rows.
+
+    rows: dicts with keys metric_date (ISO str), impressions, revenue, and
+    optional dwell_time_seconds, circulation, video_index (default 0).
+    Returns {"campaign_id": int, "video_ids": [int, ...]}.
+    """
+    from app.database.db import get_db_cursor
+    from app.tools.campaign_tools import create_campaign
+
+    created = create_campaign(
+        product_id=1, store_name="Parity Test Store", city="Austin", state="TX"
+    )
+    assert created["status"] == "success"
+    campaign_id = created["campaign"]["id"]
+
+    video_ids = []
+    with get_db_cursor() as cursor:
+        for i in range(num_videos):
+            cursor.execute(
+                "INSERT INTO campaign_videos (campaign_id, video_filename, status)"
+                " VALUES (?, ?, 'activated')",
+                (campaign_id, f"parity-test-{campaign_id}-{i}.mp4"),
+            )
+            video_ids.append(cursor.lastrowid)
+        for r in rows:
+            cursor.execute(
+                "INSERT INTO video_metrics"
+                " (video_id, metric_date, impressions, dwell_time_seconds,"
+                "  circulation, revenue) VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    video_ids[r.get("video_index", 0)],
+                    r["metric_date"],
+                    r["impressions"],
+                    r.get("dwell_time_seconds", 5.0),
+                    r.get("circulation", 0),
+                    r["revenue"],
+                ),
+            )
+    return {"campaign_id": campaign_id, "video_ids": video_ids}
+
+
+def _days_ago(n):
+    return (date.today() - timedelta(days=n)).isoformat()
 
 
 class TestGetCampaignMetrics:
@@ -69,6 +116,47 @@ class TestGetCampaignMetrics:
             # At least some KPIs should be present
             assert found >= 0  # May be 0 if no activated videos
 
+    def test_no_data_returns_error_status(self, test_db):
+        """Normalized contract: no activated metrics -> status error, never
+        summary=None under status success."""
+        from app.tools.campaign_tools import create_campaign
+        from app.tools.metrics_tools import get_campaign_metrics
+
+        created = create_campaign(
+            product_id=1, store_name="No Data Store", city="Austin", state="TX"
+        )
+        result = get_campaign_metrics(campaign_id=created["campaign"]["id"])
+
+        assert result["status"] == "error"
+        assert "No metrics data available" in result["message"]
+
+    def test_summary_rpi_is_ratio_of_sums(self, test_db):
+        """Summary RPI == compute_rpi over summed rows; daily rows carry
+        revenue and per-day RPI parity (thin-wrapper check)."""
+        from app.tools.metrics_shared import compute_rpi
+        from app.tools.metrics_tools import get_campaign_metrics
+
+        rows = [
+            {"metric_date": _days_ago(1), "impressions": 1000, "revenue": 10.0},
+            {"metric_date": _days_ago(2), "impressions": 500, "revenue": 50.0},
+            {"metric_date": _days_ago(3), "impressions": 2000, "revenue": 20.0},
+        ]
+        made = _make_campaign_with_metrics(rows)
+        result = get_campaign_metrics(campaign_id=made["campaign_id"], days=30)
+
+        assert result["status"] == "success"
+        expected = compute_rpi(80.0, 3500)
+        assert result["summary"]["revenue_per_impression"] == expected
+        # Non-probative-equality guard: ratio-of-sums must differ from the
+        # mean of daily ratios for this deliberately unequal data.
+        daily_rpis = [d["revenue_per_impression"] for d in result["daily_metrics"]]
+        assert expected != round(sum(daily_rpis) / len(daily_rpis), 4)
+        for d in result["daily_metrics"]:
+            assert "revenue" in d
+            assert d["revenue_per_impression"] == compute_rpi(
+                d["revenue"], d["impressions"]
+            )
+
 
 class TestGetTopPerformingAds:
     """Tests for get_top_performing_ads tool."""
@@ -110,6 +198,47 @@ class TestGetTopPerformingAds:
         if "ads" in result and result["ads"]:
             assert len(result["ads"]) <= 3
 
+    def test_optional_filters_narrow_results(self, test_db):
+        """campaign_id restricts to one campaign; days excludes old metrics;
+        the default stays global/all-time."""
+        from app.tools.metrics_tools import get_top_performing_ads
+
+        recent = _make_campaign_with_metrics(
+            [{"metric_date": _days_ago(1), "impressions": 100, "revenue": 90.0}]
+        )
+        old = _make_campaign_with_metrics(
+            [{"metric_date": _days_ago(60), "impressions": 100, "revenue": 80.0}]
+        )
+
+        unfiltered = get_top_performing_ads(limit=100)
+        assert unfiltered["status"] == "success"
+        returned_campaigns = {a["campaign"]["id"] for a in unfiltered["top_ads"]}
+        assert recent["campaign_id"] in returned_campaigns
+        assert old["campaign_id"] in returned_campaigns  # all-time default
+
+        scoped = get_top_performing_ads(limit=100, campaign_id=recent["campaign_id"])
+        assert {a["campaign"]["id"] for a in scoped["top_ads"]} == {recent["campaign_id"]}
+
+        windowed = get_top_performing_ads(limit=100, days=30)
+        windowed_campaigns = {a["campaign"]["id"] for a in windowed["top_ads"]}
+        assert recent["campaign_id"] in windowed_campaigns
+        assert old["campaign_id"] not in windowed_campaigns
+
+    def test_returned_rpi_is_thin_wrapper_over_compute_rpi(self, test_db):
+        """Every returned RPI equals compute_rpi over the ad's own totals."""
+        from app.tools.metrics_shared import compute_rpi
+        from app.tools.metrics_tools import get_top_performing_ads
+
+        result = get_top_performing_ads(limit=100)
+        assert result["status"] == "success"
+        assert result["top_ads"], "demo DB should have activated ads with metrics"
+        for ad in result["top_ads"]:
+            m = ad["metrics"]
+            assert m["revenue_per_impression"] == compute_rpi(
+                m["total_revenue"], m["total_impressions"]
+            )
+            assert m["revenue_per_impression"] == m[result["ranked_by"]]
+
 
 class TestGetCampaignInsights:
     """Tests for get_campaign_insights tool."""
@@ -131,6 +260,57 @@ class TestGetCampaignInsights:
 
         # Should return error
         assert "error" in result or "not found" in str(result).lower() or result is not None
+
+    def test_date_scoping_excludes_old_metrics(self, test_db):
+        """days=30 must ignore a 200-day-old outlier; a wide window sees it."""
+        from app.tools.metrics_tools import get_campaign_insights
+
+        made = _make_campaign_with_metrics([
+            {"metric_date": _days_ago(200), "impressions": 100, "revenue": 1000.0},
+            {"metric_date": _days_ago(1), "impressions": 1000, "revenue": 50.0},
+        ])
+
+        scoped = get_campaign_insights(campaign_id=made["campaign_id"], days=30)
+        assert scoped["status"] == "success"
+        assert scoped["best_day"]["date"] == _days_ago(1)
+
+        wide = get_campaign_insights(campaign_id=made["campaign_id"], days=365)
+        assert wide["best_day"]["date"] == _days_ago(200)
+
+    def test_trend_compares_rpi_not_revenue(self, test_db):
+        """Revenue rises while RPI falls -> trend must be 'declining'.
+        (The old code compared raw revenue and would say 'improving'.)"""
+        from app.tools.metrics_tools import get_campaign_insights
+
+        rows = []
+        for n in range(27, 13, -1):  # older half: low revenue, HIGH RPI (0.1)
+            rows.append({"metric_date": _days_ago(n), "impressions": 500, "revenue": 50.0})
+        for n in range(13, 0, -1):  # newer half: high revenue, LOW RPI (0.02)
+            rows.append({"metric_date": _days_ago(n), "impressions": 5000, "revenue": 100.0})
+        made = _make_campaign_with_metrics(rows)
+
+        result = get_campaign_insights(campaign_id=made["campaign_id"], days=30)
+        assert result["status"] == "success"
+        assert result["performance_trend"] == "declining"
+
+    def test_best_day_groups_by_day_not_row(self, test_db):
+        """Day A holds the single best ROW (RPI 1.0) but day B is the best
+        aggregated DAY: A = (100+1)/(100+1000) ≈ 0.0918 < B = 50/500 = 0.1."""
+        from app.tools.metrics_tools import get_campaign_insights
+
+        made = _make_campaign_with_metrics(
+            [
+                {"metric_date": _days_ago(2), "impressions": 100, "revenue": 100.0, "video_index": 0},
+                {"metric_date": _days_ago(2), "impressions": 1000, "revenue": 1.0, "video_index": 1},
+                {"metric_date": _days_ago(1), "impressions": 500, "revenue": 50.0, "video_index": 0},
+            ],
+            num_videos=2,
+        )
+
+        result = get_campaign_insights(campaign_id=made["campaign_id"], days=30)
+        assert result["status"] == "success"
+        assert result["best_day"]["date"] == _days_ago(1)
+        assert result["best_day"]["revenue_per_impression"] == 0.1
 
 
 class TestCompareCampaigns:
@@ -171,6 +351,25 @@ class TestCompareCampaigns:
 
         # Should handle gracefully
         assert result is not None
+
+    def test_comparison_rpi_is_thin_wrapper(self, test_db):
+        from app.tools.metrics_shared import compute_rpi
+        from app.tools.metrics_tools import compare_campaigns
+
+        a = _make_campaign_with_metrics(
+            [{"metric_date": _days_ago(1), "impressions": 1000, "revenue": 10.0},
+             {"metric_date": _days_ago(2), "impressions": 500, "revenue": 50.0}]
+        )
+        b = _make_campaign_with_metrics(
+            [{"metric_date": _days_ago(1), "impressions": 200, "revenue": 4.0}]
+        )
+        result = compare_campaigns(campaign_ids=[a["campaign_id"], b["campaign_id"]])
+        assert result["status"] == "success"
+        for comp in result["comparisons"]:
+            m = comp["metrics"]
+            assert m["revenue_per_impression"] == compute_rpi(
+                m["total_revenue"], m["total_impressions"]
+            )
 
 
 class TestGenerateMetricsVisualization:
@@ -259,3 +458,80 @@ class TestGenerateMetricsVisualization:
 
         assert result["status"] == "error"
         assert "No metrics data available" in result["message"]
+
+
+class TestWeeklyAggregation:
+    """The weekly-RPI regression tests the phase doc's validation requires
+    (discovered during kickoff: no such test previously existed)."""
+
+    def test_aggregate_week_rpi_is_ratio_of_sums(self):
+        from app.tools.metrics_shared import compute_rpi
+        from app.tools.metrics_tools import _aggregate_week
+
+        week = [
+            {"value": 0.01, "revenue": 10.0, "impressions": 1000, "dwell_time": 5.0},
+            {"value": 0.1, "revenue": 50.0, "impressions": 500, "dwell_time": 5.0},
+        ]
+        result = _aggregate_week(week, "revenue_per_impression")
+        assert result == compute_rpi(60.0, 1500) == 0.04
+        assert result != sum(d["value"] for d in week)  # the old buggy sum (0.11)
+
+    def test_aggregate_week_dwell_is_impressions_weighted(self):
+        from app.tools.metrics_tools import _aggregate_week
+
+        week = [
+            {"value": 10.0, "revenue": 0, "impressions": 900, "dwell_time": 10.0},
+            {"value": 2.0, "revenue": 0, "impressions": 100, "dwell_time": 2.0},
+        ]
+        assert _aggregate_week(week, "dwell_time") == 9.2
+
+    def test_aggregate_week_additive_metrics_still_sum(self):
+        from app.tools.metrics_tools import _aggregate_week
+
+        week = [
+            {"value": 100, "revenue": 0, "impressions": 100, "dwell_time": 0},
+            {"value": 200, "revenue": 0, "impressions": 200, "dwell_time": 0},
+        ]
+        assert _aggregate_week(week, "impressions") == 300
+
+    async def test_weekly_bar_chart_prompt_carries_ratio_of_sums(
+        self, test_db, mock_storage_module
+    ):
+        """End-to-end: the prompt sent to the (mocked) image API contains the
+        ratio-of-sums weekly RPI, not the summed daily ratios."""
+        from app.tools.metrics_shared import compute_rpi
+        from app.tools.metrics_tools import generate_metrics_visualization
+
+        rows = []
+        for n in range(13, 6, -1):  # week 1 (older 7 days): daily RPI 0.01
+            rows.append({"metric_date": _days_ago(n), "impressions": 1000, "revenue": 10.0})
+        for n in range(6, -1, -1):  # week 2 (newer 7 days): daily RPI 0.1
+            rows.append({"metric_date": _days_ago(n), "impressions": 500, "revenue": 50.0})
+        made = _make_campaign_with_metrics(rows)
+
+        with patch("google.genai.Client") as mock_client:
+            mock_client.return_value.models.generate_content.side_effect = (
+                RuntimeError("mocked API failure")
+            )
+            # days=30 with only 14 days of data: the SQLite UTC date('now')
+            # boundary sits far outside the seeded rows, so all 14 rows are
+            # always in-window regardless of local-vs-UTC date divergence.
+            result = await generate_metrics_visualization(
+                campaign_id=made["campaign_id"],
+                chart_type="bar_chart",
+                metric="revenue_per_impression",
+                days=30,
+            )
+            assert result["status"] == "error"  # mocked API — expected
+
+            call = mock_client.return_value.models.generate_content.call_args
+            prompt = call.kwargs["contents"][0]
+
+        week1_rpi = compute_rpi(70.0, 7000)   # 0.01
+        week2_rpi = compute_rpi(350.0, 3500)  # 0.1
+        assert f"${week1_rpi:.4f}" in prompt
+        assert f"${week2_rpi:.4f}" in prompt
+        # The buggy sums of daily ratios (7×0.01=0.07 and 7×0.1=0.70) must
+        # NOT appear as weekly values
+        assert "$0.0700" not in prompt
+        assert "$0.7000" not in prompt

@@ -32,6 +32,7 @@ from typing import List, Optional
 import random
 
 from ..database.db import get_db_cursor
+from .metrics_shared import compute_rpi
 
 
 def list_pending_videos(
@@ -859,7 +860,7 @@ def get_video_details(video_id: int) -> dict:
                     "total_impressions": int(m["total_impressions"]),
                     "avg_dwell_seconds": round(m["avg_dwell"], 1),
                     "total_revenue": round(m["total_revenue"], 2),
-                    "rpi": round(m["total_revenue"] / m["total_impressions"], 4) if m["total_impressions"] > 0 else 0
+                    "rpi": compute_rpi(m["total_revenue"], m["total_impressions"])
                 }
 
         # Build view action based on whether video exists

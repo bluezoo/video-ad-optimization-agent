@@ -27,6 +27,53 @@ Tests the 10 HITL review-related tools:
 - generate_additional_metrics
 """
 
+from datetime import date, timedelta
+
+
+def _make_campaign_with_metrics(rows, num_videos=1):
+    """Create a campaign with activated video(s) and controlled metric rows.
+
+    rows: dicts with keys metric_date (ISO str), impressions, revenue, and
+    optional dwell_time_seconds, circulation, video_index (default 0).
+    Returns {"campaign_id": int, "video_ids": [int, ...]}.
+    """
+    from app.database.db import get_db_cursor
+    from app.tools.campaign_tools import create_campaign
+
+    created = create_campaign(
+        product_id=1, store_name="Parity Test Store", city="Austin", state="TX"
+    )
+    assert created["status"] == "success"
+    campaign_id = created["campaign"]["id"]
+
+    video_ids = []
+    with get_db_cursor() as cursor:
+        for i in range(num_videos):
+            cursor.execute(
+                "INSERT INTO campaign_videos (campaign_id, video_filename, status)"
+                " VALUES (?, ?, 'activated')",
+                (campaign_id, f"parity-test-{campaign_id}-{i}.mp4"),
+            )
+            video_ids.append(cursor.lastrowid)
+        for r in rows:
+            cursor.execute(
+                "INSERT INTO video_metrics"
+                " (video_id, metric_date, impressions, dwell_time_seconds,"
+                "  circulation, revenue) VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    video_ids[r.get("video_index", 0)],
+                    r["metric_date"],
+                    r["impressions"],
+                    r.get("dwell_time_seconds", 5.0),
+                    r.get("circulation", 0),
+                    r["revenue"],
+                ),
+            )
+    return {"campaign_id": campaign_id, "video_ids": video_ids}
+
+
+def _days_ago(n):
+    return (date.today() - timedelta(days=n)).isoformat()
 
 
 class TestGetVideoReviewTable:
@@ -81,6 +128,23 @@ class TestGetVideoDetails:
 
         # Should return error or not found
         assert "error" in result or "not found" in str(result).lower()
+
+    def test_rpi_is_thin_wrapper(self, test_db, mock_storage_module):
+        from app.tools.metrics_shared import compute_rpi
+        from app.tools.review_tools import get_video_details
+
+        made = _make_campaign_with_metrics(
+            [{"metric_date": _days_ago(1), "impressions": 1000, "revenue": 10.0},
+             {"metric_date": _days_ago(2), "impressions": 500, "revenue": 50.0}]
+        )
+        result = get_video_details(video_id=made["video_ids"][0])
+        assert result["status"] == "success"
+        metrics = result["metrics"]
+        assert metrics is not None
+        assert metrics["rpi"] == compute_rpi(
+            metrics["total_revenue"], metrics["total_impressions"]
+        )
+        assert "days_tracked" in metrics  # marker to confirm we got the right structure
 
 
 class TestListPendingVideos:

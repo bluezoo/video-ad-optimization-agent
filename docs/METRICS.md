@@ -30,6 +30,8 @@ This is the app's primary KPI, and it is BlueZoo's own coined, marketed metric. 
 
 Derived convenience form: revenue per 1,000 impressions (`RPI × 1000`, a CPM-style figure) — same rule applies.
 
+Zero-impressions convention: the shared implementation (`compute_rpi()` in `app/tools/metrics_shared.py`, added by Phase 3) returns `0.0` when total impressions are zero — "no impressions yet" is reported as zero RPI, not an error or null. A caller that needs to distinguish "no data" from "genuinely zero RPI" must check the impressions count, not the ratio.
+
 ## Circulation
 
 **App-local synthetic metric; BlueZoo mapping unresolved.**

@@ -23,6 +23,7 @@ from google.genai import types
 
 from ..config import IMAGE_GENERATION
 from ..database.db import get_db_cursor
+from .metrics_shared import compute_rpi, compute_weighted_average
 
 # =============================================================================
 # Chart Prompt Templates (Anti-Hallucination)
@@ -213,14 +214,14 @@ def get_campaign_metrics(campaign_id: int, days: int = 30) -> dict:
         for row in cursor.fetchall():
             impressions = int(row["impressions"]) if row["impressions"] else 0
             revenue = round(row["revenue"], 2) if row["revenue"] else 0
-            # Compute RPI on the fly (THE key metric)
-            rpi = round(revenue / impressions, 4) if impressions > 0 else 0
+            rpi = compute_rpi(revenue, impressions)
 
             daily_metrics.append({
                 "date": row["date"],
                 "impressions": impressions,
                 "dwell_time": round(row["avg_dwell_time"], 1) if row["avg_dwell_time"] else 0,
                 "circulation": int(row["circulation"]) if row["circulation"] else 0,
+                "revenue": revenue,
                 "revenue_per_impression": rpi
             })
 
@@ -245,7 +246,7 @@ def get_campaign_metrics(campaign_id: int, days: int = 30) -> dict:
             total_impressions = int(totals["total_impressions"])
             total_revenue = round(totals["total_revenue"], 2) if totals["total_revenue"] else 0
             # RPI is THE key metric for retail media
-            rpi = round(total_revenue / total_impressions, 4) if total_impressions > 0 else 0
+            rpi = compute_rpi(total_revenue, total_impressions)
 
             summary = {
                 "total_impressions": total_impressions,
@@ -254,6 +255,20 @@ def get_campaign_metrics(campaign_id: int, days: int = 30) -> dict:
                 "total_revenue": total_revenue,
                 "revenue_per_impression": rpi,
                 "revenue_per_1000_impressions": round(rpi * 1000, 2)  # CPM equivalent
+            }
+
+        # Normalized no-data contract (Phase 3): a window with no
+        # activated-video impressions is an explicit error, never
+        # summary=None under status="success" (the ambiguity behind the
+        # Phase-1 visualization crash).
+        if not summary or not daily_metrics:
+            return {
+                "status": "error",
+                "message": (
+                    f"No metrics data available for campaign {campaign_id}. "
+                    "Metrics only exist for activated videos — use the Review "
+                    "Agent to activate videos first."
+                ),
             }
 
         # Get count of activated videos
@@ -275,26 +290,33 @@ def get_campaign_metrics(campaign_id: int, days: int = 30) -> dict:
             "activated_videos": video_count,
             "period": f"last_{days}_days",
             "summary": summary,
-            "daily_metrics": daily_metrics,
-            "note": "Metrics only available for activated videos. Use Review Agent to activate pending videos." if not summary else None
+            "daily_metrics": daily_metrics
         }
 
 
-def get_top_performing_ads(metric: str = "revenue_per_impression", limit: int = 5) -> dict:
+def get_top_performing_ads(
+    metric: str = "revenue_per_impression",
+    limit: int = 5,
+    campaign_id: int = None,
+    days: int = None,
+) -> dict:
     """Get top performing video ads across all campaigns.
 
     Identifies the best ads and their key characteristics for insights.
     Uses NEW schema: video_metrics + campaign_videos + products (HITL workflow).
-    Only includes activated videos.
+    Only includes activated videos. By default the ranking is global (all
+    campaigns, all time); the optional filters narrow it when provided.
 
     Args:
         metric: Metric to rank by - one of: revenue_per_impression, impressions, dwell_time, circulation
         limit: Number of top ads to return
+        campaign_id: Optional - restrict ranking to one campaign
+        days: Optional - restrict ranking to the last N days of metrics
 
     Returns:
         Dictionary with top ads and their characteristics
     """
-    print(f"[DEBUG get_top_performing_ads] Starting with metric={metric}, limit={limit}")
+    print(f"[DEBUG get_top_performing_ads] Starting with metric={metric}, limit={limit}, campaign_id={campaign_id}, days={days}")
     valid_metrics = ["revenue_per_impression", "impressions", "dwell_time", "circulation"]
     if metric not in valid_metrics:
         return {
@@ -302,7 +324,8 @@ def get_top_performing_ads(metric: str = "revenue_per_impression", limit: int = 
             "message": f"Invalid metric. Must be one of: {', '.join(valid_metrics)}"
         }
 
-    # RPI must be computed, not a direct column
+    # SQL ratio-of-sums used for ORDER BY ranking only — every RPI value
+    # RETURNED to the caller comes from compute_rpi() (see the loop below).
     metric_column_map = {
         "revenue_per_impression": "SUM(vm.revenue) / NULLIF(SUM(vm.impressions), 0)",
         "impressions": "SUM(vm.impressions)",
@@ -311,6 +334,17 @@ def get_top_performing_ads(metric: str = "revenue_per_impression", limit: int = 
     }
 
     with get_db_cursor() as cursor:
+        vm_join = "LEFT JOIN video_metrics vm ON cv.id = vm.video_id"
+        params: list = []
+        if days:
+            vm_join += " AND vm.metric_date >= date('now', ?)"
+            params.append(f"-{days} days")
+        where_clause = "WHERE cv.status = 'activated'"
+        if campaign_id:
+            where_clause += " AND cv.campaign_id = ?"
+            params.append(campaign_id)
+        params.append(limit)
+
         cursor.execute(f'''
             SELECT
                 cv.id as video_id,
@@ -334,13 +368,13 @@ def get_top_performing_ads(metric: str = "revenue_per_impression", limit: int = 
             FROM campaign_videos cv
             JOIN campaigns c ON cv.campaign_id = c.id
             LEFT JOIN products p ON cv.product_id = p.id
-            LEFT JOIN video_metrics vm ON cv.id = vm.video_id
-            WHERE cv.status = 'activated'
+            {vm_join}
+            {where_clause}
             GROUP BY cv.id
             HAVING metric_value IS NOT NULL AND total_revenue > 0
             ORDER BY metric_value DESC
             LIMIT ?
-        ''', (limit,))
+        ''', params)
 
         top_ads = []
         for row in cursor.fetchall():
@@ -348,8 +382,7 @@ def get_top_performing_ads(metric: str = "revenue_per_impression", limit: int = 
             variation_params = json.loads(row["variation_params"]) if row["variation_params"] else {}
             total_impressions = int(row["total_impressions"]) if row["total_impressions"] else 0
             total_revenue = round(row["total_revenue"], 2) if row["total_revenue"] else 0
-            # Compute RPI
-            rpi = round(total_revenue / total_impressions, 4) if total_impressions > 0 else 0
+            rpi = compute_rpi(total_revenue, total_impressions)
 
             top_ads.append({
                 "rank": len(top_ads) + 1,
@@ -367,10 +400,12 @@ def get_top_performing_ads(metric: str = "revenue_per_impression", limit: int = 
                     "style": row["product_style"]
                 },
                 "metrics": {
-                    f"{metric}": round(row["metric_value"], 4) if row["metric_value"] else 0,
+                    f"{metric}": rpi if metric == "revenue_per_impression"
+                    else (round(row["metric_value"], 4) if row["metric_value"] else 0),
                     "total_impressions": total_impressions,
                     "average_dwell_time": round(row["avg_dwell_time"], 1) if row["avg_dwell_time"] else 0,
                     "total_circulation": int(row["total_circulation"]) if row["total_circulation"] else 0,
+                    "total_revenue": total_revenue,
                     "revenue_per_impression": rpi
                 },
                 "characteristics": {
@@ -410,7 +445,7 @@ def get_top_performing_ads(metric: str = "revenue_per_impression", limit: int = 
         }
 
 
-def get_campaign_insights(campaign_id: int) -> dict:
+def get_campaign_insights(campaign_id: int, days: int = 30) -> dict:
     """Get AI-generated insights about campaign performance.
 
     Analyzes campaign data and identifies key patterns and recommendations.
@@ -419,6 +454,7 @@ def get_campaign_insights(campaign_id: int) -> dict:
 
     Args:
         campaign_id: The ID of the campaign
+        days: Number of days of metrics to analyze (default: 30)
 
     Returns:
         Dictionary with performance insights and recommendations
@@ -473,46 +509,66 @@ def get_campaign_insights(campaign_id: int) -> dict:
             JOIN campaign_videos cv ON vm.video_id = cv.id
             WHERE cv.campaign_id = ?
               AND cv.status = 'activated'
+              AND vm.metric_date >= date('now', ?)
             GROUP BY week
             ORDER BY week
-        ''', (campaign_id,))
+        ''', (campaign_id, f'-{days} days'))
 
         weeks = cursor.fetchall()
 
+        # Trend compares RPI (ratio of sums per half), not raw revenue —
+        # revenue can rise while RPI falls if impressions rise faster.
         trend = "stable"
         if len(weeks) >= 2:
-            first_half_rev = sum(w["revenue"] for w in weeks[:len(weeks)//2] if w["revenue"])
-            second_half_rev = sum(w["revenue"] for w in weeks[len(weeks)//2:] if w["revenue"])
-            if first_half_rev > 0 and second_half_rev > first_half_rev * 1.1:
+            half = len(weeks) // 2
+            first_half_rpi = compute_rpi(
+                sum(w["revenue"] or 0 for w in weeks[:half]),
+                sum(w["impressions"] or 0 for w in weeks[:half]),
+            )
+            second_half_rpi = compute_rpi(
+                sum(w["revenue"] or 0 for w in weeks[half:]),
+                sum(w["impressions"] or 0 for w in weeks[half:]),
+            )
+            if first_half_rpi > 0 and second_half_rpi > first_half_rpi * 1.1:
                 trend = "improving"
-            elif first_half_rev > 0 and second_half_rev < first_half_rev * 0.9:
+            elif first_half_rpi > 0 and second_half_rpi < first_half_rpi * 0.9:
                 trend = "declining"
 
-        # Get best and worst performing days by RPI
+        # Best and worst performing days by RPI — a "day" is the aggregate
+        # across ALL activated videos that day (GROUP BY date), not one
+        # video_metrics row. RPI per day via compute_rpi (ratio of sums).
         cursor.execute('''
-            SELECT vm.metric_date as date, vm.revenue, vm.impressions, vm.dwell_time_seconds,
-                   vm.revenue * 1.0 / NULLIF(vm.impressions, 0) as rpi
+            SELECT
+                vm.metric_date as date,
+                SUM(vm.revenue) as revenue,
+                SUM(vm.impressions) as impressions,
+                AVG(vm.dwell_time_seconds) as avg_dwell
             FROM video_metrics vm
             JOIN campaign_videos cv ON vm.video_id = cv.id
             WHERE cv.campaign_id = ?
               AND cv.status = 'activated'
-            ORDER BY rpi DESC
-            LIMIT 1
-        ''', (campaign_id,))
-        best_day = cursor.fetchone()
+              AND vm.metric_date >= date('now', ?)
+            GROUP BY vm.metric_date
+        ''', (campaign_id, f'-{days} days'))
 
-        cursor.execute('''
-            SELECT vm.metric_date as date, vm.revenue, vm.impressions, vm.dwell_time_seconds,
-                   vm.revenue * 1.0 / NULLIF(vm.impressions, 0) as rpi
-            FROM video_metrics vm
-            JOIN campaign_videos cv ON vm.video_id = cv.id
-            WHERE cv.campaign_id = ?
-              AND cv.status = 'activated'
-              AND vm.impressions > 0
-            ORDER BY rpi ASC
-            LIMIT 1
-        ''', (campaign_id,))
-        worst_day = cursor.fetchone()
+        day_aggregates = [
+            {
+                "date": r["date"],
+                "revenue_per_impression": compute_rpi(r["revenue"], r["impressions"]),
+                "impressions": int(r["impressions"]) if r["impressions"] else 0,
+                "dwell_time": round(r["avg_dwell"], 1) if r["avg_dwell"] else 0,
+            }
+            for r in cursor.fetchall()
+        ]
+        best_day = max(
+            day_aggregates, key=lambda d: d["revenue_per_impression"], default=None
+        )
+        days_with_impressions = [d for d in day_aggregates if d["impressions"] > 0]
+        worst_day = min(
+            days_with_impressions,
+            key=lambda d: d["revenue_per_impression"],
+            default=None,
+        )
 
         # Get video performance comparison
         cursor.execute('''
@@ -525,11 +581,12 @@ def get_campaign_insights(campaign_id: int) -> dict:
                 AVG(vm.dwell_time_seconds) as avg_dwell
             FROM campaign_videos cv
             LEFT JOIN video_metrics vm ON cv.id = vm.video_id
+                AND vm.metric_date >= date('now', ?)
             WHERE cv.campaign_id = ?
               AND cv.status = 'activated'
             GROUP BY cv.id
             ORDER BY total_revenue DESC
-        ''', (campaign_id,))
+        ''', (f'-{days} days', campaign_id))
 
         video_performances = cursor.fetchall()
 
@@ -544,14 +601,16 @@ def get_campaign_insights(campaign_id: int) -> dict:
             insights.append("Campaign performance is stable")
 
         if best_day:
-            rpi = round(best_day["rpi"], 4) if best_day["rpi"] else 0
-            dwell = round(best_day["dwell_time_seconds"], 1) if best_day["dwell_time_seconds"] else 0
-            insights.append(f"Best performing day: {best_day['date']} (RPI: ${rpi:.4f}, Dwell: {dwell}s)")
+            insights.append(
+                f"Best performing day: {best_day['date']} "
+                f"(RPI: ${best_day['revenue_per_impression']:.4f}, "
+                f"Dwell: {best_day['dwell_time']}s)"
+            )
 
         if video_performances:
             best_video = video_performances[0]
             if best_video["total_impressions"] and best_video["total_impressions"] > 0:
-                video_rpi = round(best_video["total_revenue"] / best_video["total_impressions"], 4)
+                video_rpi = compute_rpi(best_video["total_revenue"], best_video["total_impressions"])
                 variation = best_video["variation_name"] or "default"
                 avg_dwell = round(best_video["avg_dwell"], 1) if best_video["avg_dwell"] else 0
                 insights.append(f"Top video (RPI: ${video_rpi:.4f}): {variation} variation, avg dwell {avg_dwell}s")
@@ -577,6 +636,7 @@ def get_campaign_insights(campaign_id: int) -> dict:
                 "status": campaign["status"]
             },
             "activated_videos": activated_count,
+            "period": f"last_{days}_days",
             "performance_trend": trend,
             "insights": insights,
             "recommendations": [
@@ -588,18 +648,8 @@ def get_campaign_insights(campaign_id: int) -> dict:
                 "Consider expanding to new locations",
                 "Generate similar creatives for other campaigns"
             ],
-            "best_day": {
-                "date": best_day["date"],
-                "revenue_per_impression": round(best_day["rpi"], 4) if best_day["rpi"] else 0,
-                "impressions": int(best_day["impressions"]),
-                "dwell_time": round(best_day["dwell_time_seconds"], 1) if best_day["dwell_time_seconds"] else 0
-            } if best_day else None,
-            "worst_day": {
-                "date": worst_day["date"],
-                "revenue_per_impression": round(worst_day["rpi"], 4) if worst_day["rpi"] else 0,
-                "impressions": int(worst_day["impressions"]),
-                "dwell_time": round(worst_day["dwell_time_seconds"], 1) if worst_day["dwell_time_seconds"] else 0
-            } if worst_day else None
+            "best_day": best_day,
+            "worst_day": worst_day
         }
 
 
@@ -654,8 +704,7 @@ def compare_campaigns(campaign_ids: list[int]) -> dict:
             if row:
                 total_impressions = int(row["total_impressions"]) if row["total_impressions"] else 0
                 total_revenue = round(row["total_revenue"], 2) if row["total_revenue"] else 0
-                # Compute RPI on the fly
-                rpi = round(total_revenue / total_impressions, 4) if total_impressions > 0 else 0
+                rpi = compute_rpi(total_revenue, total_impressions)
 
                 comparisons.append({
                     "campaign_id": row["id"],
@@ -715,6 +764,27 @@ def compare_campaigns(campaign_ids: list[int]) -> dict:
         }
 
 
+def _aggregate_week(week_slice: list, metric: str) -> float:
+    """Aggregate one week of enriched daily rows using the metric's rule.
+
+    Ratio metrics recompute ratio-of-sums via compute_rpi; dwell time is an
+    impressions-weighted average; additive metrics (impressions,
+    circulation) sum. This is the per-metric aggregation rule Phase 3
+    centralized — the old code summed daily values for every metric, which
+    is meaningless for ratios (see docs/METRICS.md).
+    """
+    if metric == "revenue_per_impression":
+        return compute_rpi(
+            sum(d["revenue"] for d in week_slice),
+            sum(d["impressions"] for d in week_slice),
+        )
+    if metric == "dwell_time":
+        return round(
+            compute_weighted_average(week_slice, "dwell_time", "impressions"), 1
+        )
+    return sum(d["value"] for d in week_slice)
+
+
 async def generate_metrics_visualization(
     campaign_id: int,
     chart_type: str = "trendline",
@@ -765,19 +835,6 @@ async def generate_metrics_visualization(
     summary = metrics_result["summary"]
     daily_metrics = metrics_result["daily_metrics"]
 
-    # Guard BEFORE any summary deref: get_campaign_metrics returns
-    # summary=None (status still "success") when no activated-video rows
-    # have impressions in the window.
-    if not daily_metrics or not summary:
-        return {
-            "status": "error",
-            "message": (
-                f"No metrics data available for campaign {campaign_id}. "
-                "Metrics only exist for activated videos — use the Review "
-                "Agent to activate videos first."
-            )
-        }
-
     print("[DEBUG VIZ] Step 2: Data received from DB:")
     print(f"[DEBUG VIZ]   - Campaign: {campaign_name}")
     print(f"[DEBUG VIZ]   - Total daily records: {len(daily_metrics)}")
@@ -800,7 +857,10 @@ async def generate_metrics_visualization(
     for day in daily_metrics[:min(days, len(daily_metrics))]:
         data_points.append({
             "date": day["date"],
-            "value": day.get(metric, 0)
+            "value": day.get(metric, 0),
+            "revenue": day.get("revenue", 0),
+            "impressions": day.get("impressions", 0),
+            "dwell_time": day.get("dwell_time", 0),
         })
 
     # Reverse to show oldest to newest
@@ -915,14 +975,9 @@ async def generate_metrics_visualization(
         for i in range(0, len(data_points), week_size):
             week_slice = data_points[i:i+week_size]
             if week_slice:
-                # KNOWN BUG (flagged, fix in Phase 3 / 04-centralize-rpi-metrics):
-                # summing per-day values is wrong for ratio metrics like
-                # revenue_per_impression — a weekly RPI must be recomputed as
-                # sum(revenue)/sum(impressions), not sum(daily ratios).
-                # Phase 3 centralizes per-metric aggregation rules.
-                week_total = sum(d["value"] for d in week_slice)
-                weekly_data.append({"week": f"Week {len(weekly_data)+1}", "value": week_total})
-                print(f"[DEBUG VIZ]     Week {len(weekly_data)}: {len(week_slice)} days, total={week_total:.2f}")
+                week_value = _aggregate_week(week_slice, metric)
+                weekly_data.append({"week": f"Week {len(weekly_data)+1}", "value": week_value})
+                print(f"[DEBUG VIZ]     Week {len(weekly_data)}: {len(week_slice)} days, value={week_value:.4f}")
 
         # Format weekly data for template
         if metric == "revenue_per_impression":
