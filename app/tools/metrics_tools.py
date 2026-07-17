@@ -764,6 +764,27 @@ def compare_campaigns(campaign_ids: list[int]) -> dict:
         }
 
 
+def _aggregate_week(week_slice: list, metric: str) -> float:
+    """Aggregate one week of enriched daily rows using the metric's rule.
+
+    Ratio metrics recompute ratio-of-sums via compute_rpi; dwell time is an
+    impressions-weighted average; additive metrics (impressions,
+    circulation) sum. This is the per-metric aggregation rule Phase 3
+    centralized — the old code summed daily values for every metric, which
+    is meaningless for ratios (see docs/METRICS.md).
+    """
+    if metric == "revenue_per_impression":
+        return compute_rpi(
+            sum(d["revenue"] for d in week_slice),
+            sum(d["impressions"] for d in week_slice),
+        )
+    if metric == "dwell_time":
+        return round(
+            compute_weighted_average(week_slice, "dwell_time", "impressions"), 1
+        )
+    return sum(d["value"] for d in week_slice)
+
+
 async def generate_metrics_visualization(
     campaign_id: int,
     chart_type: str = "trendline",
@@ -849,7 +870,10 @@ async def generate_metrics_visualization(
     for day in daily_metrics[:min(days, len(daily_metrics))]:
         data_points.append({
             "date": day["date"],
-            "value": day.get(metric, 0)
+            "value": day.get(metric, 0),
+            "revenue": day.get("revenue", 0),
+            "impressions": day.get("impressions", 0),
+            "dwell_time": day.get("dwell_time", 0),
         })
 
     # Reverse to show oldest to newest
@@ -964,14 +988,9 @@ async def generate_metrics_visualization(
         for i in range(0, len(data_points), week_size):
             week_slice = data_points[i:i+week_size]
             if week_slice:
-                # KNOWN BUG (flagged, fix in Phase 3 / 04-centralize-rpi-metrics):
-                # summing per-day values is wrong for ratio metrics like
-                # revenue_per_impression — a weekly RPI must be recomputed as
-                # sum(revenue)/sum(impressions), not sum(daily ratios).
-                # Phase 3 centralizes per-metric aggregation rules.
-                week_total = sum(d["value"] for d in week_slice)
-                weekly_data.append({"week": f"Week {len(weekly_data)+1}", "value": week_total})
-                print(f"[DEBUG VIZ]     Week {len(weekly_data)}: {len(week_slice)} days, total={week_total:.2f}")
+                week_value = _aggregate_week(week_slice, metric)
+                weekly_data.append({"week": f"Week {len(weekly_data)+1}", "value": week_value})
+                print(f"[DEBUG VIZ]     Week {len(weekly_data)}: {len(week_slice)} days, value={week_value:.4f}")
 
         # Format weekly data for template
         if metric == "revenue_per_impression":

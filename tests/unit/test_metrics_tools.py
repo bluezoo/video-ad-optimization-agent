@@ -458,3 +458,80 @@ class TestGenerateMetricsVisualization:
 
         assert result["status"] == "error"
         assert "No metrics data available" in result["message"]
+
+
+class TestWeeklyAggregation:
+    """The weekly-RPI regression tests the phase doc's validation requires
+    (discovered during kickoff: no such test previously existed)."""
+
+    def test_aggregate_week_rpi_is_ratio_of_sums(self):
+        from app.tools.metrics_shared import compute_rpi
+        from app.tools.metrics_tools import _aggregate_week
+
+        week = [
+            {"value": 0.01, "revenue": 10.0, "impressions": 1000, "dwell_time": 5.0},
+            {"value": 0.1, "revenue": 50.0, "impressions": 500, "dwell_time": 5.0},
+        ]
+        result = _aggregate_week(week, "revenue_per_impression")
+        assert result == compute_rpi(60.0, 1500) == 0.04
+        assert result != sum(d["value"] for d in week)  # the old buggy sum (0.11)
+
+    def test_aggregate_week_dwell_is_impressions_weighted(self):
+        from app.tools.metrics_tools import _aggregate_week
+
+        week = [
+            {"value": 10.0, "revenue": 0, "impressions": 900, "dwell_time": 10.0},
+            {"value": 2.0, "revenue": 0, "impressions": 100, "dwell_time": 2.0},
+        ]
+        assert _aggregate_week(week, "dwell_time") == 9.2
+
+    def test_aggregate_week_additive_metrics_still_sum(self):
+        from app.tools.metrics_tools import _aggregate_week
+
+        week = [
+            {"value": 100, "revenue": 0, "impressions": 100, "dwell_time": 0},
+            {"value": 200, "revenue": 0, "impressions": 200, "dwell_time": 0},
+        ]
+        assert _aggregate_week(week, "impressions") == 300
+
+    async def test_weekly_bar_chart_prompt_carries_ratio_of_sums(
+        self, test_db, mock_storage_module
+    ):
+        """End-to-end: the prompt sent to the (mocked) image API contains the
+        ratio-of-sums weekly RPI, not the summed daily ratios."""
+        from app.tools.metrics_shared import compute_rpi
+        from app.tools.metrics_tools import generate_metrics_visualization
+
+        rows = []
+        for n in range(14, 7, -1):  # week 1 (older 7 days): unequal days
+            rows.append({"metric_date": _days_ago(n), "impressions": 1000, "revenue": 10.0})
+        for n in range(7, 0, -1):  # week 2
+            rows.append({"metric_date": _days_ago(n), "impressions": 500, "revenue": 50.0})
+        made = _make_campaign_with_metrics(rows)
+
+        with patch("google.genai.Client") as mock_client:
+            mock_client.return_value.models.generate_content.side_effect = (
+                RuntimeError("mocked API failure")
+            )
+            result = await generate_metrics_visualization(
+                campaign_id=made["campaign_id"],
+                chart_type="bar_chart",
+                metric="revenue_per_impression",
+                days=14,
+            )
+            assert result["status"] == "error"  # mocked API — expected
+
+            call = mock_client.return_value.models.generate_content.call_args
+            prompt = call.kwargs["contents"][0]
+
+        # Week 1: 6 days @ 1000 imp, 10 rev + 1 day @ 500 imp, 50 rev
+        # = 6500 imp, 110 rev → 0.0169
+        # Week 2: 6 days @ 500 imp, 50 rev
+        # = 3000 imp, 300 rev → 0.1
+        week1_rpi = compute_rpi(110.0, 6500)  # 0.0169
+        week2_rpi = compute_rpi(300.0, 3000)  # 0.1
+        assert f"${week1_rpi:.4f}" in prompt
+        assert f"${week2_rpi:.4f}" in prompt
+        # The buggy sums (0.077 and 0.70) must NOT appear as weekly values
+        assert "$0.0770" not in prompt
+        assert "$0.7000" not in prompt
