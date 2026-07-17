@@ -31,3 +31,47 @@ class TestDemoAnchor:
             set_demo_anchor_date(cursor, "2026-02-01")
         with get_db_cursor() as cursor:
             assert get_demo_anchor_date(cursor) == "2026-02-01"
+
+
+class TestSeededWindow:
+    def test_seeded_metrics_fill_the_anchor_window(self, fresh_test_db):
+        """populate_mock_data() must fill exactly [anchor-29, anchor] for
+        every seeded activated video — the single windowing rule."""
+        from datetime import date, timedelta
+
+        with get_db_cursor() as cursor:
+            anchor = date.fromisoformat(get_demo_anchor_date(cursor))
+            cursor.execute(
+                """
+                SELECT video_id, MIN(metric_date) AS lo, MAX(metric_date) AS hi,
+                       COUNT(*) AS n
+                FROM video_metrics GROUP BY video_id
+                """
+            )
+            groups = cursor.fetchall()
+        assert groups, "seeded demo DB must contain metrics"
+        for g in groups:
+            assert g["lo"] == (anchor - timedelta(days=29)).isoformat()
+            assert g["hi"] == anchor.isoformat()
+            assert g["n"] == 30
+
+    def test_reseeding_is_deterministic(self, fresh_test_db):
+        """Wipe metrics and repopulate: byte-identical rows come back."""
+        from app.database.mock_data import populate_mock_data
+
+        def snapshot():
+            with get_db_cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT video_id, metric_date, impressions, dwell_time_seconds,
+                           circulation, revenue
+                    FROM video_metrics ORDER BY video_id, metric_date
+                    """
+                )
+                return [tuple(r) for r in cursor.fetchall()]
+
+        first = snapshot()
+        with get_db_cursor() as cursor:
+            cursor.execute("DELETE FROM video_metrics")
+        populate_mock_data()
+        assert snapshot() == first

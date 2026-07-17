@@ -22,11 +22,12 @@ Uses NEW schema (product-centric model):
 """
 
 import json
-import random
-from datetime import datetime, timedelta
-from .db import get_connection
-from .products_data import PRODUCTS
+from datetime import date, datetime, timedelta
 
+from ..demo_data.constants import DEMO_WINDOW_DAYS
+from ..demo_data.derive import derive_video_metrics_rows
+from .db import get_connection, get_demo_anchor_date
+from .products_data import PRODUCTS
 
 # =============================================================================
 # Product-Centric Campaign Definitions (NEW MODEL)
@@ -165,76 +166,6 @@ def _generate_campaign_name(product_name: str, store_name: str) -> str:
     return f"{product_title} - {store_name}"
 
 
-def _generate_mock_video_metrics(video_id: int, campaign_id: int, days: int = 30) -> list:
-    """Generate realistic in-store retail media metrics for an activated video.
-
-    Metrics generated:
-    - impressions: Number of ad displays on in-store screens (800-2000/day)
-    - dwell_time_seconds: Average seconds viewing (3-8 seconds)
-    - circulation: Foot traffic past display location (1500-4000/day)
-    - revenue: Revenue for RPI calculation ($30-$120/day)
-
-    RPI (revenue_per_impression) is computed on-the-fly as revenue/impressions.
-
-    Args:
-        video_id: The video ID in campaign_videos table
-        campaign_id: The campaign ID for location multiplier
-        days: Number of days of metrics to generate
-
-    Returns:
-        List of metric dictionaries
-    """
-    metrics = []
-    today = datetime.now().date()
-
-    # Campaign-specific multipliers (some stores perform better)
-    campaign_multipliers = {
-        1: 1.2,   # Los Angeles flagship store
-        2: 0.9,   # NYC boutique
-        3: 1.0,   # Chicago baseline
-        4: 0.7,   # Smaller market
-    }
-    multiplier = campaign_multipliers.get(campaign_id, 1.0)
-
-    # Base metrics for in-store retail
-    base_impressions = int(random.randint(800, 2000) * multiplier)
-    base_circulation = int(base_impressions * random.uniform(1.5, 2.5))
-
-    for day_offset in range(days):
-        date = today - timedelta(days=day_offset)
-
-        # Weekend patterns (more shoppers on weekends)
-        day_of_week = date.weekday()
-        weekend_boost = 1.4 if day_of_week >= 5 else 1.0
-
-        # Daily variation
-        daily_variation = random.uniform(0.85, 1.15)
-
-        # Calculate metrics
-        impressions = int(base_impressions * weekend_boost * daily_variation)
-        circulation = int(base_circulation * weekend_boost * random.uniform(0.9, 1.1))
-
-        # Dwell time: 3-8 seconds, weekend shoppers browse longer
-        base_dwell = random.uniform(3.0, 8.0)
-        weekend_dwell_boost = 1.2 if day_of_week >= 5 else 1.0
-        dwell_time = round(min(base_dwell * weekend_dwell_boost, 12.0), 1)
-
-        # Revenue: $0.02-$0.08 per impression for retail media
-        revenue_per_impression = random.uniform(0.02, 0.08) * multiplier
-        revenue = round(impressions * revenue_per_impression, 2)
-
-        metrics.append({
-            "video_id": video_id,
-            "metric_date": date.isoformat(),
-            "impressions": impressions,
-            "dwell_time_seconds": dwell_time,
-            "circulation": circulation,
-            "revenue": revenue
-        })
-
-    return metrics
-
-
 def populate_mock_data() -> dict:
     """Populate the database with mock data using NEW schema.
 
@@ -244,7 +175,8 @@ def populate_mock_data() -> dict:
     - 1 activated video per campaign
     - 30 days of metrics per activated video
 
-    IMPORTANT: Skips if data already exists (safe to call multiple times).
+    On repeat calls, regenerates metrics deterministically for all existing
+    activated videos (idempotent on video/campaign lifecycle).
 
     Returns:
         Dictionary with counts of created records
@@ -252,149 +184,178 @@ def populate_mock_data() -> dict:
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Check if data already exists - check BOTH old and new tables
+    # Check if products/campaigns already exist
     cursor.execute("SELECT COUNT(*) FROM campaigns")
     campaign_count = cursor.fetchone()[0]
 
-    if campaign_count > 0:
-        conn.close()
-        return {"status": "skipped", "message": "Mock data already exists"}
+    # If no campaigns, create full structure; otherwise just regenerate metrics
+    if campaign_count == 0:
+        products_created = 0
+        campaigns_created = 0
+        videos_created = 0
 
-    products_created = 0
-    campaigns_created = 0
-    videos_created = 0
-    metrics_created = 0
+        # Step 1: Insert all 22 products
+        # Use INSERT OR IGNORE to handle multi-process race conditions (Agent Engine)
+        for product in PRODUCTS:
+            cursor.execute('''
+                INSERT OR IGNORE INTO products (name, category, style, color, fabric, details, occasion, image_filename, metadata)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                product["name"],
+                product["category"],
+                product.get("style", ""),
+                product.get("color", ""),
+                product.get("fabric", ""),
+                product.get("details", ""),
+                product.get("occasion", ""),
+                product["image_filename"],
+                json.dumps(product)
+            ))
+            products_created += 1
 
-    # Step 1: Insert all 22 products
-    # Use INSERT OR IGNORE to handle multi-process race conditions (Agent Engine)
-    for product in PRODUCTS:
-        cursor.execute('''
-            INSERT OR IGNORE INTO products (name, category, style, color, fabric, details, occasion, image_filename, metadata)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            product["name"],
-            product["category"],
-            product.get("style", ""),
-            product.get("color", ""),
-            product.get("fabric", ""),
-            product.get("details", ""),
-            product.get("occasion", ""),
-            product["image_filename"],
-            json.dumps(product)
-        ))
-        products_created += 1
+        # Step 2: Create product-centric campaigns
+        for i, camp_data in enumerate(MOCK_CAMPAIGNS):
+            # Find the product
+            product = _get_product_by_name(camp_data["product_name"])
+            if not product:
+                continue
 
-    # Step 2: Create product-centric campaigns
-    for i, camp_data in enumerate(MOCK_CAMPAIGNS):
-        # Find the product
-        product = _get_product_by_name(camp_data["product_name"])
-        if not product:
-            continue
+            # Get the product ID (1-indexed based on insertion order)
+            cursor.execute("SELECT id FROM products WHERE name = ?", (product["name"],))
+            product_row = cursor.fetchone()
+            if not product_row:
+                continue
+            product_id = product_row[0]
 
-        # Get the product ID (1-indexed based on insertion order)
-        cursor.execute("SELECT id FROM products WHERE name = ?", (product["name"],))
-        product_row = cursor.fetchone()
-        if not product_row:
-            continue
-        product_id = product_row[0]
+            # Generate campaign name
+            campaign_name = _generate_campaign_name(product["name"], camp_data["store_name"])
 
-        # Generate campaign name
-        campaign_name = _generate_campaign_name(product["name"], camp_data["store_name"])
+            # Insert campaign with product_id and store_name
+            # Use INSERT OR IGNORE for multi-process safety
+            cursor.execute('''
+                INSERT OR IGNORE INTO campaigns (name, description, product_id, store_name, city, state, category, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                campaign_name,
+                f"Campaign for {product['name']} at {camp_data['store_name']}",
+                product_id,
+                camp_data["store_name"],
+                camp_data["city"],
+                camp_data["state"],
+                camp_data["category"],
+                camp_data["status"]
+            ))
 
-        # Insert campaign with product_id and store_name
-        # Use INSERT OR IGNORE for multi-process safety
-        cursor.execute('''
-            INSERT OR IGNORE INTO campaigns (name, description, product_id, store_name, city, state, category, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            campaign_name,
-            f"Campaign for {product['name']} at {camp_data['store_name']}",
-            product_id,
-            camp_data["store_name"],
-            camp_data["city"],
-            camp_data["state"],
-            camp_data["category"],
-            camp_data["status"]
-        ))
+            # Fetch the actual campaign_id (lastrowid is unreliable with INSERT OR IGNORE)
+            cursor.execute("SELECT id FROM campaigns WHERE name = ?", (campaign_name,))
+            campaign_row = cursor.fetchone()
+            if not campaign_row:
+                continue
+            campaign_id = campaign_row[0]
+            campaigns_created += 1
 
-        # Fetch the actual campaign_id (lastrowid is unreliable with INSERT OR IGNORE)
-        cursor.execute("SELECT id FROM campaigns WHERE name = ?", (campaign_name,))
-        campaign_row = cursor.fetchone()
-        if not campaign_row:
-            continue
-        campaign_id = campaign_row[0]
-        campaigns_created += 1
+            # Step 3: Create activated videos using REAL GCS video files
+            if camp_data["status"] == "active":
+                product_name = product["name"]
+                real_video_list = REAL_VIDEOS.get(product_name, [])
 
-        # Step 3: Create activated videos using REAL GCS video files
-        if camp_data["status"] == "active":
-            product_name = product["name"]
-            real_video_list = REAL_VIDEOS.get(product_name, [])
+                # If no real videos exist for this product, create one placeholder
+                if not real_video_list:
+                    variation = MOCK_VARIATIONS[i % len(MOCK_VARIATIONS)]
+                    variation_name = f"{variation['model_ethnicity']}-{variation['setting']}-{variation['time_of_day']}"
+                    date_str = datetime.now().strftime("%m%d%y")
+                    real_video_list = [{
+                        "filename": f"{product_name}-{date_str}-{variation_name}.mp4",
+                        "thumbnail": f"{product_name}-{date_str}-{variation_name}-thumbnail.png",
+                        "variation": variation,
+                    }]
 
-            # If no real videos exist for this product, create one placeholder
-            if not real_video_list:
-                variation = MOCK_VARIATIONS[i % len(MOCK_VARIATIONS)]
-                variation_name = f"{variation['model_ethnicity']}-{variation['setting']}-{variation['time_of_day']}"
-                date_str = datetime.now().strftime("%m%d%y")
-                real_video_list = [{
-                    "filename": f"{product_name}-{date_str}-{variation_name}.mp4",
-                    "thumbnail": f"{product_name}-{date_str}-{variation_name}-thumbnail.png",
-                    "variation": variation,
-                }]
+                # Insert ALL real videos for this campaign
+                for video_data in real_video_list:
+                    variation = video_data["variation"]
+                    variation_name = f"{variation['model_ethnicity']}-{variation['setting']}-{variation['mood']}"
 
-            # Insert ALL real videos for this campaign
-            for video_data in real_video_list:
-                variation = video_data["variation"]
-                variation_name = f"{variation['model_ethnicity']}-{variation['setting']}-{variation['mood']}"
-
-                cursor.execute('''
-                    INSERT OR IGNORE INTO campaign_videos
-                    (campaign_id, product_id, video_filename, thumbnail_path,
-                     scene_prompt, video_prompt, pipeline_type,
-                     variation_name, variation_params, duration_seconds, aspect_ratio,
-                     status, activated_at, activated_by)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    campaign_id,
-                    product_id,
-                    video_data["filename"],
-                    video_data["thumbnail"],
-                    f"Scene: {variation['model_ethnicity']} model wearing {product_name} in {variation['setting']}",
-                    f"Cinematic video of model in {product_name}, {variation['mood']} mood",
-                    "two-stage",
-                    variation_name,
-                    json.dumps(variation),
-                    8,
-                    "9:16",
-                    "activated",  # Pre-activated for demo
-                    datetime.now().isoformat(),
-                    "mock_data"
-                ))
-
-                # Fetch the actual video_id (lastrowid is unreliable with INSERT OR IGNORE)
-                cursor.execute("SELECT id FROM campaign_videos WHERE video_filename = ?",
-                              (video_data["filename"],))
-                video_row = cursor.fetchone()
-                if not video_row:
-                    continue
-                video_id = video_row[0]
-                videos_created += 1
-
-                # Step 4: Generate metrics for each activated video
-                metrics = _generate_mock_video_metrics(video_id, campaign_id, days=30)
-                for metric in metrics:
                     cursor.execute('''
-                        INSERT OR IGNORE INTO video_metrics
-                        (video_id, metric_date, impressions, dwell_time_seconds, circulation, revenue)
-                        VALUES (?, ?, ?, ?, ?, ?)
+                        INSERT OR IGNORE INTO campaign_videos
+                        (campaign_id, product_id, video_filename, thumbnail_path,
+                         scene_prompt, video_prompt, pipeline_type,
+                         variation_name, variation_params, duration_seconds, aspect_ratio,
+                         status, activated_at, activated_by)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
-                        metric["video_id"],
-                        metric["metric_date"],
-                        metric["impressions"],
-                        metric["dwell_time_seconds"],
-                        metric["circulation"],
-                        metric["revenue"]
+                        campaign_id,
+                        product_id,
+                        video_data["filename"],
+                        video_data["thumbnail"],
+                        f"Scene: {variation['model_ethnicity']} model wearing {product_name} in {variation['setting']}",
+                        f"Cinematic video of model in {product_name}, {variation['mood']} mood",
+                        "two-stage",
+                        variation_name,
+                        json.dumps(variation),
+                        8,
+                        "9:16",
+                        "activated",  # Pre-activated for demo
+                        datetime.now().isoformat(),
+                        "mock_data"
                     ))
-                    metrics_created += 1
+
+                    # Fetch the actual video_id (lastrowid is unreliable with INSERT OR IGNORE)
+                    cursor.execute("SELECT id FROM campaign_videos WHERE video_filename = ?",
+                                  (video_data["filename"],))
+                    video_row = cursor.fetchone()
+                    if not video_row:
+                        continue
+                    videos_created += 1
+    else:
+        products_created = 0
+        campaigns_created = 0
+        videos_created = 0
+
+    # Step 4: Always regenerate deterministic metrics for all active videos
+    # on the single anchor window [anchor-29, anchor]
+    metrics_created = 0
+    anchor = date.fromisoformat(get_demo_anchor_date(cursor))
+    window_start = anchor - timedelta(days=DEMO_WINDOW_DAYS - 1)
+
+    # Get all active campaigns with their videos
+    cursor.execute('''
+        SELECT DISTINCT c.id FROM campaigns c
+        WHERE c.status = 'active'
+    ''')
+    active_campaigns = [row[0] for row in cursor.fetchall()]
+
+    for campaign_id in active_campaigns:
+        # Get all activated videos for this campaign
+        cursor.execute('''
+            SELECT id FROM campaign_videos
+            WHERE campaign_id = ? AND status = 'activated'
+        ''', (campaign_id,))
+        campaign_video_ids = [row[0] for row in cursor.fetchall()]
+
+        if not campaign_video_ids:
+            continue
+
+        # Delete old metrics for these videos (to allow deterministic regeneration)
+        for video_id in campaign_video_ids:
+            cursor.execute('DELETE FROM video_metrics WHERE video_id = ?', (video_id,))
+
+        # Generate deterministic metrics
+        for row in derive_video_metrics_rows(
+            campaign_id, campaign_video_ids, window_start, anchor
+        ):
+            cursor.execute('''
+                INSERT OR IGNORE INTO video_metrics
+                (video_id, metric_date, impressions, dwell_time_seconds, circulation, revenue)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (
+                row["video_id"],
+                row["metric_date"],
+                row["impressions"],
+                row["dwell_time_seconds"],
+                row["circulation"],
+                row["revenue"]
+            ))
+            metrics_created += 1
 
     conn.commit()
     conn.close()
