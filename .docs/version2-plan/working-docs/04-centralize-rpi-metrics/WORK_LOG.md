@@ -25,3 +25,6 @@ get_top_performing_ads: optional campaign_id/days filters (days in JOIN ON claus
 
 ## 2026-07-16 — Task 4 complete (SDD task ledger mirror)
 get_campaign_insights repaired (commit 9f35d5b): days param with all three queries date-scoped, trend compares RPI halves via compute_rpi (test proves rising revenue + falling RPI → declining), best/worst day from one GROUP BY date query with python max/min. Review approved; its one cannot-verify (compute_rpi edge inputs) is covered by Task 1's unit tests.
+
+## 2026-07-16 — Task 5 complete (SDD task ledger mirror)
+compare_campaigns, get_campaign, get_video_details migrated to compute_rpi with parity tests (commit 680a09b); mock generators verified division-free and untouched; phase doc Step 5 amended as vacuous. Implementer corrected the plan's guessed return nesting (metrics_summary/metrics are top-level keys). Review approved.
