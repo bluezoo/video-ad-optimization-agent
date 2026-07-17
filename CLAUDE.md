@@ -8,6 +8,8 @@ A Google ADK multi-agent system that closes the loop on in-store video ad optimi
 
 Key source layout: `app/agent.py` (agent graph), `app/config.py` (models/env), `app/tools/` (campaign, video, review, metrics, maps, image tools), `app/database/` (SQLite + mock data), `app/models/` (Pydantic models), `app/agent_engine_app.py` (Agent Engine entrypoint).
 
+`docs/METRICS.md` is the authoritative glossary for every metric (impressions, RPI, revenue, circulation, dwell time) — read it before changing metric-related code; code comments and README prose do not override it.
+
 ## Version 2 plan
 
 **`.docs/version2-plan/` is the sole authoritative plan for ongoing work.** Start at `00-overview.md` for sequencing and philosophy, then the numbered phase docs (`01-*.md` through `14b-*.md`); `99-open-questions.md` consolidates every phase's open questions. `STATUS.md` in that folder is the cross-workstream progress index — read it before starting or resuming any phase.

@@ -48,6 +48,10 @@ make dev            # ADK web UI on :8501 (alias: make playground)
 
 Open the printed local URL. `make reset-db` wipes `campaigns.db` and repopulates demo data on the next `make dev`.
 
+## Metrics glossary
+
+`docs/METRICS.md` is the single source of truth for what every metric means (impressions, RPI, revenue, circulation, dwell time), aligned to BlueZoo's own vocabulary — read it before touching any metric-related code. It supersedes the metric explanations scattered through code comments and the README's marketing prose; where they disagree, `docs/METRICS.md` wins. (README.md itself stays untouched per this file's header note.)
+
 ## Test
 
 ```bash
