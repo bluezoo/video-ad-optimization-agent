@@ -12,7 +12,7 @@ Update rows in place as a workstream progresses; don't append new rows for the s
 |---|---|---|---|---|---|---|---|
 | 0 | `01` | emergency-model-currency-fix | merged | version_2_model-currency-fix | [#1](https://github.com/bluezoo/video-ad-optimization-agent/pull/1) | 2026-07-14 | merged 9f12738; incl. conftest fix + preview-model probe |
 | 1 | `02` | bug-fixes-and-cleanup | merged | version_2_bug-fixes-and-cleanup | [#2](https://github.com/bluezoo/video-ad-optimization-agent/pull/2) | 2026-07-16 | merged e0a0a52; incl. DB-isolation fix + test de-vacuation discoveries |
-| 2 | `03` | metrics-glossary-and-terminology | kickoff in progress | version_2_metrics-glossary | - | 2026-07-16 | - |
+| 2 | `03` | metrics-glossary-and-terminology | plan in progress | version_2_metrics-glossary | - | 2026-07-16 | working doc approved; BlueZoo defs re-verified live; README-link step redirected to SETUP_INSTRUCTIONS/CLAUDE.md |
 | 3 | `04` | centralize-rpi-metrics | not started | - | - | 2026-07-13 | depends on Phase 2 |
 | 4 | `05` | deterministic-demo-data | not started | - | - | 2026-07-13 | depends on Phase 3 |
 | 5 | `06` | app-mode-config-skeleton | not started | - | - | 2026-07-13 | - |
