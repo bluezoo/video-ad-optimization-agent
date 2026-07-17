@@ -13,7 +13,7 @@ Kick off one `.docs/version2-plan/` phase: isolate it in its own worktree/branch
 
 ## Naming: what `<NN>` means
 
-`<NN>` in every path below is **the phase doc's filename prefix**, not the phase number — they're offset by one (Phase 6's doc is `07-rpi-across-creatives-chart.md`, so its workstream directory is `working-docs/07-rpi-across-creatives-chart/`). The filename prefix is the only unambiguous, sortable identifier; `tracking-workstream-progress` uses the same rule. STATUS.md's Phase column keeps the phase number — that's fine, the two coexist; just never use the phase number in a directory name.
+`<NN>` in every path below is **the phase doc's filename prefix**, which equals the phase number since the 2026-07-16 renumbering (Phase 7's doc is `07-rpi-across-creatives-chart.md`, so its workstream directory is `working-docs/07-rpi-across-creatives-chart/`). Records predating the renumbering use the old 0-based phase numbers — one less than the doc prefix. The filename prefix is the sortable identifier; `tracking-workstream-progress` uses the same rule.
 
 ## When to Use
 

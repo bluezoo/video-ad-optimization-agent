@@ -1,8 +1,8 @@
-# Phase 7 — Product Schema Generalization
+# Phase 8 — Product Schema Generalization
 
 ## Goal
 
-Make the `products` table and its Python-side handling vertical-agnostic, so a non-fashion product (e.g., a beverage, an electronics SKU, a QSR menu item) can be created and run through the full pipeline without touching fashion-specific columns. This is the data-layer half of the client's first request; Phase 8 does the prompt/agent-instruction half.
+Make the `products` table and its Python-side handling vertical-agnostic, so a non-fashion product (e.g., a beverage, an electronics SKU, a QSR menu item) can be created and run through the full pipeline without touching fashion-specific columns. This is the data-layer half of the client's first request; Phase 9 does the prompt/agent-instruction half.
 
 ## Why this is smaller than it looks
 
@@ -16,7 +16,7 @@ Make the `products` table and its Python-side handling vertical-agnostic, so a n
 - `app/database/db.py:375` (`get_product()`) — returns a raw dict; does not deserialize `metadata`.
 - `app/tools/video_tools.py:477` — consumes that raw dict directly; this call site needs to move to the typed model once it exists.
 - `app/database/products_data.py` — the entire seeded catalog (22 products) is fashion (dress/pants/skirt/top/outerwear), with no non-fashion example anywhere in the codebase to prove genericity.
-- `app/tools/campaign_tools.py:66` (`create_campaign()`) — hardcodes a `category_mapping` dict literal that maps fashion product categories to campaign categories, and **silently defaults any unrecognized category to `"essentials"`** (the fallback itself is at `:73`) rather than erroring (see Phase 1, item 5 — this is dormant drift today, but it's exactly what a non-fashion product's category will hit).
+- `app/tools/campaign_tools.py:66` (`create_campaign()`) — hardcodes a `category_mapping` dict literal that maps fashion product categories to campaign categories, and **silently defaults any unrecognized category to `"essentials"`** (the fallback itself is at `:73`) rather than erroring (see Phase 2, item 5 — this is dormant drift today, but it's exactly what a non-fashion product's category will hit).
 - **Correction from review — the category problem is more structural than a mapping fix.** `Product.category` is meant to be an open, vertical-agnostic value, but campaigns validate against a closed SQLite CHECK constraint (`app/database/db.py:70`). Feeding an arbitrary non-fashion product category straight into that closed list cannot work as-is. This phase needs to explicitly decide: is *campaign* category a separate, small, controlled taxonomy (theme/objective, like "seasonal" or "always-on") that's independent of *product* category (which can be anything), or does the campaign CHECK constraint need to become a free-form field? Don't conflate "product taxonomy" and "campaign category" as the same problem — they're different concepts that happen to share a mapping function today.
 - No Pydantic model represents "a product" generically today — `app/models/variation.py`'s `CreativeVariation` is about a video's creative treatment, not the underlying product.
 
@@ -26,8 +26,8 @@ Make the `products` table and its Python-side handling vertical-agnostic, so a n
 2. Add the row↔model adapter this phase actually needs: update `get_product()` (`app/database/db.py:375`) to parse `metadata` and return (or be wrapped by a function that returns) a `Product` instance, and migrate `app/tools/video_tools.py:477` to consume the typed model instead of the raw dict. This is the concrete piece of "wiring up" the schema — not a config toggle, an actual data-flow change with its own test.
 3. Migrate the DB additively: keep `style`/`color`/`fabric`/`occasion` as nullable columns (do not drop them — the 22 existing fashion products keep working unchanged). No destructive migration, no data loss, no forced rewrite of `products_data.py`'s existing entries.
 4. Add a second seed dataset — a small (5-10 item) **non-fashion** product catalog (pick one concrete vertical to prove genericity with; this is a product/business call worth a quick check with the client rather than an arbitrary technical choice — see open questions) using the `attributes` JSON path instead of the fashion-typed columns. This becomes the test fixture proving the schema is actually generic, not just theoretically capable of being.
-5. Decide and implement the product-category vs. campaign-category resolution from "Current state" above, then fix `create_campaign()`'s hardcoded `category_mapping` (`app/tools/campaign_tools.py:66`) accordingly — using the corrected `CAMPAIGN_CATEGORIES` from Phase 1, item 5, and replacing the silent `"essentials"` fallback with an explicit, deliberate behavior (error, or a genuine "uncategorized" bucket — a conscious choice either way, not an accident).
-6. **Do not build product CRUD tools in this phase — but they are now committed scope elsewhere.** *(Amended, workstream replan-data-track, 2026-07-16: the owner decided from-scratch product onboarding is a real requirement — Q8 is answered "yes." Product CRUD (agent tools + CLI wrapper: `create_product`, `import_products_from_folder`, `generate_product_image`) lives in Phase 14, `15-product-onboarding.md`, which depends on this phase's `Product` model and adapter. This phase's job is unchanged: build the typed model/adapter/migration that Phase 14's tools will call. Products remain seeded via `products_data.py` and the new non-fashion fixture file within this phase.)*
+5. Decide and implement the product-category vs. campaign-category resolution from "Current state" above, then fix `create_campaign()`'s hardcoded `category_mapping` (`app/tools/campaign_tools.py:66`) accordingly — using the corrected `CAMPAIGN_CATEGORIES` from Phase 2, item 5, and replacing the silent `"essentials"` fallback with an explicit, deliberate behavior (error, or a genuine "uncategorized" bucket — a conscious choice either way, not an accident).
+6. **Do not build product CRUD tools in this phase — but they are now committed scope elsewhere.** *(Amended, workstream replan-data-track, 2026-07-16: the owner decided from-scratch product onboarding is a real requirement — Q8 is answered "yes." Product CRUD (agent tools + CLI wrapper: `create_product`, `import_products_from_folder`, `generate_product_image`) lives in Phase 15, `15-product-onboarding.md`, which depends on this phase's `Product` model and adapter. This phase's job is unchanged: build the typed model/adapter/migration that Phase 15's tools will call. Products remain seeded via `products_data.py` and the new non-fashion fixture file within this phase.)*
 
 ## Validation
 
@@ -39,14 +39,14 @@ Make the `products` table and its Python-side handling vertical-agnostic, so a n
 
 ## Exit criteria
 
-**Narrower than the first draft, deliberately** (per review: full non-fashion video generation needs Phase 8's prompt changes too, so it can't be this phase's exit bar). This phase exits when: a non-fashion product can be persisted, retrieved via `get_product()` as a typed `Product` with parsed `attributes`, and successfully used to create a campaign — with zero references to fashion-specific columns or a silent category fallback in the code paths exercised. Full end-to-end non-fashion image/video generation is proven in Phase 8, which depends on this phase's `Product` model existing.
+**Narrower than the first draft, deliberately** (per review: full non-fashion video generation needs Phase 9's prompt changes too, so it can't be this phase's exit bar). This phase exits when: a non-fashion product can be persisted, retrieved via `get_product()` as a typed `Product` with parsed `attributes`, and successfully used to create a campaign — with zero references to fashion-specific columns or a silent category fallback in the code paths exercised. Full end-to-end non-fashion image/video generation is proven in Phase 9, which depends on this phase's `Product` model existing.
 
 ## Dependencies
 
-Phase 1 (corrected `CAMPAIGN_CATEGORIES`).
+Phase 2 (corrected `CAMPAIGN_CATEGORIES`).
 
 ## Open questions
 
 1. **Which non-fashion vertical should the proof-of-genericity fixture use?** This should match whatever BlueZoo customer/vertical is most relevant to show next (BlueZoo's own marketed verticals are out-of-home advertising, retail, hospitality, and smart cities — none of which are fashion-specific) — worth a quick confirmation with the client rather than picking arbitrarily.
 2. **Is campaign category a controlled taxonomy independent of product category, or should it become free-form?** This determines whether step 5's fix is "add a small campaign-theme enum separate from product category" or "loosen the DB CHECK constraint" — a real design decision, not a mechanical mapping fix.
-3. ~~Product CRUD is intentionally out of scope for this phase (see step 6) — flag only as backlog if a future demo genuinely needs to create products live rather than via seed fixtures.~~ **Answered (owner, 2026-07-16): yes, it's needed** — from-scratch onboarding is a stated goal; CRUD tools are Phase 14 (`15-product-onboarding.md`). Still out of scope for *this* phase.
+3. ~~Product CRUD is intentionally out of scope for this phase (see step 6) — flag only as backlog if a future demo genuinely needs to create products live rather than via seed fixtures.~~ **Answered (owner, 2026-07-16): yes, it's needed** — from-scratch onboarding is a stated goal; CRUD tools are Phase 15 (`15-product-onboarding.md`). Still out of scope for *this* phase.

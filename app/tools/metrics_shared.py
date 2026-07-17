@@ -1,7 +1,7 @@
 """Shared metric computation — the ONLY place RPI math lives.
 
 docs/METRICS.md is the authoritative definition source; this module is its
-executable counterpart (Phase 3 / 04-centralize-rpi-metrics). Every tool
+executable counterpart (Phase 4 / 04-centralize-rpi-metrics). Every tool
 that returns an RPI value calls compute_rpi() instead of dividing inline;
 python-level cross-row averaging of already-averaged quantities (dwell
 time) goes through compute_weighted_average().

@@ -257,10 +257,10 @@ def get_campaign_metrics(campaign_id: int, days: int = 30) -> dict:
                 "revenue_per_1000_impressions": round(rpi * 1000, 2)  # CPM equivalent
             }
 
-        # Normalized no-data contract (Phase 3): a window with no
+        # Normalized no-data contract (Phase 4): a window with no
         # activated-video impressions is an explicit error, never
         # summary=None under status="success" (the ambiguity behind the
-        # Phase-1 visualization crash).
+        # Phase-2 visualization crash).
         if not summary or not daily_metrics:
             return {
                 "status": "error",
@@ -769,7 +769,7 @@ def _aggregate_week(week_slice: list, metric: str) -> float:
 
     Ratio metrics recompute ratio-of-sums via compute_rpi; dwell time is an
     impressions-weighted average; additive metrics (impressions,
-    circulation) sum. This is the per-metric aggregation rule Phase 3
+    circulation) sum. This is the per-metric aggregation rule Phase 4
     centralized — the old code summed daily values for every metric, which
     is meaningless for ratios (see docs/METRICS.md).
     """

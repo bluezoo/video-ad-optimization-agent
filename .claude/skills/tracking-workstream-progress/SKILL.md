@@ -9,7 +9,7 @@ description: Use at the start of every session touching a .docs/version2-plan/ w
 
 Two durable, git-tracked files carry the workstream lifecycle across context compaction and across workstreams: `.docs/version2-plan/STATUS.md` (cross-workstream index) and `.docs/version2-plan/working-docs/<NN>-<name>/WORK_LOG.md` (per-workstream, append-only). Neither is `subagent-driven-development`'s own `.superpowers/sdd/progress.md` ledger — that one is git-ignored scratch, scoped to a single implement-phase execution, and gone once the worktree is cleaned up after merge. These two are the permanent record.
 
-`<NN>` is the phase doc's **filename prefix**, not the phase number — they're offset by one (Phase 6's doc is `07-rpi-across-creatives-chart.md`, so its directory is `working-docs/07-rpi-across-creatives-chart/`). Same rule as `starting-a-workstream`.
+`<NN>` is the phase doc's **filename prefix**, which equals the phase number since the 2026-07-16 renumbering (Phase 7's doc is `07-rpi-across-creatives-chart.md`, so its directory is `working-docs/07-rpi-across-creatives-chart/`). Same rule as `starting-a-workstream`.
 
 **Announce at start:** "I'm using tracking-workstream-progress to [check status / update the log]."
 
@@ -30,7 +30,7 @@ Trust these files over your own memory of the conversation — that is the entir
 
 ## STATUS.md — Cross-Workstream Index
 
-One row per phase, updated in place (not appended). The `Doc` column carries the phase-doc filename prefix — the offset-by-one companion to the 0-based `Phase` number (see the Overview above); keep both columns filled, they're how readers bridge the two numbering schemes:
+One row per phase, updated in place (not appended). The `Doc` column carries the phase-doc filename prefix — equal to the `Phase` number since the 2026-07-16 renumbering; keep both columns filled (rows and records predating the renumbering used 0-based phase numbers, one less than the doc prefix):
 
 ```markdown
 | Phase | Doc | Name | Status | Branch | PR | Last updated | Note |
@@ -94,7 +94,7 @@ Every workstream surfaces new facts: "we planned X, but implementation/research 
 ## 2026-07-20 11:30 — DISCOVERY: BlueZoo API rejects sub-15-min windows
 Assumed (10-playout-attribution.md:41): windows down to 5 min supported.
 Actual: API returns 422 below 15 min — confirmed against sandbox, curl output in scratch/.
-Blast radius: Phase 10 attribution granularity; 99-open-questions Q17; this plan's Task 3.
+Blast radius: Phase 11 attribution granularity; 99-open-questions Q17; this plan's Task 3.
 ```
 
 **2. Sweep the blast radius** — grep `.docs/version2-plan/*.md` (and the current plan) for the invalidated assumption. Three targets, in order:

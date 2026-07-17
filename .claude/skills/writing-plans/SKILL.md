@@ -164,6 +164,6 @@ Inside a `.docs/version2-plan/` workstream, the saved plan needs the owner's exp
 
 ## Execution Handoff
 
-Inside a workstream, execution uses **subagent-driven-development** (the vendored copy — never the global `superpowers:`-prefixed skills, which lack this repo's version_2/WORK_LOG conventions). Exception — **trivial phases**: for a phase 00-overview.md rates Trivial (e.g. Phase 0's two-config-string change), a one-task plan executed inline in this session is acceptable; keep the non-negotiables (plan approval above, real verification, WORK_LOG/STATUS checkpoints, PR via finishing-a-development-branch). See CLAUDE.md's "Workstream process" for this fast path.
+Inside a workstream, execution uses **subagent-driven-development** (the vendored copy — never the global `superpowers:`-prefixed skills, which lack this repo's version_2/WORK_LOG conventions). Exception — **trivial phases**: for a phase 00-overview.md rates Trivial (e.g. Phase 1's two-config-string change), a one-task plan executed inline in this session is acceptable; keep the non-negotiables (plan approval above, real verification, WORK_LOG/STATUS checkpoints, PR via finishing-a-development-branch). See CLAUDE.md's "Workstream process" for this fast path.
 
 Outside a workstream, offer the standard choice: subagent-driven-development (fresh subagent per task, recommended) or inline execution via executing-plans.

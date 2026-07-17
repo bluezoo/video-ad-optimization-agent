@@ -1,4 +1,4 @@
-"""Unit tests for media-model configuration (Phase 0: model currency fix)."""
+"""Unit tests for media-model configuration (Phase 1: model currency fix)."""
 
 import importlib
 

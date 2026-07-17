@@ -1,4 +1,4 @@
-# Phase 0: Emergency Model Currency Fix — Implementation Plan
+# Phase 1: Emergency Model Currency Fix — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use subagent-driven-development (this repo's vendored copy in `.claude/skills/`, NOT the global `superpowers:` one — the local copy carries the WORK_LOG/STATUS conventions) to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. **Exception (approved):** this phase is rated Trivial in `00-overview.md`, so per CLAUDE.md's trivial-phase fast path these tasks execute inline in the main session — no per-task subagent dispatch. Everything else (checkpoints, verification, PR) stays standard.
 
@@ -14,7 +14,7 @@
 - Env override names exactly: `IMAGE_GENERATION_MODEL` and `VIDEO_GEN_MODEL` (approved addendum + plan-approval rename).
 - Constant rename `VEO_MODEL` → `VIDEO_GEN_MODEL` everywhere: `app/config.py:28`, `app/tools/video_tools.py:51,297,299,581,958,960`, plus the `CLAUDE.md:70` gotcha line and the phase doc's validation grep (both reference `VEO_MODEL` by name).
 - `MODEL = "gemini-3-flash-preview"` (config.py:24) is untouched — confirmed no near-term shutdown.
-- `README.md` untouched. `video_tools.py:18` docstring and `agent.py:200` "Gemini 2.0" texts untouched (Phase 1, item 6).
+- `README.md` untouched. `video_tools.py:18` docstring and `agent.py:200` "Gemini 2.0" texts untouched (Phase 2, item 6).
 - `app/.env` is gitignored (`.gitignore:23`) and must never be committed.
 - No `Co-Authored-By` trailers in commits.
 - Vertex env for smoke tests: project `kaggle-on-gcp`, location `global`, bucket `kaggle-on-gcp-ad-campaign-assets` (approved).
@@ -161,7 +161,7 @@ git commit -m "Add media-model smoke script; record preview-ID baseline"
 Create `tests/unit/test_config.py`:
 
 ```python
-"""Unit tests for media-model configuration (Phase 0: model currency fix)."""
+"""Unit tests for media-model configuration (Phase 1: model currency fix)."""
 
 import importlib
 
@@ -222,7 +222,7 @@ with:
 ```python
 # Media generation models — GA IDs as defaults, env-overridable so preview
 # models (e.g. Nano Banana 2 Lite, Gemini Omni Flash) can be swapped in for
-# pipeline testing without code changes (evaluation itself is Phase 13a/13b).
+# pipeline testing without code changes (evaluation itself is Phase 14a/14b).
 # VIDEO_GEN_MODEL is deliberately model-agnostic (Veo today, possibly Omni later).
 IMAGE_GENERATION = os.environ.get("IMAGE_GENERATION_MODEL", "gemini-3-pro-image")  # Stage 1 scene images
 VIDEO_GEN_MODEL = os.environ.get("VIDEO_GEN_MODEL", "veo-3.1-generate-001")  # Stage 2 video animation
@@ -349,7 +349,7 @@ with:
 - [ ] **Step 5: Amend the phase doc's open question 1** (research finding, provenance-marked per the Discoveries convention). In `.docs/version2-plan/01-emergency-model-currency-fix.md`, append directly under the first open-question bullet (the one about `MODEL = "gemini-3-flash-preview"`):
 
 ```markdown
-  > **Amended (workstream 01, 2026-07-14):** Answered during kickoff research — Google's deprecations page lists `gemini-3-flash-preview` as deprecated 2025-12-17 with **"no shutdown date announced"** (successor: `gemini-3.5-flash`). No near-term cutoff, so it stays out of Phase 0's scope; revisit if a shutdown date is announced.
+  > **Amended (workstream 01, 2026-07-14):** Answered during kickoff research — Google's deprecations page lists `gemini-3-flash-preview` as deprecated 2025-12-17 with **"no shutdown date announced"** (successor: `gemini-3.5-flash`). No near-term cutoff, so it stays out of Phase 1's scope; revisit if a shutdown date is announced.
 ```
 
 Also run `grep -n "gemini-3-flash-preview" .docs/version2-plan/99-open-questions.md` — if the consolidated list carries this question too, add the same amendment there; if not, no change.
@@ -368,7 +368,7 @@ grep -n 'IMAGE_GENERATION\s*=\|VIDEO_GEN_MODEL\s*=' app/config.py
 grep -rn "Gemini 2.0 Flash Exp" app/
 ```
 
-Expected: grep 1 → no output. Grep 2 → the two `os.environ.get` lines with GA defaults. Grep 3 → exactly two hits, `app/tools/video_tools.py:18` and `app/agent.py:200` (Phase 1's, untouched).
+Expected: grep 1 → no output. Grep 2 → the two `os.environ.get` lines with GA defaults. Grep 3 → exactly two hits, `app/tools/video_tools.py:18` and `app/agent.py:200` (Phase 2's, untouched).
 
 - [ ] **Step 7: Commit**
 
@@ -424,7 +424,7 @@ Env-override path verified (IMAGE_GENERATION_MODEL). test-unit / test-e2e / test
 
 ```bash
 git add .docs/version2-plan/working-docs/01-emergency-model-currency-fix/WORK_LOG.md
-git commit -m "Record Phase 0 release-gate results"
+git commit -m "Record Phase 1 release-gate results"
 ```
 
 ---

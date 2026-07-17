@@ -2,7 +2,7 @@
 
 Owner-facing walkthrough of the full workstream lifecycle: which skill fires at each step, what Claude does autonomously, and the exact moments your input is required. The skills themselves (`.claude/skills/`) are the enforcement mechanism; this doc is the map. If this doc and a skill ever disagree, the skill wins — then fix this doc.
 
-Running example throughout: **Phase 6, the RPI-across-creatives chart** (phase doc `07-rpi-across-creatives-chart.md` — note the filename prefix `07` is what names the workstream's folders/branch, not the phase number; they're offset by one).
+Running example throughout: **Phase 7, the RPI-across-creatives chart** (phase doc `07-rpi-across-creatives-chart.md` — the filename prefix `07` equals the phase number since the 2026-07-16 renumbering, and is what names the workstream's folders/branch).
 
 ---
 
@@ -26,19 +26,19 @@ The process infra — `.claude/skills/`, `.claude/agents/`, `.mcp.json`, `STATUS
 
 ---
 
-## Walkthrough: shipping Phase 6
+## Walkthrough: shipping Phase 7
 
 ### You type
 
-> Start the workstream for Phase 6 (07-rpi-across-creatives-chart).
+> Start the workstream for Phase 7 (07-rpi-across-creatives-chart).
 
 That single sentence is enough. Everything below is what happens next.
 
 ### Step 0 — Resume check (automatic)
 
-Claude reads `STATUS.md`. Phase 6's row says `not started` → kickoff proceeds. (If it said anything else, Claude resumes at whatever step the row + `WORK_LOG.md` indicate instead of restarting — this is also exactly what happens after a crashed or compacted session.)
+Claude reads `STATUS.md`. Phase 7's row says `not started` → kickoff proceeds. (If it said anything else, Claude resumes at whatever step the row + `WORK_LOG.md` indicate instead of restarting — this is also exactly what happens after a crashed or compacted session.)
 
-It also checks Phase 6's dependencies are `merged` in STATUS.md. Dependencies not merged → the workstream doesn't start; finish those first. Sequential, always.
+It also checks Phase 7's dependencies are `merged` in STATUS.md. Dependencies not merged → the workstream doesn't start; finish those first. Sequential, always.
 
 ### Step 1 — Kickoff (`starting-a-workstream`)
 
@@ -71,7 +71,7 @@ You don't need to be present per-task. Check in whenever; `WORK_LOG.md` always s
 
 STATUS → `verify in progress`. Beyond green tests, Claude dispatches the `demo-scenario-verifier` agent: it kills anything stale on port 8501, starts `make dev` *in this worktree*, drives the scenario's queries through the ADK web UI via chrome-devtools MCP, and checks the **Trace tab** (or the `/run` response's event list for `api_server`) to confirm the right tools fired with sane arguments. Evidence (screenshots, trace observations) lands in the report; result goes into `WORK_LOG.md` (checkpoint 5).
 
-For Phase 6 this means: the new chart tool actually gets invoked by the Analytics Agent for a "compare RPI across creatives" query, and the chart artifact renders. A failing scenario blocks finishing — fix and re-verify.
+For Phase 7 this means: the new chart tool actually gets invoked by the Analytics Agent for a "compare RPI across creatives" query, and the chart artifact renders. A failing scenario blocks finishing — fix and re-verify.
 
 If the phase touches a vertical with no scenario doc yet, writing one (adapted from `DEMO_GUIDE.md`, plus expected-tool-call assertions) is part of this step. `DEMO_GUIDE.md` itself is never run directly and never edited.
 
@@ -98,9 +98,9 @@ Worktree exits and is removed, `version_2` is pulled fresh in the main checkout,
 
 ### Next workstream
 
-> Start the workstream for Phase 7.
+> Start the workstream for Phase 8.
 
-New worktree, branched from the `version_2` that now *contains* Phase 6. Same loop.
+New worktree, branched from the `version_2` that now *contains* Phase 7. Same loop.
 
 ---
 
@@ -115,7 +115,7 @@ This will happen constantly, and it's the difference between plans that stay use
    - **Durable knowledge:** operational facts every future session needs → `CLAUDE.md` gotchas; env/setup changes → `SETUP_INSTRUCTIONS.md`; your preferences and process corrections → Claude's persistent memory.
 3. **Amendments ship with this workstream's PR.** The invariant: after every merge, the remaining plan is current as of everything learned so far. The next kickoff's re-verification step then *confirms* freshness instead of excavating months of drift.
 
-Worked example: during Phase 10 implementation, the BlueZoo sandbox rejects sub-15-minute windows that `10-playout-attribution.md` assumed were available. Same turn: DISCOVERY entry in WORK_LOG.md → `10-*.md` amended with provenance → Q17 in `99-open-questions.md` updated (it asked exactly this) → Phase 6's chart granularity note checked for impact → if it's an API behavior every future session must know, one line in CLAUDE.md's gotchas. All of it lands in the Phase 10 PR.
+Worked example: during Phase 11 implementation, the BlueZoo sandbox rejects sub-15-minute windows that `10-playout-attribution.md` assumed were available. Same turn: DISCOVERY entry in WORK_LOG.md → `10-*.md` amended with provenance → Q17 in `99-open-questions.md` updated (it asked exactly this) → Phase 7's chart granularity note checked for impact → if it's an API behavior every future session must know, one line in CLAUDE.md's gotchas. All of it lands in the Phase 11 PR.
 
 **Your role:** discoveries that change scope, cost, or an open-question answer get surfaced to you at the moment they're found — not batched into the PR description. Everything else is recorded and flows through the PR for your review at merge time.
 
@@ -123,7 +123,7 @@ Worked example: during Phase 10 implementation, the BlueZoo sandbox rejects sub-
 
 ## Trivial-phase fast path
 
-For a phase `00-overview.md` rates Trivial (e.g. Phase 0, the two-config-string model swap): step 3's per-task subagent dispatch may be replaced by inline execution of a one-task plan. **Everything else is non-negotiable** — working-doc approval, plan approval, real verification, WORK_LOG/STATUS checkpoints, PR + self-merge. The fast path trims ceremony, not evidence.
+For a phase `00-overview.md` rates Trivial (e.g. Phase 1, the two-config-string model swap): step 3's per-task subagent dispatch may be replaced by inline execution of a one-task plan. **Everything else is non-negotiable** — working-doc approval, plan approval, real verification, WORK_LOG/STATUS checkpoints, PR + self-merge. The fast path trims ceremony, not evidence.
 
 ## Interruptions, compaction, new sessions
 
