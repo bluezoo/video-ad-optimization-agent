@@ -14,7 +14,7 @@ Update rows in place as a workstream progresses; don't append new rows for the s
 | 2 | `02` | bug-fixes-and-cleanup | merged | version_2_bug-fixes-and-cleanup | [#2](https://github.com/bluezoo/video-ad-optimization-agent/pull/2) | 2026-07-16 | merged e0a0a52; incl. DB-isolation fix + test de-vacuation discoveries |
 | 3 | `03` | metrics-glossary-and-terminology | merged | version_2_metrics-glossary | [#3](https://github.com/bluezoo/video-ad-optimization-agent/pull/3) | 2026-07-16 | merged 2bb2452; docs/METRICS.md is the metrics source of truth; demo skipped by design (docs-only) |
 | 4 | `04` | centralize-rpi-metrics | merged | version_2_centralize-rpi-metrics | #4 | 2026-07-16 | squash commit a29f182; demo F2 PASS; final review clean |
-| 5 | `05` | deterministic-demo-data | plan in progress | version_2_deterministic-demo-data | - | 2026-07-17 | working doc approved; owner chose flat RPI constant + numpy-only |
+| 5 | `05` | deterministic-demo-data | implement in progress | version_2_deterministic-demo-data | - | 2026-07-17 | plan approved (3a23dcc); 6 tasks |
 | 6 | `06` | app-mode-config-skeleton | not started | - | - | 2026-07-13 | - |
 | 7 | `07` | rpi-across-creatives-chart | not started | - | - | 2026-07-13 | depends on Phases 4, 5 |
 | 8 | `08` | product-schema-generalization | not started | - | - | 2026-07-13 | depends on Phase 2 |
