@@ -23,6 +23,7 @@ from google.genai import types
 
 from ..config import IMAGE_GENERATION
 from ..database.db import get_db_cursor
+from .metrics_shared import compute_rpi, compute_weighted_average
 
 # =============================================================================
 # Chart Prompt Templates (Anti-Hallucination)
@@ -213,14 +214,14 @@ def get_campaign_metrics(campaign_id: int, days: int = 30) -> dict:
         for row in cursor.fetchall():
             impressions = int(row["impressions"]) if row["impressions"] else 0
             revenue = round(row["revenue"], 2) if row["revenue"] else 0
-            # Compute RPI on the fly (THE key metric)
-            rpi = round(revenue / impressions, 4) if impressions > 0 else 0
+            rpi = compute_rpi(revenue, impressions)
 
             daily_metrics.append({
                 "date": row["date"],
                 "impressions": impressions,
                 "dwell_time": round(row["avg_dwell_time"], 1) if row["avg_dwell_time"] else 0,
                 "circulation": int(row["circulation"]) if row["circulation"] else 0,
+                "revenue": revenue,
                 "revenue_per_impression": rpi
             })
 
@@ -245,7 +246,7 @@ def get_campaign_metrics(campaign_id: int, days: int = 30) -> dict:
             total_impressions = int(totals["total_impressions"])
             total_revenue = round(totals["total_revenue"], 2) if totals["total_revenue"] else 0
             # RPI is THE key metric for retail media
-            rpi = round(total_revenue / total_impressions, 4) if total_impressions > 0 else 0
+            rpi = compute_rpi(total_revenue, total_impressions)
 
             summary = {
                 "total_impressions": total_impressions,
@@ -254,6 +255,20 @@ def get_campaign_metrics(campaign_id: int, days: int = 30) -> dict:
                 "total_revenue": total_revenue,
                 "revenue_per_impression": rpi,
                 "revenue_per_1000_impressions": round(rpi * 1000, 2)  # CPM equivalent
+            }
+
+        # Normalized no-data contract (Phase 3): a window with no
+        # activated-video impressions is an explicit error, never
+        # summary=None under status="success" (the ambiguity behind the
+        # Phase-1 visualization crash).
+        if not summary or not daily_metrics:
+            return {
+                "status": "error",
+                "message": (
+                    f"No metrics data available for campaign {campaign_id}. "
+                    "Metrics only exist for activated videos — use the Review "
+                    "Agent to activate videos first."
+                ),
             }
 
         # Get count of activated videos
@@ -275,8 +290,7 @@ def get_campaign_metrics(campaign_id: int, days: int = 30) -> dict:
             "activated_videos": video_count,
             "period": f"last_{days}_days",
             "summary": summary,
-            "daily_metrics": daily_metrics,
-            "note": "Metrics only available for activated videos. Use Review Agent to activate pending videos." if not summary else None
+            "daily_metrics": daily_metrics
         }
 
 

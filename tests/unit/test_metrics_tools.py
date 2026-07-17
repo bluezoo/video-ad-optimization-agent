@@ -23,6 +23,53 @@ Tests the 5 analytics-related tools (non-visualization):
 """
 
 from unittest.mock import patch
+from datetime import date, timedelta
+
+
+def _make_campaign_with_metrics(rows, num_videos=1):
+    """Create a campaign with activated video(s) and controlled metric rows.
+
+    rows: dicts with keys metric_date (ISO str), impressions, revenue, and
+    optional dwell_time_seconds, circulation, video_index (default 0).
+    Returns {"campaign_id": int, "video_ids": [int, ...]}.
+    """
+    from app.database.db import get_db_cursor
+    from app.tools.campaign_tools import create_campaign
+
+    created = create_campaign(
+        product_id=1, store_name="Parity Test Store", city="Austin", state="TX"
+    )
+    assert created["status"] == "success"
+    campaign_id = created["campaign"]["id"]
+
+    video_ids = []
+    with get_db_cursor() as cursor:
+        for i in range(num_videos):
+            cursor.execute(
+                "INSERT INTO campaign_videos (campaign_id, video_filename, status)"
+                " VALUES (?, ?, 'activated')",
+                (campaign_id, f"parity-test-{campaign_id}-{i}.mp4"),
+            )
+            video_ids.append(cursor.lastrowid)
+        for r in rows:
+            cursor.execute(
+                "INSERT INTO video_metrics"
+                " (video_id, metric_date, impressions, dwell_time_seconds,"
+                "  circulation, revenue) VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    video_ids[r.get("video_index", 0)],
+                    r["metric_date"],
+                    r["impressions"],
+                    r.get("dwell_time_seconds", 5.0),
+                    r.get("circulation", 0),
+                    r["revenue"],
+                ),
+            )
+    return {"campaign_id": campaign_id, "video_ids": video_ids}
+
+
+def _days_ago(n):
+    return (date.today() - timedelta(days=n)).isoformat()
 
 
 class TestGetCampaignMetrics:
@@ -68,6 +115,47 @@ class TestGetCampaignMetrics:
             found = sum(1 for k in kpis if k in metrics_str)
             # At least some KPIs should be present
             assert found >= 0  # May be 0 if no activated videos
+
+    def test_no_data_returns_error_status(self, test_db):
+        """Normalized contract: no activated metrics -> status error, never
+        summary=None under status success."""
+        from app.tools.campaign_tools import create_campaign
+        from app.tools.metrics_tools import get_campaign_metrics
+
+        created = create_campaign(
+            product_id=1, store_name="No Data Store", city="Austin", state="TX"
+        )
+        result = get_campaign_metrics(campaign_id=created["campaign"]["id"])
+
+        assert result["status"] == "error"
+        assert "No metrics data available" in result["message"]
+
+    def test_summary_rpi_is_ratio_of_sums(self, test_db):
+        """Summary RPI == compute_rpi over summed rows; daily rows carry
+        revenue and per-day RPI parity (thin-wrapper check)."""
+        from app.tools.metrics_shared import compute_rpi
+        from app.tools.metrics_tools import get_campaign_metrics
+
+        rows = [
+            {"metric_date": _days_ago(1), "impressions": 1000, "revenue": 10.0},
+            {"metric_date": _days_ago(2), "impressions": 500, "revenue": 50.0},
+            {"metric_date": _days_ago(3), "impressions": 2000, "revenue": 20.0},
+        ]
+        made = _make_campaign_with_metrics(rows)
+        result = get_campaign_metrics(campaign_id=made["campaign_id"], days=30)
+
+        assert result["status"] == "success"
+        expected = compute_rpi(80.0, 3500)
+        assert result["summary"]["revenue_per_impression"] == expected
+        # Non-probative-equality guard: ratio-of-sums must differ from the
+        # mean of daily ratios for this deliberately unequal data.
+        daily_rpis = [d["revenue_per_impression"] for d in result["daily_metrics"]]
+        assert expected != round(sum(daily_rpis) / len(daily_rpis), 4)
+        for d in result["daily_metrics"]:
+            assert "revenue" in d
+            assert d["revenue_per_impression"] == compute_rpi(
+                d["revenue"], d["impressions"]
+            )
 
 
 class TestGetTopPerformingAds:
