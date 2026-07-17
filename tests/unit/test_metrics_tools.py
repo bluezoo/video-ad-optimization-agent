@@ -261,6 +261,57 @@ class TestGetCampaignInsights:
         # Should return error
         assert "error" in result or "not found" in str(result).lower() or result is not None
 
+    def test_date_scoping_excludes_old_metrics(self, test_db):
+        """days=30 must ignore a 200-day-old outlier; a wide window sees it."""
+        from app.tools.metrics_tools import get_campaign_insights
+
+        made = _make_campaign_with_metrics([
+            {"metric_date": _days_ago(200), "impressions": 100, "revenue": 1000.0},
+            {"metric_date": _days_ago(1), "impressions": 1000, "revenue": 50.0},
+        ])
+
+        scoped = get_campaign_insights(campaign_id=made["campaign_id"], days=30)
+        assert scoped["status"] == "success"
+        assert scoped["best_day"]["date"] == _days_ago(1)
+
+        wide = get_campaign_insights(campaign_id=made["campaign_id"], days=365)
+        assert wide["best_day"]["date"] == _days_ago(200)
+
+    def test_trend_compares_rpi_not_revenue(self, test_db):
+        """Revenue rises while RPI falls -> trend must be 'declining'.
+        (The old code compared raw revenue and would say 'improving'.)"""
+        from app.tools.metrics_tools import get_campaign_insights
+
+        rows = []
+        for n in range(27, 13, -1):  # older half: low revenue, HIGH RPI (0.1)
+            rows.append({"metric_date": _days_ago(n), "impressions": 500, "revenue": 50.0})
+        for n in range(13, 0, -1):  # newer half: high revenue, LOW RPI (0.02)
+            rows.append({"metric_date": _days_ago(n), "impressions": 5000, "revenue": 100.0})
+        made = _make_campaign_with_metrics(rows)
+
+        result = get_campaign_insights(campaign_id=made["campaign_id"], days=30)
+        assert result["status"] == "success"
+        assert result["performance_trend"] == "declining"
+
+    def test_best_day_groups_by_day_not_row(self, test_db):
+        """Day A holds the single best ROW (RPI 1.0) but day B is the best
+        aggregated DAY: A = (100+1)/(100+1000) ≈ 0.0918 < B = 50/500 = 0.1."""
+        from app.tools.metrics_tools import get_campaign_insights
+
+        made = _make_campaign_with_metrics(
+            [
+                {"metric_date": _days_ago(2), "impressions": 100, "revenue": 100.0, "video_index": 0},
+                {"metric_date": _days_ago(2), "impressions": 1000, "revenue": 1.0, "video_index": 1},
+                {"metric_date": _days_ago(1), "impressions": 500, "revenue": 50.0, "video_index": 0},
+            ],
+            num_videos=2,
+        )
+
+        result = get_campaign_insights(campaign_id=made["campaign_id"], days=30)
+        assert result["status"] == "success"
+        assert result["best_day"]["date"] == _days_ago(1)
+        assert result["best_day"]["revenue_per_impression"] == 0.1
+
 
 class TestCompareCampaigns:
     """Tests for compare_campaigns tool."""
