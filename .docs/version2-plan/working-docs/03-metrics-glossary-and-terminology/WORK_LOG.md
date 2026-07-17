@@ -31,3 +31,6 @@ Per verifying-with-demo-scenarios' skip rule for genuinely non-agent-facing work
 
 ## 2026-07-16 — final whole-branch review: Ready to merge
 Fable reviewer, range 1fb1d77..c54c3d7. Initial verdict "Needs fixes" on one Important finding (docs/METRICS.md cited open questions by the phase doc's local numbers 1/2 instead of 99-open-questions.md's 5/6) plus one accepted Minor (WORK_LOG referenced the git-ignored SDD ledger path). Both fixed in c54c3d7 (cross-references now carry the confirmed numbers + quoted heading titles); re-review confirmed resolved, constraints re-verified, no new issues. Third (Minor, line-number drift between phase doc and working doc) accepted as no-action — expected re-verification against post-ws02 code.
+
+## 2026-07-16 — finish: PR open (checkpoint 6, pending merge)
+PR #3 into version_2: https://github.com/bluezoo/video-ad-optimization-agent/pull/3 — awaiting owner confirmation to self-merge per the sequencing model.
