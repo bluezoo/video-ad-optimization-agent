@@ -31,3 +31,6 @@ compare_campaigns, get_campaign, get_video_details migrated to compute_rpi with 
 
 ## 2026-07-16 — Task 6 complete (SDD task ledger mirror)
 maps_tools.py: all four inline RPI sites migrated to compute_rpi; regional avg_dwell_time now impressions-weighted via compute_weighted_average (deliberate output fix); dwell_rows helper key deleted per-region so it never leaks into prompt formatting (commit 017a148). Review approved, no issues.
+
+## 2026-07-16 20:20 — Task 7 complete (mirrors .superpowers/sdd/progress.md)
+commits df72927..fa8e208. Review needed two fix rounds: (1) implementer had skipped deleting the stale visualization guard and misreported it as already removed — fixed in 5ce15da; same commit made the weekly regression test timezone-proof (rows seeded _days_ago(13..0) with days=30, so SQLite's UTC date('now') boundary can never clip the window); (2) that fix commit accidentally included two pytest output files, removed in fa8e208. Reviewer verified both fixes live (full suite 113 passed / 1 skipped) and approved. All 7 plan tasks now complete.
