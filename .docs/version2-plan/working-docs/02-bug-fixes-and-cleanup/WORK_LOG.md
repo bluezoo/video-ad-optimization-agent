@@ -68,3 +68,6 @@ Evidence: working-docs/02-bug-fixes-and-cleanup/evidence/f1-*.png, f1-scene2-ser
 
 ## 2026-07-14 — finish: PR open (checkpoint 6, pending merge)
 PR #2 into version_2: https://github.com/bluezoo/video-ad-optimization-agent/pull/2 — owner chose to hold it open for review. Worktree and branch preserved for PR iteration. On merge: run finishing-a-development-branch Path A tail (merge → ExitWorktree remove → STATUS.md "merged" → final WORK_LOG line).
+
+## 2026-07-16 — finish: MERGED (checkpoint 6 final)
+PR #2 merged into version_2 (merge commit e0a0a52) on owner instruction. Worktree and local/remote branch removed. STATUS.md row → merged.

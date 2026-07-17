@@ -11,7 +11,7 @@ Update rows in place as a workstream progresses; don't append new rows for the s
 | Phase | Doc | Name | Status | Branch | PR | Last updated | Note |
 |---|---|---|---|---|---|---|---|
 | 0 | `01` | emergency-model-currency-fix | merged | version_2_model-currency-fix | [#1](https://github.com/bluezoo/video-ad-optimization-agent/pull/1) | 2026-07-14 | merged 9f12738; incl. conftest fix + preview-model probe |
-| 1 | `02` | bug-fixes-and-cleanup | PR open | version_2_bug-fixes-and-cleanup | [#2](https://github.com/bluezoo/video-ad-optimization-agent/pull/2) | 2026-07-14 | all verified (e2e 0 failed, F1+F2 PASS, review clean); held for owner review |
+| 1 | `02` | bug-fixes-and-cleanup | merged | version_2_bug-fixes-and-cleanup | [#2](https://github.com/bluezoo/video-ad-optimization-agent/pull/2) | 2026-07-16 | merged e0a0a52; incl. DB-isolation fix + test de-vacuation discoveries |
 | 2 | `03` | metrics-glossary-and-terminology | not started | - | - | 2026-07-13 | - |
 | 3 | `04` | centralize-rpi-metrics | not started | - | - | 2026-07-13 | depends on Phase 2 |
 | 4 | `05` | deterministic-demo-data | not started | - | - | 2026-07-13 | depends on Phase 3 |
