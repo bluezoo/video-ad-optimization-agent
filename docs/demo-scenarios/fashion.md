@@ -92,27 +92,39 @@ number the agent reports must be internally consistent under the flat demo
 revenue model (`revenue = impressions × 0.05`, so RPI is exactly 0.05
 everywhere by construction).
 
-### Scene F3.1 — HITL activation seeds a 30-day window
+### Scene F3.1 — deterministic 30-day window and anchor extension
 
-**Query 1:** "Show me the videos pending review"
+> Note: the seeded demo DB activates all its videos up front (base behavior,
+> `app/database/mock_data.py`), so there is nothing pending to activate in a
+> fresh DB — HITL activation seeding is covered by unit tests
+> (`tests/unit/test_review_tools.py::TestDeterministicActivation`) and only
+> occurs live after a real Veo generation (Scenario F1). This scene instead
+> asserts the seeded window and the anchor-advancing extension path.
 
-**Query 2 (follow-up turn):** "Activate video <ID>" — use a video id from
-Query 1's response, preferring one belonging to a seeded demo campaign.
+**Query 1:** "What's the status of video 1, including how many days of
+metrics it has?"
+
+**Query 2 (follow-up turn):** "Generate 3 more days of metrics for video 1"
+
+**Query 3 (follow-up turn):** "Check video 1's status again — how many days
+of metrics now?"
 
 **Expected tool calls:**
-- Query 1: `list_pending_videos` (Review tools; arguments none/defaults).
-- Query 2: `activate_video(video_id=<ID>)`.
+- Query 1: `get_video_status(video_id=1)` → `video_status: "activated"`,
+  `metrics_count: 30` (the seeded 30-day anchor window — must be 30, not 7).
+- Query 2: `generate_additional_metrics(video_id=1, days=3)` →
+  `status: "success"`, `days_generated: 3`.
+- Query 3: `get_video_status(video_id=1)` → `metrics_count: 33`.
 
 **Pass criteria:**
-- Activation response reports success and ~30 days of metrics generated
-  (the tool returns a `metrics_generated` / days count — must be 30, not 7,
-  and must not mention random generation).
-- No crash/traceback in either response.
+- The counts are exactly 30 → +3 → 33; no response mentions random
+  generation; no crash/traceback in any response.
 
 ### Scene F3.2 — reported numbers are internally consistent (RPI = 0.05)
 
 **Query:** "Give me the top performing ads for that campaign, with their
-impressions, revenue and RPI" (same campaign as the video activated in F3.1).
+impressions, revenue and RPI" (same campaign as video 1 from F3.1 — its
+campaign name/id comes back in the Query 1 response there).
 
 **Expected tool calls:**
 - `get_top_performing_ads` (or `get_campaign_metrics`/`get_campaign_insights`
