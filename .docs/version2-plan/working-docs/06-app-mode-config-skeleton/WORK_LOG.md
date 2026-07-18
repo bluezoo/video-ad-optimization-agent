@@ -16,3 +16,6 @@ commits 9e7bb0c..ffe2873, review clean (Approved, 12/12 spec items). AppMode + v
 
 ## 2026-07-18 — Task 2 complete (mirrors .superpowers/sdd/progress.md)
 commits 7a1a477..50f61ba, review clean (Approved, exact match to brief). APP_MODE forwarded in scripts/deploy.sh (--set-env-vars, default demo) and scripts/deploy_ae_inline.py (env_vars dict); deploy_ae.sh untouched by design. Implementer's dry-run gap closed by controller: actual generated gcloud command shows --set-env-vars=APP_MODE=demo (and =connected when set).
+
+## 2026-07-18 — Task 3 complete (mirrors .superpowers/sdd/progress.md)
+commits ef6337c..741ab17, review clean (Approved; every documented claim cross-checked against code). APP_MODE documented in CLAUDE.md Environment, SETUP_INSTRUCTIONS.md (Optional block + Phase 6 workstream bullet), DEPLOYMENT.md Optional table. Full make test green (148 unit / e2e / 5 integration). All 3 plan tasks complete.
