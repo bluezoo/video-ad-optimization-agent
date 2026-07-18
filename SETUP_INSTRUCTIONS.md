@@ -40,6 +40,7 @@ GCS_BUCKET=<your-bucket-name>
 **Optional:**
 ```
 GOOGLE_MAPS_API_KEY=<your-maps-key>   # or MAPS_API_KEY
+APP_MODE=demo                          # or connected; default demo — inert until Phase 11/12
 ```
 
 ## Run locally
@@ -97,3 +98,4 @@ See `DEPLOYMENT.md` for Cloud Run / Vertex AI Agent Engine deployment, including
 This section accumulates setup steps introduced by `.docs/version2-plan/` phases as they land — e.g. `APP_MODE` (Phase 6), a BlueZoo `AccessKey` secret (Phase 11), a PoS credential (Phase 12). Check `.docs/version2-plan/STATUS.md` for current progress.
 
 - **Phase 1 (workstream 01):** all three model config values now default to GA IDs and are env-overridable via `AGENT_MODEL` (default `gemini-3.5-flash`), `IMAGE_GENERATION_MODEL` (default `gemini-3-pro-image`), and `VIDEO_GEN_MODEL` (default `veo-3.1-generate-001`) — set them in `app/.env` only when testing a different (e.g. preview) model. `scripts/smoke_media_models.py` smoke-tests Stage 1 + Stage 2 generation against whatever is configured (`--skip-video` for the cheap image-only check). Note `make install` runs bare `python`; on machines with only versioned interpreters, create the venv manually (`python3.12 -m venv .venv && .venv/bin/pip install -r app/requirements.txt`).
+- **Phase 6 (workstream 06):** `APP_MODE=demo|connected` exists as a typed config value (`app/config.py`), default `demo`; invalid values fail startup with a `ValueError`. Nothing consumes it yet — Phase 11a resolves it to a data-provider selection internally (it stays the only user-facing mode knob). Both explicit deploy paths forward it (`scripts/deploy.sh` via `--set-env-vars`, `scripts/deploy_ae_inline.py` via its `env_vars` dict); `scripts/deploy_ae.sh` picks it up from `app/.env` automatically.
