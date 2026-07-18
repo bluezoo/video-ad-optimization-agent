@@ -110,11 +110,12 @@ metrics it has?"
 of metrics now?"
 
 **Expected tool calls:**
-- Query 1: `get_video_status(video_id=1)` → `video_status: "activated"`,
-  `metrics_count: 30` (the seeded 30-day anchor window — must be 30, not 7).
+- Query 1: `get_video_status(video_id=1)` or `get_video_details(1)` (the
+  latter returns a superset — either is acceptable) → status "activated",
+  30 metric days (`metrics_count`/`days_tracked` — must be 30, not 7).
 - Query 2: `generate_additional_metrics(video_id=1, days=3)` →
   `status: "success"`, `days_generated: 3`.
-- Query 3: `get_video_status(video_id=1)` → `metrics_count: 33`.
+- Query 3: same status tool again → 33 metric days.
 
 **Pass criteria:**
 - The counts are exactly 30 → +3 → 33; no response mentions random
