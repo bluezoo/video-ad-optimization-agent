@@ -13,3 +13,6 @@ Owner approved plan.md (cfa4d37): 3 tasks — (1) AppMode enum + validated APP_M
 
 ## 2026-07-18 — Task 1 complete (mirrors .superpowers/sdd/progress.md)
 commits 9e7bb0c..ffe2873, review clean (Approved, 12/12 spec items). AppMode + validated APP_MODE in app/config.py; 7 new tests (148 unit total green); lint clean; 4-case smoke matrix correct. Deviation adjudicated: implementer used StrEnum instead of the brief's (str, Enum) — accepted, ruff.toml targets py311 so StrEnum is the lint-preferred form; ≤3.10 ImportError concern moot.
+
+## 2026-07-18 — Task 2 complete (mirrors .superpowers/sdd/progress.md)
+commits 7a1a477..50f61ba, review clean (Approved, exact match to brief). APP_MODE forwarded in scripts/deploy.sh (--set-env-vars, default demo) and scripts/deploy_ae_inline.py (env_vars dict); deploy_ae.sh untouched by design. Implementer's dry-run gap closed by controller: actual generated gcloud command shows --set-env-vars=APP_MODE=demo (and =connected when set).
