@@ -37,3 +37,6 @@ Fresh `make dev` on :8501 from this worktree, fresh-seeded DB. Full `make test` 
 
 ## 2026-07-17 19:40 — final whole-branch review: Ready to merge
 Fresh reviewer, full package 1008c79..68e1442 (22 commits, 19 files, +2751/−301). All focus checks PASS: five port corrections verified in code at exact bin indices; single DEMO_RPI constant; both legacy generators deleted; tool contracts unchanged; determinism proven incl. cross-process; no forbidden touches (README/DEMO_GUIDE untouched, no .env, no AI trailers). Zero Critical/Important; 3 informational Minors (startup DELETE-then-INSERT reseed window; pre-existing weak assertions; 62 pre-existing lint errors) — none blocking. Full report: .superpowers/sdd/final-review.md (scratch) — verdicts mirrored here.
+
+## 2026-07-18 — finish: merged (checkpoint 6)
+PR #6 squash-merged into version_2 as a5a0f17 (owner-confirmed). Worktree removed, local + remote workstream branch deleted. STATUS.md row → merged. Workstream 05 closed.
