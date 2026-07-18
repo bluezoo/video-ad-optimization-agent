@@ -19,3 +19,11 @@ commits 7a1a477..50f61ba, review clean (Approved, exact match to brief). APP_MOD
 
 ## 2026-07-18 — Task 3 complete (mirrors .superpowers/sdd/progress.md)
 commits ef6337c..741ab17, review clean (Approved; every documented claim cross-checked against code). APP_MODE documented in CLAUDE.md Environment, SETUP_INSTRUCTIONS.md (Optional block + Phase 6 workstream bullet), DEPLOYMENT.md Optional table. Full make test green (148 unit / e2e / 5 integration). All 3 plan tasks complete.
+
+## 2026-07-18 — verification: PASS via startup smoke matrix; demo scenario explicitly SKIPPED (checkpoint 5)
+Demo-scenario run skipped per verifying-with-demo-scenarios' allowance for genuinely non-agent-facing work, owner-approved at the working-doc gate: this phase changes zero tool/agent behavior (APP_MODE has no consumers), and every fashion.md scenario scripts agent behavior. Substitute evidence, run at the full `import app.agent` level:
+- unset → boot OK, mode = demo
+- APP_MODE=demo → boot OK, mode = demo
+- APP_MODE=connected → boot OK, mode = connected (readable, inert)
+- APP_MODE=garbage → ValueError: "Invalid APP_MODE='garbage'. Allowed values: demo, connected; unset defaults to 'demo'." (exit 1; same failure at pytest collection)
+Deploy validation: actual `deploy.sh --dry-run` command contains --set-env-vars=APP_MODE=demo (and =connected when set); deploy_ae_inline.py env_vars verified by grep + AST parse. Full make test green in Task 3 (148 unit / e2e / 5 integration).
