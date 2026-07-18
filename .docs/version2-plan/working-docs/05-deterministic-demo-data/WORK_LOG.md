@@ -25,3 +25,6 @@ commits ff19a91..d533ce9, review clean — populate_mock_data() now derives dete
 
 ## 2026-07-17 — Task 5 complete (mirrors .superpowers/sdd/progress.md)
 commits 789b6c4..0b8a84b, review clean — activate_video fills [anchor-29, anchor]; generate_additional_metrics advances the global anchor and extends every activated video atomically, count scoped to the requested video; second _generate_mock_video_metrics deleted (repo-wide grep now zero hits); response contracts byte-compatible. Unit 141 passed, e2e 25 passed.
+
+## 2026-07-17 17:20 — Task 6 complete (mirrors .superpowers/sdd/progress.md)
+commits fcf3e4c..a0b934a, review clean (fresh haiku reviewer, Approved). f11e78f: BLUEZOO_MAPPING.md (donor pin b6e3302 recorded; five port corrections documented) + SETUP_INSTRUCTIONS.md numpy note. a0b934a: controller fix for the only 2 branch-introduced lint errors (ruff UP017 in app/database/db.py + tests/unit/test_demo_meta.py, from Task 3's anchor helpers). Lint discrepancy resolved: the other 62 `make lint` errors are byte-identical on base 1008c79 (incl. all 7 in app/tools/review_tools.py) — pre-existing, out of scope for this workstream. Full `make test` green (141 unit / 25 e2e / 5 integration). All 6 plan tasks complete.
