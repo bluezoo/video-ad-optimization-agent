@@ -15,6 +15,26 @@
 """Configuration for the Ad Campaign Agent."""
 
 import os
+from enum import StrEnum
+
+
+# App mode (Phase 6): demo|connected, default demo. Nothing consumes this yet —
+# Phase 11a resolves it internally to a data-provider selection (demo → the
+# synthetic provider, connected → the live one). APP_MODE stays the ONLY
+# user-facing mode knob; do not add a second mode env var.
+class AppMode(StrEnum):
+    DEMO = "demo"
+    CONNECTED = "connected"
+
+
+_raw_app_mode = (os.environ.get("APP_MODE") or "").strip().lower()
+try:
+    APP_MODE = AppMode(_raw_app_mode) if _raw_app_mode else AppMode.DEMO
+except ValueError:
+    raise ValueError(
+        f"Invalid APP_MODE={_raw_app_mode!r}. Allowed values: "
+        f"{', '.join(m.value for m in AppMode)}; unset defaults to 'demo'."
+    ) from None
 
 # Model configuration
 # Agent models
