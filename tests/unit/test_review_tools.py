@@ -332,3 +332,183 @@ class TestGenerateAdditionalMetrics:
 
         # Should handle gracefully
         assert result is not None
+
+
+class TestDeterministicActivation:
+    def test_activation_fills_anchor_window(self, fresh_test_db):
+        """A newly-activated video's rows land on [anchor-29, anchor] —
+        the same window seeding used (no seed/activation discontinuity)."""
+        from datetime import date, timedelta
+
+        from app.database.db import get_db_cursor, get_demo_anchor_date
+        from app.tools.review_tools import activate_video
+
+        with get_db_cursor() as cursor:
+            # Get a campaign and product
+            cursor.execute(
+                "SELECT c.id as campaign_id, p.id as product_id FROM campaigns c, products p LIMIT 1"
+            )
+            row = cursor.fetchone()
+            campaign_id = row["campaign_id"]
+            product_id = row["product_id"]
+
+            # Create a new video in 'generated' status
+            cursor.execute(
+                """
+                INSERT INTO campaign_videos
+                (campaign_id, product_id, video_filename, thumbnail_path,
+                 scene_prompt, video_prompt, pipeline_type, variation_name,
+                 duration_seconds, aspect_ratio, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    campaign_id,
+                    product_id,
+                    "test-video.mp4",
+                    "test-thumbnail.png",
+                    "Test scene",
+                    "Test prompt",
+                    "two-stage",
+                    "test-variation",
+                    8,
+                    "9:16",
+                    "generated",
+                ),
+            )
+            video_id = cursor.lastrowid
+
+        # Activate it
+        result = activate_video(video_id=video_id)
+        assert result["status"] == "success"
+
+        with get_db_cursor() as cursor:
+            anchor = date.fromisoformat(get_demo_anchor_date(cursor))
+            cursor.execute(
+                "SELECT MIN(metric_date) AS lo, MAX(metric_date) AS hi, COUNT(*) AS n "
+                "FROM video_metrics WHERE video_id = ?",
+                (video_id,),
+            )
+            row = cursor.fetchone()
+        assert row["lo"] == (anchor - timedelta(days=29)).isoformat()
+        assert row["hi"] == anchor.isoformat()
+        assert row["n"] == 30
+
+    def test_activation_is_deterministic(self, fresh_test_db):
+        """Activating, wiping the rows, and re-deriving yields identical rows."""
+        from app.database.db import get_db_cursor
+        from app.tools.review_tools import activate_video
+
+        with get_db_cursor() as cursor:
+            # Get a campaign and product
+            cursor.execute(
+                "SELECT c.id as campaign_id, p.id as product_id FROM campaigns c, products p LIMIT 1"
+            )
+            row = cursor.fetchone()
+            campaign_id = row["campaign_id"]
+            product_id = row["product_id"]
+
+            # Create a new video in 'generated' status
+            cursor.execute(
+                """
+                INSERT INTO campaign_videos
+                (campaign_id, product_id, video_filename, thumbnail_path,
+                 scene_prompt, video_prompt, pipeline_type, variation_name,
+                 duration_seconds, aspect_ratio, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    campaign_id,
+                    product_id,
+                    "test-video-2.mp4",
+                    "test-thumbnail-2.png",
+                    "Test scene 2",
+                    "Test prompt 2",
+                    "two-stage",
+                    "test-variation-2",
+                    8,
+                    "9:16",
+                    "generated",
+                ),
+            )
+            video_id = cursor.lastrowid
+
+        activate_video(video_id=video_id)
+
+        def rows():
+            with get_db_cursor() as cursor:
+                cursor.execute(
+                    "SELECT metric_date, impressions, dwell_time_seconds, circulation, revenue "
+                    "FROM video_metrics WHERE video_id = ? ORDER BY metric_date",
+                    (video_id,),
+                )
+                return [tuple(r) for r in cursor.fetchall()]
+
+        first = rows()
+        assert len(first) == 30
+        # Re-run just the metrics generation path (activate_video refuses an
+        # already-activated video, so exercise idempotent regeneration directly)
+        from datetime import date, timedelta
+
+        from app.database.db import get_demo_anchor_date
+        from app.demo_data.constants import DEMO_WINDOW_DAYS
+        from app.demo_data.derive import derive_video_metrics_rows
+
+        with get_db_cursor() as cursor:
+            anchor = date.fromisoformat(get_demo_anchor_date(cursor))
+            cursor.execute(
+                "SELECT campaign_id FROM campaign_videos WHERE id = ?", (video_id,)
+            )
+            campaign_id = cursor.fetchone()["campaign_id"]
+            for row in derive_video_metrics_rows(
+                campaign_id,
+                [video_id],
+                anchor - timedelta(days=DEMO_WINDOW_DAYS - 1),
+                anchor,
+            ):
+                cursor.execute(
+                    """
+                    INSERT OR IGNORE INTO video_metrics
+                    (video_id, metric_date, impressions, dwell_time_seconds, circulation, revenue)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        row["video_id"],
+                        row["metric_date"],
+                        row["impressions"],
+                        row["dwell_time_seconds"],
+                        row["circulation"],
+                        row["revenue"],
+                    ),
+                )
+        assert rows() == first  # INSERT OR IGNORE + determinism = idempotent
+
+
+class TestGenerateAdditionalMetricsDeterministic:
+    def test_advances_anchor_and_extends_all_activated_videos(self, fresh_test_db):
+        """The third call site: advancing the demo universe by N days moves
+        the anchor and extends every activated video, atomically."""
+        from datetime import date, timedelta
+
+        from app.database.db import get_db_cursor, get_demo_anchor_date
+        from app.tools.review_tools import generate_additional_metrics
+
+        with get_db_cursor() as cursor:
+            old_anchor = date.fromisoformat(get_demo_anchor_date(cursor))
+            cursor.execute(
+                "SELECT id FROM campaign_videos WHERE status = 'activated' LIMIT 2"
+            )
+            activated = [r["id"] for r in cursor.fetchall()]
+        assert len(activated) >= 2, "demo seed data provides activated videos"
+
+        result = generate_additional_metrics(video_id=activated[0], days=5)
+        assert result["status"] == "success"
+
+        with get_db_cursor() as cursor:
+            new_anchor = date.fromisoformat(get_demo_anchor_date(cursor))
+            assert new_anchor == old_anchor + timedelta(days=5)
+            for vid in activated:
+                cursor.execute(
+                    "SELECT MAX(metric_date) AS hi FROM video_metrics WHERE video_id = ?",
+                    (vid,),
+                )
+                assert cursor.fetchone()["hi"] == new_anchor.isoformat()

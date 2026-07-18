@@ -16,6 +16,7 @@
 
 import sqlite3
 from contextlib import contextmanager
+from datetime import UTC, datetime
 
 from .. import config
 
@@ -149,6 +150,15 @@ def init_database() -> None:
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (video_id) REFERENCES campaign_videos(id) ON DELETE CASCADE,
             UNIQUE(video_id, metric_date)
+        )
+    ''')
+
+    # Key-value store for demo-mode state (e.g. the demo anchor date that
+    # fixes the deterministic generation window — see app/demo_data/).
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS demo_meta (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
         )
     ''')
 
@@ -314,6 +324,7 @@ def reset_database() -> None:
     cursor = conn.cursor()
 
     # Drop new tables
+    cursor.execute('DROP TABLE IF EXISTS demo_meta')
     cursor.execute('DROP TABLE IF EXISTS video_metrics')
     cursor.execute('DROP TABLE IF EXISTS campaign_videos')
     cursor.execute('DROP TABLE IF EXISTS campaign_products')
@@ -436,3 +447,35 @@ def list_products(category: str = None) -> list:
     conn.close()
 
     return [dict(row) for row in rows]
+
+
+DEMO_ANCHOR_KEY = "demo_anchor_date"
+
+
+def get_demo_anchor_date(cursor) -> str:
+    """The demo anchor date (ISO), created as today's UTC date on first read.
+
+    All deterministic demo generation windows are anchored here (UTC day
+    buckets by convention), so seed-time and activation-time data share one
+    windowing rule."""
+    cursor.execute("SELECT value FROM demo_meta WHERE key = ?", (DEMO_ANCHOR_KEY,))
+    row = cursor.fetchone()
+    if row:
+        return row["value"]
+    today = datetime.now(UTC).date().isoformat()
+    cursor.execute(
+        "INSERT OR IGNORE INTO demo_meta (key, value) VALUES (?, ?)",
+        (DEMO_ANCHOR_KEY, today),
+    )
+    return today
+
+
+def set_demo_anchor_date(cursor, iso_date: str) -> None:
+    """Overwrite the demo anchor date (ISO string)."""
+    cursor.execute(
+        """
+        INSERT INTO demo_meta (key, value) VALUES (?, ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        """,
+        (DEMO_ANCHOR_KEY, iso_date),
+    )

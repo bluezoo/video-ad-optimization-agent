@@ -29,9 +29,10 @@ Video Lifecycle:
 import json
 from datetime import datetime, date, timedelta
 from typing import List, Optional
-import random
 
-from ..database.db import get_db_cursor
+from ..database.db import get_db_cursor, get_demo_anchor_date, set_demo_anchor_date
+from ..demo_data.constants import DEMO_WINDOW_DAYS
+from ..demo_data.derive import derive_video_metrics_rows
 from .metrics_shared import compute_rpi
 
 
@@ -109,6 +110,27 @@ def list_pending_videos(
         }
 
 
+def _insert_derived_metrics(cursor, ad_campaign_id, video_ids, date_from, date_to) -> int:
+    """Insert derived deterministic rows; INSERT OR IGNORE keeps overlapping
+    regeneration idempotent (UNIQUE(video_id, metric_date))."""
+    inserted = 0
+    for row in derive_video_metrics_rows(ad_campaign_id, video_ids, date_from, date_to):
+        cursor.execute('''
+            INSERT OR IGNORE INTO video_metrics
+            (video_id, metric_date, impressions, dwell_time_seconds, circulation, revenue)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (
+            row["video_id"],
+            row["metric_date"],
+            row["impressions"],
+            row["dwell_time_seconds"],
+            row["circulation"],
+            row["revenue"]
+        ))
+        inserted += cursor.rowcount if cursor.rowcount > 0 else 0
+    return inserted
+
+
 def activate_video(
     video_id: int,
     activated_by: str = "user"
@@ -164,13 +186,14 @@ def activate_video(
             WHERE id = ?
         ''', (now, activated_by, video_id))
 
-        # Generate mock metrics for this video
-        # Start from today, generate 30 days of data
-        metrics_generated = _generate_mock_video_metrics(
-            cursor=cursor,
-            video_id=video_id,
-            start_date=date.today(),
-            days=30
+        # Deterministic metrics on the single anchor window [anchor-29, anchor]
+        anchor = date.fromisoformat(get_demo_anchor_date(cursor))
+        metrics_generated = _insert_derived_metrics(
+            cursor,
+            video["campaign_id"],
+            [video_id],
+            anchor - timedelta(days=DEMO_WINDOW_DAYS - 1),
+            anchor,
         )
 
         return {
@@ -448,72 +471,6 @@ def get_activation_summary(campaign_id: int = None) -> dict:
         }
 
 
-# =============================================================================
-# Mock Metrics Generation (only called on activation)
-# =============================================================================
-
-def _generate_mock_video_metrics(
-    cursor,
-    video_id: int,
-    start_date: date,
-    days: int = 30
-) -> int:
-    """Generate mock metrics for an activated video.
-
-    Creates realistic in-store retail media metrics:
-    - Impressions: 800-2000 per day (with weekly patterns)
-    - Dwell time: 3-8 seconds average
-    - Circulation: 1500-4000 foot traffic
-    - Revenue: Based on impressions and RPI
-
-    Args:
-        cursor: Database cursor
-        video_id: The video ID to generate metrics for
-        start_date: Start date for metrics
-        days: Number of days of metrics to generate
-
-    Returns:
-        Number of metric records created
-    """
-    metrics_created = 0
-
-    # Base performance (varies by video for diversity)
-    base_impressions = random.randint(800, 1500)
-    base_dwell = random.uniform(4.0, 6.5)
-    base_rpi = random.uniform(0.08, 0.15)  # Revenue per impression
-
-    for day_offset in range(days):
-        metric_date = start_date + timedelta(days=day_offset)
-
-        # Day of week multiplier (weekends higher)
-        dow = metric_date.weekday()
-        if dow >= 5:  # Weekend
-            dow_multiplier = random.uniform(1.3, 1.6)
-        elif dow == 0 or dow == 4:  # Monday, Friday
-            dow_multiplier = random.uniform(1.0, 1.2)
-        else:  # Tue-Thu
-            dow_multiplier = random.uniform(0.85, 1.05)
-
-        # Add some random variation
-        daily_variation = random.uniform(0.85, 1.15)
-
-        # Calculate metrics
-        impressions = int(base_impressions * dow_multiplier * daily_variation)
-        dwell_time = round(base_dwell * random.uniform(0.9, 1.1), 2)
-        circulation = int(impressions * random.uniform(1.8, 2.5))  # More foot traffic than impressions
-        revenue = round(impressions * base_rpi * random.uniform(0.9, 1.1), 2)
-
-        cursor.execute('''
-            INSERT OR IGNORE INTO video_metrics
-            (video_id, metric_date, impressions, dwell_time_seconds, circulation, revenue)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (video_id, metric_date.isoformat(), impressions, dwell_time, circulation, revenue))
-
-        metrics_created += 1
-
-    return metrics_created
-
-
 def generate_additional_metrics(
     video_id: int,
     days: int = 7
@@ -548,31 +505,37 @@ def generate_additional_metrics(
                 "message": f"Video {video_id} is not activated (metrics only for live videos)"
             }
 
-        # Get the last metric date
+        # Advance the demo universe: move the anchor forward by `days` and
+        # fill the new dates for EVERY activated video, so no video lags the
+        # anchor (single windowing rule, no per-video drift).
+        old_anchor = date.fromisoformat(get_demo_anchor_date(cursor))
+        new_anchor = old_anchor + timedelta(days=days)
+        set_demo_anchor_date(cursor, new_anchor.isoformat())
+
         cursor.execute('''
-            SELECT MAX(metric_date) as last_date FROM video_metrics WHERE video_id = ?
-        ''', (video_id,))
+            SELECT id, campaign_id FROM campaign_videos WHERE status = 'activated'
+        ''')
+        by_campaign: dict = {}
+        for row in cursor.fetchall():
+            by_campaign.setdefault(row["campaign_id"], []).append(row["id"])
 
-        row = cursor.fetchone()
-        if row and row["last_date"]:
-            last_date = date.fromisoformat(row["last_date"])
-            start_date = last_date + timedelta(days=1)
-        else:
-            start_date = date.today()
+        for cid, vids in by_campaign.items():
+            _insert_derived_metrics(
+                cursor, cid, vids, old_anchor + timedelta(days=1), new_anchor
+            )
 
-        # Generate new metrics
-        metrics_created = _generate_mock_video_metrics(
-            cursor=cursor,
-            video_id=video_id,
-            start_date=start_date,
-            days=days
+        # The response contract's count is for the requested video
+        cursor.execute(
+            "SELECT COUNT(*) AS n FROM video_metrics WHERE video_id = ? AND metric_date > ?",
+            (video_id, old_anchor.isoformat()),
         )
+        metrics_created = cursor.fetchone()["n"]
 
         return {
             "status": "success",
             "message": f"Generated {metrics_created} additional metric days",
             "video_id": video_id,
-            "start_date": start_date.isoformat(),
+            "start_date": (old_anchor + timedelta(days=1)).isoformat(),
             "days_generated": metrics_created
         }
 

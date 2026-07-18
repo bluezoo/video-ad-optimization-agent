@@ -83,3 +83,60 @@ campaign anyway"
   returns the clean error ("No metrics data available … activate videos
   first") and the agent relays that guidance (e.g. pointing at
   review/activation).
+
+## Scenario F3: Deterministic activation metrics (workstream 05 regression)
+
+Covers Phase 5's deterministic demo data: activating a video seeds a full
+30-day metrics window from the seeded generator (`app/demo_data/`), and every
+number the agent reports must be internally consistent under the flat demo
+revenue model (`revenue = impressions × 0.05`, so RPI is exactly 0.05
+everywhere by construction).
+
+### Scene F3.1 — deterministic 30-day window and anchor extension
+
+> Note: the seeded demo DB activates all its videos up front (base behavior,
+> `app/database/mock_data.py`), so there is nothing pending to activate in a
+> fresh DB — HITL activation seeding is covered by unit tests
+> (`tests/unit/test_review_tools.py::TestDeterministicActivation`) and only
+> occurs live after a real Veo generation (Scenario F1). This scene instead
+> asserts the seeded window and the anchor-advancing extension path.
+
+**Query 1:** "What's the status of video 1, including how many days of
+metrics it has?"
+
+**Query 2 (follow-up turn):** "Generate 3 more days of metrics for video 1"
+
+**Query 3 (follow-up turn):** "Check video 1's status again — how many days
+of metrics now?"
+
+**Expected tool calls:**
+- Query 1: `get_video_status(video_id=1)` or `get_video_details(1)` (the
+  latter returns a superset — either is acceptable) → status "activated",
+  30 metric days (`metrics_count`/`days_tracked` — must be 30, not 7).
+- Query 2: `generate_additional_metrics(video_id=1, days=3)` →
+  `status: "success"`, `days_generated: 3`.
+- Query 3: same status tool again → 33 metric days.
+
+**Pass criteria:**
+- The counts are exactly 30 → +3 → 33; no response mentions random
+  generation; no crash/traceback in any response.
+
+### Scene F3.2 — reported numbers are internally consistent (RPI = 0.05)
+
+**Query:** "Give me the top performing ads for that campaign, with their
+impressions, revenue and RPI" (same campaign as video 1 from F3.1 — its
+campaign name/id comes back in the Query 1 response there).
+
+**Expected tool calls:**
+- `get_top_performing_ads` (or `get_campaign_metrics`/`get_campaign_insights`
+  for the same campaign — any of these is acceptable so long as per-ad or
+  campaign totals with impressions + revenue + RPI come back).
+
+**Pass criteria (the workstream-05 assertion — check the arithmetic, don't
+trust prose):**
+- For every ad/total row reported: `revenue ≈ impressions × 0.05` (within
+  rounding to cents) and any reported RPI value is 0.05 (±0.001).
+- Impressions are non-zero for the activated video.
+- FAIL if any row's revenue/impressions ratio deviates from 0.05 beyond
+  rounding — that would mean a non-deterministic or legacy generator path
+  survived.
