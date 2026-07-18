@@ -83,3 +83,47 @@ campaign anyway"
   returns the clean error ("No metrics data available … activate videos
   first") and the agent relays that guidance (e.g. pointing at
   review/activation).
+
+## Scenario F3: Deterministic activation metrics (workstream 05 regression)
+
+Covers Phase 5's deterministic demo data: activating a video seeds a full
+30-day metrics window from the seeded generator (`app/demo_data/`), and every
+number the agent reports must be internally consistent under the flat demo
+revenue model (`revenue = impressions × 0.05`, so RPI is exactly 0.05
+everywhere by construction).
+
+### Scene F3.1 — HITL activation seeds a 30-day window
+
+**Query 1:** "Show me the videos pending review"
+
+**Query 2 (follow-up turn):** "Activate video <ID>" — use a video id from
+Query 1's response, preferring one belonging to a seeded demo campaign.
+
+**Expected tool calls:**
+- Query 1: `list_pending_videos` (Review tools; arguments none/defaults).
+- Query 2: `activate_video(video_id=<ID>)`.
+
+**Pass criteria:**
+- Activation response reports success and ~30 days of metrics generated
+  (the tool returns a `metrics_generated` / days count — must be 30, not 7,
+  and must not mention random generation).
+- No crash/traceback in either response.
+
+### Scene F3.2 — reported numbers are internally consistent (RPI = 0.05)
+
+**Query:** "Give me the top performing ads for that campaign, with their
+impressions, revenue and RPI" (same campaign as the video activated in F3.1).
+
+**Expected tool calls:**
+- `get_top_performing_ads` (or `get_campaign_metrics`/`get_campaign_insights`
+  for the same campaign — any of these is acceptable so long as per-ad or
+  campaign totals with impressions + revenue + RPI come back).
+
+**Pass criteria (the workstream-05 assertion — check the arithmetic, don't
+trust prose):**
+- For every ad/total row reported: `revenue ≈ impressions × 0.05` (within
+  rounding to cents) and any reported RPI value is 0.05 (±0.001).
+- Impressions are non-zero for the activated video.
+- FAIL if any row's revenue/impressions ratio deviates from 0.05 beyond
+  rounding — that would mean a non-deterministic or legacy generator path
+  survived.
