@@ -15,7 +15,7 @@ Update rows in place as a workstream progresses; don't append new rows for the s
 | 3 | `03` | metrics-glossary-and-terminology | merged | version_2_metrics-glossary | [#3](https://github.com/bluezoo/video-ad-optimization-agent/pull/3) | 2026-07-16 | merged 2bb2452; docs/METRICS.md is the metrics source of truth; demo skipped by design (docs-only) |
 | 4 | `04` | centralize-rpi-metrics | merged | version_2_centralize-rpi-metrics | #4 | 2026-07-16 | squash commit a29f182; demo F2 PASS; final review clean |
 | 5 | `05` | deterministic-demo-data | merged | version_2_deterministic-demo-data | #6 | 2026-07-18 | squash-merged as a5a0f17; F2+F3 demo scenarios PASS; final review clean |
-| 6 | `06` | app-mode-config-skeleton | kickoff in progress | version_2_app-mode-config | - | 2026-07-18 | kickoff research underway |
+| 6 | `06` | app-mode-config-skeleton | plan in progress | version_2_app-mode-config | - | 2026-07-18 | working doc approved; deploy wiring covers deploy.sh + deploy_ae_inline.py |
 | 7 | `07` | rpi-across-creatives-chart | not started | - | - | 2026-07-13 | depends on Phases 4, 5 |
 | 8 | `08` | product-schema-generalization | not started | - | - | 2026-07-13 | depends on Phase 2 |
 | 9 | `09` | prompt-and-agent-generalization | not started | - | - | 2026-07-13 | depends on Phase 8 |
