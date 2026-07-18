@@ -10,3 +10,6 @@ Owner approved the six-dimension restatement. Owner decisions at the gate: (1) d
 
 ## 2026-07-18 — plan approved (checkpoint 3)
 Owner approved plan.md (cfa4d37): 3 tasks — (1) AppMode enum + validated APP_MODE + 7 tests + smoke matrix; (2) forward APP_MODE in deploy.sh and deploy_ae_inline.py, dry-run/AST verification; (3) docs in CLAUDE.md/SETUP_INSTRUCTIONS.md/DEPLOYMENT.md + full make test. Execution via subagent-driven-development, no check-ins until verification.
+
+## 2026-07-18 — Task 1 complete (mirrors .superpowers/sdd/progress.md)
+commits 9e7bb0c..ffe2873, review clean (Approved, 12/12 spec items). AppMode + validated APP_MODE in app/config.py; 7 new tests (148 unit total green); lint clean; 4-case smoke matrix correct. Deviation adjudicated: implementer used StrEnum instead of the brief's (str, Enum) — accepted, ruff.toml targets py311 so StrEnum is the lint-preferred form; ≤3.10 ImportError concern moot.
