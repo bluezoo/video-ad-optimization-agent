@@ -27,3 +27,6 @@ Demo-scenario run skipped per verifying-with-demo-scenarios' allowance for genui
 - APP_MODE=connected → boot OK, mode = connected (readable, inert)
 - APP_MODE=garbage → ValueError: "Invalid APP_MODE='garbage'. Allowed values: demo, connected; unset defaults to 'demo'." (exit 1; same failure at pytest collection)
 Deploy validation: actual `deploy.sh --dry-run` command contains --set-env-vars=APP_MODE=demo (and =connected when set); deploy_ae_inline.py env_vars verified by grep + AST parse. Full make test green in Task 3 (148 unit / e2e / 5 integration).
+
+## 2026-07-18 — final whole-branch review: Ready to merge
+Fresh reviewer, full package 49d015c..a2d57cb (12 commits). Zero findings at any severity; all focus checks PASS: zero behavior change (no APP_MODE consumers, app/agent.py & tools untouched), exact semantics (ValueError never ImportError-shaped), StrEnum sound under ruff py311 target, both deploy paths wired (deploy_ae.sh zero diff by design), docs accurate with no overstatement, 7 real reload-based tests, no forbidden touches. Verdicts mirrored here from .superpowers/sdd/final-review.md (scratch).
