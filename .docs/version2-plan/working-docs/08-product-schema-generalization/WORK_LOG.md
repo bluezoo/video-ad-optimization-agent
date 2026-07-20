@@ -14,3 +14,6 @@ Owner rejected the plain approval prompt and instead directed a scope addition i
 ## 2026-07-19 — Task 3 implemented (commit 1648175, tests 183 passed, 1 skipped) [review pending]
 ## 2026-07-19 — Task 4 implemented (commits 36560f1, tests 190 passed + 1 skipped) [review pending]
 ## 2026-07-20 — Task 5 implemented (commit 2723487, tests 190 passed, 1 skipped) [review pending]
+
+## 2026-07-20 — checkpoint 4 complete: all 5 tasks implemented, reviewed, stabilized (workflow run wf_9095d301)
+Task heads: 1@8386089, 2@8f7a96c (golden prompts byte-identical), 3@29d5c83, 4@4d733d4 (incl. insert_product self-service substrate), 5@a37d00d (doc amendments + Scenario F5). All five reviews approved, zero Critical/Important/Minor findings. Stabilize loop (owner-directed): round 1 green — full make test (190 unit/e2e + 5 integration) + ruff clean on branch-touched files after removing a leftover unused typing.List import (02fc504). Next: demo verification (F1.1, F2.1, F5).
