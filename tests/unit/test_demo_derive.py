@@ -2,8 +2,8 @@
 
 from datetime import date
 
-from app.demo_data.constants import DEMO_RPI, DEMO_WINDOW_DAYS
-from app.demo_data.derive import derive_video_metrics_rows, video_fraction
+from app.demo_data.constants import DEMO_WINDOW_DAYS
+from app.demo_data.derive import derive_video_metrics_rows, video_fraction, video_rpi
 from app.demo_data.seed import generate_frames
 from app.tools.metrics_shared import compute_rpi
 
@@ -14,7 +14,6 @@ D_TO = date(2026, 6, 7)
 
 class TestConstants:
     def test_canonical_values(self):
-        assert DEMO_RPI == 0.05
         assert DEMO_WINDOW_DAYS == 30
 
 
@@ -42,12 +41,25 @@ class TestDerivation:
         assert rows[0]["impressions"] == int(round(day_inner * f))
         assert rows[0]["impressions"] != int(round(day_both * f))
 
-    def test_revenue_is_flat_demo_rpi(self):
+    def test_revenue_uses_per_creative_rpi(self):
         rows = derive_video_metrics_rows(CID, [101, 102], D_FROM, D_TO)
         for r in rows:
-            assert r["revenue"] == round(r["impressions"] * DEMO_RPI, 2)
-            if r["impressions"] > 0:
-                assert compute_rpi(r["revenue"], r["impressions"]) == DEMO_RPI
+            assert r["revenue"] == round(r["impressions"] * video_rpi(CID, r["video_id"]), 2)
+
+    def test_video_rpi_band_and_determinism(self):
+        for vid in (101, 102, 999):
+            factor = video_rpi(CID, vid)
+            assert 0.03 <= factor <= 0.07
+            assert factor == video_rpi(CID, vid)
+
+    def test_video_rpi_differs_across_creatives(self):
+        assert video_rpi(CID, 101) != video_rpi(CID, 102)
+
+    def test_window_rpi_matches_creative_constant(self):
+        rows = derive_video_metrics_rows(CID, [101], D_FROM, D_TO)
+        total_rev = sum(r["revenue"] for r in rows)
+        total_imp = sum(r["impressions"] for r in rows)
+        assert abs(compute_rpi(total_rev, total_imp) - video_rpi(CID, 101)) < 0.001
 
     def test_per_video_fractions_differ(self):
         assert video_fraction(CID, 101) != video_fraction(CID, 102)

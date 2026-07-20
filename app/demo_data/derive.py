@@ -58,6 +58,18 @@ def video_fraction(ad_campaign_id: int, video_id) -> float:
     return float(round(0.25 + rng.uniform() * 0.35, 4))
 
 
+def video_rpi(ad_campaign_id: int, video_id) -> float:
+    """Deterministic per-(campaign, video) RPI in [0.03, 0.07].
+
+    DEMO_RPI x a seeded factor in [0.6, 1.4], constant across days: each
+    creative's revenue/impressions ratio stays ONE checkable constant, but
+    creatives differ from each other (Phase 7 owner decision, reversing the
+    ws05 strict-flat choice). Keyed per (campaign, video) only — absolute,
+    so later activations never change existing videos' rows."""
+    rng = _seeded_rng("rpi", ad_campaign_id, video_id)
+    return float(round(DEMO_RPI * (0.6 + rng.uniform() * 0.8), 4))
+
+
 def derive_video_metrics_rows(
     ad_campaign_id: int, video_ids: list, date_from: date, date_to: date
 ) -> list[dict]:
@@ -66,7 +78,8 @@ def derive_video_metrics_rows(
 
     impressions = video_fraction x the day's summed incoming_inner_count
     (inner-only — outer is ~100 m passersby, never impressions).
-    revenue = impressions x DEMO_RPI (flat, owner decision).
+    revenue = impressions x video_rpi(campaign, video) — deterministic
+    per-creative RPI in [0.03, 0.07] (Phase 7 owner decision; was flat 0.05).
     Returned dicts carry exactly the video_metrics insert columns."""
     frames = generate_frames(_campaign_seed_config(ad_campaign_id, date_from, date_to))
 
@@ -81,6 +94,7 @@ def derive_video_metrics_rows(
     for d in sorted(by_day):
         for video_id in video_ids:
             fraction = video_fraction(ad_campaign_id, video_id)
+            rpi = video_rpi(ad_campaign_id, video_id)
             impressions = int(round(by_day[d]["inner"] * fraction))
             dwell_rng = _seeded_rng("dwell-scalar", ad_campaign_id, video_id, d.isoformat())
             rows.append(
@@ -91,7 +105,7 @@ def derive_video_metrics_rows(
                     # Synthetic seconds-scale scalar — see module docstring.
                     "dwell_time_seconds": float(round(4.0 + dwell_rng.uniform() * 8.0, 1)),
                     "circulation": int(round(by_day[d]["outer_out"] * fraction)),
-                    "revenue": round(impressions * DEMO_RPI, 2),
+                    "revenue": round(impressions * rpi, 2),
                 }
             )
     return rows
