@@ -22,3 +22,6 @@ compare_creatives_within_campaign tool: commit 4ad6f6f (range 671dc3d..4ad6f6f),
 
 ## 2026-07-19 — Task 3 complete (mirrors .superpowers/sdd/progress.md)
 generate_creative_comparison_chart (matplotlib Figure+Agg, artifact contract) + matplotlib in app/requirements.txt + matplotlib AND numpy (ws05 DISCOVERY fix) in deploy_ae_inline.py: commit b07366d (range ccf4dbd..b07366d), review approved. 3 new async tests (first ToolContext AsyncMock in suite); 159 unit tests green.
+
+## 2026-07-19 — Task 4 complete (mirrors .superpowers/sdd/progress.md)
+Agent wiring + F3.2 criteria reshape + new Scenario F4 + phase-doc resolution note: commit ea97b50 (range 36fdc6f..ea97b50), review approved. Full make test green (159 unit + 5 integration). All 4 plan tasks done.
