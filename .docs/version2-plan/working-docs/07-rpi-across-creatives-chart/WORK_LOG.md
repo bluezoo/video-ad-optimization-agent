@@ -32,3 +32,6 @@ F4 (new): PASS — generate_creative_comparison_chart fired (campaign 4), artifa
 
 ## 2026-07-19 — final whole-branch review: READY TO MERGE
 Range 49ae21b..c825dbd (15 commits). Zero Critical/Important findings. All deferred per-task Minors triaged acceptable (reviewer empirically tested the $-in-title mathtext hazard — non-issue). Reviewer's STATUS.md note was against the worktree's stale copy; main-checkout row is current. Review: .superpowers/sdd/final-review.md.
+
+## 2026-07-19 — checkpoint 6: finished — merged
+PR #8 squash-merged into version_2 as 60ac50f. Worktree removed, branch deleted (local + remote). STATUS row → merged.
