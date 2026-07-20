@@ -238,6 +238,7 @@ def init_database() -> None:
 
     # Populate products table
     populate_products()
+    populate_retail_test_products()
 
 
 def create_migration_indexes() -> None:
@@ -385,6 +386,65 @@ def populate_products() -> None:
     conn.commit()
     conn.close()
     print(f"[DB] Populated {len(PRODUCTS)} products")
+
+
+def insert_product(product: Product) -> Product:
+    """Insert a new product through the typed write path (Phase 8).
+
+    The db-layer substrate for self-service onboarding ("run MY product
+    through it"): Phase 15's agent tools (create_product / import /
+    generate_product_image) wrap this. The referenced image file does NOT
+    need to exist yet — image_filename is a reference resolved later by
+    vendor upload or image generation.
+
+    Returns:
+        The stored Product, re-read via get_product() so the caller sees
+        exactly what any later retrieval will see (id populated).
+
+    Raises:
+        sqlite3.IntegrityError: if a product with this name already exists.
+    """
+    row = product.to_row()
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            INSERT INTO products
+            (name, category, style, color, fabric, occasion, details,
+             image_filename, gcs_path, local_path, metadata)
+            VALUES (:name, :category, :style, :color, :fabric, :occasion,
+                    :details, :image_filename, :gcs_path, :local_path, :metadata)
+        ''', row)
+        product_id = cursor.lastrowid
+        conn.commit()
+    finally:
+        conn.close()
+    return get_product(product_id)
+
+
+def populate_retail_test_products() -> None:
+    """Seed the multi-vertical retail core test set (Phase 8).
+
+    Attributes-first products across five verticals proving the schema is
+    vertical-agnostic. Additive and idempotent (INSERT OR IGNORE on the
+    UNIQUE name); the fashion demo catalog is untouched. Writes go through
+    Product.to_row() — the same write path Phase 15's create_product uses.
+    """
+    from .retail_products_data import RETAIL_TEST_PRODUCTS
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    for entry in RETAIL_TEST_PRODUCTS:
+        row = Product(**entry).to_row()
+        cursor.execute('''
+            INSERT OR IGNORE INTO products
+            (name, category, style, color, fabric, occasion, details,
+             image_filename, gcs_path, local_path, metadata)
+            VALUES (:name, :category, :style, :color, :fabric, :occasion,
+                    :details, :image_filename, :gcs_path, :local_path, :metadata)
+        ''', row)
+    conn.commit()
+    conn.close()
 
 
 def get_product(product_id: int) -> Product | None:

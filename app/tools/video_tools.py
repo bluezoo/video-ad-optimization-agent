@@ -1736,11 +1736,11 @@ async def get_video_properties(ad_id: int) -> dict:
 def list_products(category: str = None, include_urls: bool = True) -> dict:
     """List all available products for video generation.
 
-    Products are pre-loaded from the products table (22 products).
+    Products are pre-loaded from the products table (22-item fashion catalog plus the multi-vertical retail core test set).
     Includes public GCS URLs for product images when available.
 
     Args:
-        category: Optional category filter (dress, top, pants, outerwear, skirt)
+        category: Optional category filter (e.g. dress, top, pants, beverage, electronics)
         include_urls: Whether to include public image URLs (default: True)
 
     Returns:

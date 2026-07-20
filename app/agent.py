@@ -190,7 +190,7 @@ You handle all media generation and management tasks:
 - Analyze images to extract fashion metadata (legacy)
 
 ## Product Library (NEW)
-The system has 22 pre-loaded products in scripts/products/:
+The system has 28 pre-loaded products (22-item fashion catalog + 6-SKU multi-vertical retail test set):
 - Dresses, tops, pants, outerwear, skirts
 - Each product has an image and detailed metadata
 - Use list_products() to browse available products
