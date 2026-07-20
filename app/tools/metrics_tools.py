@@ -16,10 +16,13 @@
 
 import json
 import time
+from io import BytesIO
 
 from google import genai
 from google.adk.tools import ToolContext
 from google.genai import types
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.figure import Figure
 
 from ..config import IMAGE_GENERATION
 from ..database.db import get_db_cursor
@@ -856,6 +859,71 @@ def compare_creatives_within_campaign(campaign_id: int) -> dict:
             "revenue_per_impression": best["metrics"]["revenue_per_impression"],
         },
         "note": "RPI per creative = compute_rpi() over all-time sums (ratio of sums, never sum of ratios).",
+    }
+
+
+async def generate_creative_comparison_chart(
+    campaign_id: int,
+    tool_context: ToolContext = None
+) -> dict:
+    """Render a deterministic RPI-per-creative bar chart for one campaign.
+
+    Unlike generate_metrics_visualization (AI-image-drawn), this renders with
+    matplotlib, so bar heights are exactly the numbers returned — the chart
+    and the structured data come from the same compare_creatives_within_campaign()
+    call. Saved as a PNG artifact for the web UI; also returns the full
+    comparison payload.
+
+    Args:
+        campaign_id: The campaign whose activated creatives to chart
+        tool_context: ADK tool context for artifact saving
+
+    Returns:
+        Dictionary with chart artifact metadata and the comparison data
+    """
+    comparison = compare_creatives_within_campaign(campaign_id)
+    if comparison["status"] != "success":
+        return comparison
+
+    creatives = comparison["creatives"]
+    labels = [c["variation_name"] for c in creatives]
+    rpi_values = [c["metrics"]["revenue_per_impression"] for c in creatives]
+
+    # 16:9 to match the repo's chart convention (CHART_TEMPLATES enforce it)
+    fig = Figure(figsize=(12.8, 7.2), dpi=100)
+    FigureCanvasAgg(fig)
+    ax = fig.add_subplot(111)
+    bars = ax.bar(labels, rpi_values, color="#4C7DE0")
+    ax.set_title(f"RPI by creative — {comparison['campaign_name']}")
+    ax.set_ylabel("Revenue per impression ($)")
+    ax.bar_label(bars, fmt="$%.4f")
+    ax.tick_params(axis="x", labelrotation=15)
+    fig.tight_layout()
+
+    buffer = BytesIO()
+    fig.savefig(buffer, format="png")
+    image_bytes = buffer.getvalue()
+
+    timestamp = int(time.time())
+    filename = f"creative_comparison_{campaign_id}_{timestamp}.png"
+    if tool_context:
+        image_artifact = types.Part.from_bytes(data=image_bytes, mime_type="image/png")
+        version = await tool_context.save_artifact(filename=filename, artifact=image_artifact)
+        artifact_saved = True
+    else:
+        artifact_saved = False
+        version = None
+
+    return {
+        "status": "success",
+        "message": f"Creative comparison chart generated for campaign {campaign_id}",
+        "chart": {
+            "filename": filename,
+            "artifact_saved": artifact_saved,
+            "artifact_version": version,
+            "chart_data": {"labels": labels, "rpi_values": rpi_values},
+        },
+        "comparison": comparison,
     }
 
 

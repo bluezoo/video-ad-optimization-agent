@@ -602,3 +602,55 @@ class TestCompareCreativesWithinCampaign:
         result = compare_creatives_within_campaign(created["campaign"]["id"])
         assert result["status"] == "error"
         assert "activated" in result["message"]
+
+
+class TestGenerateCreativeComparisonChart:
+    """Deterministic matplotlib chart (Phase 7) — no AI image model, no slow marker."""
+
+    async def test_chart_data_matches_comparison_return(self, test_db):
+        from app.tools.metrics_tools import generate_creative_comparison_chart
+
+        made = _make_campaign_with_metrics(
+            [
+                {"metric_date": "2026-07-01", "impressions": 10000, "revenue": 300.0, "video_index": 0},
+                {"metric_date": "2026-07-01", "impressions": 1000, "revenue": 60.0, "video_index": 1},
+            ],
+            num_videos=2,
+        )
+        result = await generate_creative_comparison_chart(made["campaign_id"])
+        assert result["status"] == "success"
+        comp = result["comparison"]
+        assert result["chart"]["chart_data"]["labels"] == [
+            c["variation_name"] for c in comp["creatives"]
+        ]
+        assert result["chart"]["chart_data"]["rpi_values"] == [
+            c["metrics"]["revenue_per_impression"] for c in comp["creatives"]
+        ]
+        assert result["chart"]["artifact_saved"] is False  # no tool_context
+
+    async def test_artifact_saved_with_tool_context(self, test_db):
+        from unittest.mock import AsyncMock, MagicMock
+
+        from app.tools.metrics_tools import generate_creative_comparison_chart
+
+        made = _make_campaign_with_metrics(
+            [{"metric_date": "2026-07-01", "impressions": 500, "revenue": 25.0}]
+        )
+        ctx = MagicMock()
+        ctx.save_artifact = AsyncMock(return_value=1)
+        result = await generate_creative_comparison_chart(made["campaign_id"], tool_context=ctx)
+        assert result["chart"]["artifact_saved"] is True
+        assert result["chart"]["artifact_version"] == 1
+        ctx.save_artifact.assert_awaited_once()
+        artifact = ctx.save_artifact.await_args.kwargs["artifact"]
+        assert artifact.inline_data.mime_type == "image/png"
+        assert artifact.inline_data.data[:8] == b"\x89PNG\r\n\x1a\n"  # PNG magic bytes
+        filename = ctx.save_artifact.await_args.kwargs["filename"]
+        assert filename.startswith(f"creative_comparison_{made['campaign_id']}_")
+        assert filename.endswith(".png")
+
+    async def test_error_passthrough_for_missing_campaign(self, test_db):
+        from app.tools.metrics_tools import generate_creative_comparison_chart
+
+        result = await generate_creative_comparison_chart(999999)
+        assert result["status"] == "error"
