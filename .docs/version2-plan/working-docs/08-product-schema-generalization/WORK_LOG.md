@@ -20,3 +20,6 @@ Task heads: 1@8386089, 2@8f7a96c (golden prompts byte-identical), 3@29d5c83, 4@4
 
 ## 2026-07-20 — checkpoint 5: demo scenario verification PASS
 Regression (F1 Scene 1 + F2.1): 2/2 PASS through the typed-Product migration (report .superpowers/sdd/regression-verification.md). New F5 (non-fashion campaign): PASS — list_products(category="beverage") returned the core-set SKUs; create_campaign for aurora-cold-brew-330ml produced category "always-on" (not the old silent "essentials"), description names the product with no fashion literals, no "None" strings, no tracebacks (report .superpowers/sdd/f5-verification.md).
+
+## 2026-07-20 — final whole-branch review: READY TO MERGE (+ polish)
+Range 89ab760..545cc81 (18 commits). Zero Critical/Important; 5 Minors. Reviewer independently re-verified: Product contract consistent everywhere, no dict-access survivors, golden genuinely pins fashion prompt output (style-present path; all 22 seeded products hit it), insert_product connection-safe, forbidden files untouched, SQL parameterized. Polish commit a076980 fixed 3 Minors (agent.py:524 count, seeder try/finally, NULL-style fallback pin test). Accepted as informational: retail SKUs visible in live demo catalog until Phase 15's DEMO_DATASET knob (surfaced to owner in PR); reset-db requirement documented. Review: .superpowers/sdd/final-review.md.
