@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from app.demo_data.constants import DEMO_WINDOW_DAYS
+from app.demo_data.constants import DEMO_RPI, DEMO_WINDOW_DAYS
 from app.demo_data.derive import derive_video_metrics_rows, video_fraction, video_rpi
 from app.demo_data.seed import generate_frames
 from app.tools.metrics_shared import compute_rpi
@@ -14,6 +14,7 @@ D_TO = date(2026, 6, 7)
 
 class TestConstants:
     def test_canonical_values(self):
+        assert DEMO_RPI == 0.05
         assert DEMO_WINDOW_DAYS == 30
 
 
