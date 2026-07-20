@@ -19,3 +19,6 @@ Option A per-creative RPI factor: commits 5700aad + fix 70bcb48 (range c8d0652..
 
 ## 2026-07-19 — Task 2 complete (mirrors .superpowers/sdd/progress.md)
 compare_creatives_within_campaign tool: commit 4ad6f6f (range 671dc3d..4ad6f6f), review approved. 5 new unit tests; 156 unit tests green. Minor notes deferred to final review: dwell 1dp rounding (plan-mandated), docstring phrasing.
+
+## 2026-07-19 — Task 3 complete (mirrors .superpowers/sdd/progress.md)
+generate_creative_comparison_chart (matplotlib Figure+Agg, artifact contract) + matplotlib in app/requirements.txt + matplotlib AND numpy (ws05 DISCOVERY fix) in deploy_ae_inline.py: commit b07366d (range ccf4dbd..b07366d), review approved. 3 new async tests (first ToolContext AsyncMock in suite); 159 unit tests green.
