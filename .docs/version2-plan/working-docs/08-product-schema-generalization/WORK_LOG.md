@@ -8,3 +8,6 @@ Owner gate decisions: (1) Category = Option A (controlled campaign-theme taxonom
 
 ## 2026-07-20 — checkpoint 3: plan approved (owner-amended)
 Owner rejected the plain approval prompt and instead directed a scope addition in text: the self-service vendor flow ("run MY product through it") must be architecturally supported now — db-layer insert_product(Product) write path, image-reference-only persistence (file need not exist; upload/nano-banana generation land in Phase 14a/15 as thin wrappers), proven by an on-the-fly end-to-end test — then execute. Plan amended (Task 4 + Global Constraints + Phase-15 amendment text) and committed; execution mode per owner: workflow with a stabilize loop that keeps fixing until the full test suite is green.
+
+## 2026-07-19 — Task 1 implemented (commit 8386089, tests 168 passed, 1 skipped) [review pending]
+## 2026-07-19 — Task 2 implemented (commits 0d6b5b3, tests 178 passed 1 skipped) [review pending]
