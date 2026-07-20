@@ -16,7 +16,7 @@ Update rows in place as a workstream progresses; don't append new rows for the s
 | 4 | `04` | centralize-rpi-metrics | merged | version_2_centralize-rpi-metrics | #4 | 2026-07-16 | squash commit a29f182; demo F2 PASS; final review clean |
 | 5 | `05` | deterministic-demo-data | merged | version_2_deterministic-demo-data | #6 | 2026-07-18 | squash-merged as a5a0f17; F2+F3 demo scenarios PASS; final review clean |
 | 6 | `06` | app-mode-config-skeleton | merged | version_2_app-mode-config | [#7](https://github.com/bluezoo/video-ad-optimization-agent/pull/7) | 2026-07-19 | squash-merged as 2e05f9d; smoke-matrix verification (demo scenario skipped by design — no agent-facing change); final review zero findings |
-| 7 | `07` | rpi-across-creatives-chart | not started | - | - | 2026-07-13 | depends on Phases 4, 5 |
+| 7 | `07` | rpi-across-creatives-chart | kickoff in progress | version_2_rpi-chart | - | 2026-07-19 | deps 4+5 merged; kickoff research underway; flat-RPI decision at working-doc gate |
 | 8 | `08` | product-schema-generalization | not started | - | - | 2026-07-13 | depends on Phase 2 |
 | 9 | `09` | prompt-and-agent-generalization | not started | - | - | 2026-07-13 | depends on Phase 8 |
 | 10 | `10` | playout-attribution | not started | - | - | 2026-07-13 | depends on Phases 4, 5, 8 |
