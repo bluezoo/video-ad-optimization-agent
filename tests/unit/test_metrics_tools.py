@@ -535,3 +535,70 @@ class TestWeeklyAggregation:
         # NOT appear as weekly values
         assert "$0.0700" not in prompt
         assert "$0.7000" not in prompt
+
+
+class TestCompareCreativesWithinCampaign:
+    """Creative-level comparison (Phase 7)."""
+
+    def test_ranks_by_rpi_not_revenue(self, test_db):
+        from app.tools.metrics_tools import compare_creatives_within_campaign
+
+        # video 0: high volume, low ratio; video 1: low volume, high ratio
+        made = _make_campaign_with_metrics(
+            [
+                {"metric_date": "2026-07-01", "impressions": 10000, "revenue": 300.0, "video_index": 0},
+                {"metric_date": "2026-07-01", "impressions": 1000, "revenue": 60.0, "video_index": 1},
+            ],
+            num_videos=2,
+        )
+        result = compare_creatives_within_campaign(made["campaign_id"])
+        assert result["status"] == "success"
+        assert result["creatives_compared"] == 2
+        top = result["creatives"][0]
+        assert top["video_id"] == made["video_ids"][1]  # 0.06 beats 0.03
+        assert top["rpi_rank"] == 1
+        assert top["metrics"]["revenue_per_impression"] == 0.06
+        assert result["best_performer"]["video_id"] == made["video_ids"][1]
+
+    def test_rpi_is_ratio_of_sums_via_compute_rpi(self, test_db):
+        from app.tools.metrics_shared import compute_rpi
+        from app.tools.metrics_tools import compare_creatives_within_campaign
+
+        made = _make_campaign_with_metrics(
+            [
+                {"metric_date": "2026-07-01", "impressions": 100, "revenue": 9.0},
+                {"metric_date": "2026-07-02", "impressions": 300, "revenue": 3.0},
+            ]
+        )
+        result = compare_creatives_within_campaign(made["campaign_id"])
+        c = result["creatives"][0]
+        assert c["metrics"]["revenue_per_impression"] == compute_rpi(12.0, 400)  # 0.03, not mean(0.09, 0.01)
+
+    def test_zero_metric_activated_video_included(self, test_db):
+        from app.tools.metrics_tools import compare_creatives_within_campaign
+
+        made = _make_campaign_with_metrics(
+            [{"metric_date": "2026-07-01", "impressions": 500, "revenue": 25.0, "video_index": 0}],
+            num_videos=2,  # video 1 activated but has zero metric rows
+        )
+        result = compare_creatives_within_campaign(made["campaign_id"])
+        assert result["creatives_compared"] == 2
+        zero = [c for c in result["creatives"] if c["video_id"] == made["video_ids"][1]][0]
+        assert zero["metrics"]["total_impressions"] == 0
+        assert zero["metrics"]["revenue_per_impression"] == 0.0
+
+    def test_campaign_not_found(self, test_db):
+        from app.tools.metrics_tools import compare_creatives_within_campaign
+
+        result = compare_creatives_within_campaign(999999)
+        assert result["status"] == "error"
+        assert "not found" in result["message"].lower()
+
+    def test_no_activated_videos(self, test_db):
+        from app.tools.campaign_tools import create_campaign
+        from app.tools.metrics_tools import compare_creatives_within_campaign
+
+        created = create_campaign(product_id=1, store_name="No Videos Store", city="Austin", state="TX")
+        result = compare_creatives_within_campaign(created["campaign"]["id"])
+        assert result["status"] == "error"
+        assert "activated" in result["message"]
