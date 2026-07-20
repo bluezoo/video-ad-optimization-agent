@@ -71,7 +71,7 @@ def init_database() -> None:
             store_name TEXT,
             city TEXT NOT NULL,
             state TEXT NOT NULL,
-            category TEXT CHECK(category IN ('summer', 'formal', 'professional', 'essentials', 'holiday')),
+            category TEXT CHECK(category IN ('summer', 'formal', 'professional', 'essentials', 'holiday', 'always-on')),
             status TEXT DEFAULT 'draft' CHECK(status IN ('draft', 'active', 'paused', 'completed')),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

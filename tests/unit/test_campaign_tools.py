@@ -24,9 +24,10 @@ Tests the 7 campaign-related tools:
 - get_location_demographics
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
 from datetime import date, timedelta
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 
 def _make_campaign_with_metrics(rows, num_videos=1):
@@ -320,3 +321,58 @@ class TestGetLocationDemographics:
 
         # Should return demographics or handle gracefully
         assert "demographics" in result or "error" in result or "data" in result
+
+
+class TestCampaignCategoryResolution:
+    """Phase 8 Option A: themed taxonomy decoupled from open product category."""
+
+    def test_fashion_mapping_unchanged(self, test_db):
+        # product 1 is category 'pants' -> mapped theme 'professional'
+        from app.tools.campaign_tools import create_campaign
+
+        result = create_campaign(product_id=1, store_name="Category Test Store",
+                                 city="Austin", state="TX")
+        assert result["status"] == "success"
+        assert result["campaign"]["category"] == "professional"
+
+    def test_explicit_valid_category_wins(self, test_db):
+        from app.tools.campaign_tools import create_campaign
+
+        result = create_campaign(product_id=1, store_name="Explicit Cat Store",
+                                 city="Austin", state="TX", category="holiday")
+        assert result["status"] == "success"
+        assert result["campaign"]["category"] == "holiday"
+
+    def test_explicit_category_normalized(self, test_db):
+        from app.tools.campaign_tools import create_campaign
+
+        result = create_campaign(product_id=1, store_name="Normalized Cat Store",
+                                 city="Austin", state="TX", category="  Always-On ")
+        assert result["status"] == "success"
+        assert result["campaign"]["category"] == "always-on"
+
+    def test_explicit_invalid_category_errors(self, test_db):
+        from app.tools.campaign_tools import create_campaign
+
+        result = create_campaign(product_id=1, store_name="Bad Cat Store",
+                                 city="Austin", state="TX", category="beverage")
+        assert result["status"] == "error"
+        assert "always-on" in result["message"]  # lists the valid values
+
+    def test_unmapped_product_category_defaults_to_always_on(self, test_db):
+        # Insert a minimal non-fashion product directly (Task 4 adds the real fixtures)
+        from app.database.db import get_db_cursor
+        from app.tools.campaign_tools import create_campaign
+
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO products (name, category, image_filename, metadata)"
+                " VALUES (?, ?, ?, ?)",
+                ("category-test-widget", "gadget", "category-test-widget.png", "{}"),
+            )
+            product_id = cursor.lastrowid
+        result = create_campaign(product_id=product_id, store_name="Fallback Store",
+                                 city="Austin", state="TX")
+        assert result["status"] == "success"
+        assert result["campaign"]["category"] == "always-on"
+        assert "fashion item" not in result["campaign"]["description"]
