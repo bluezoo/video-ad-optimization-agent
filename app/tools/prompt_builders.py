@@ -18,7 +18,6 @@ Stage 1: Scene Image Prompt - Creates first frame with model wearing product
 Stage 2: Video Animation Prompt - Animates the scene image
 """
 
-from typing import List
 from ..models.product import Product
 from ..models.variation import CreativeVariation
 
