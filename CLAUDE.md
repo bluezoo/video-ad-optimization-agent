@@ -65,7 +65,7 @@ Lint/format with ruff (config in `ruff.toml`): `make lint` (check only), `make f
 
 ## Environment
 
-Vertex AI path: `GOOGLE_GENAI_USE_VERTEXAI=TRUE`, `GOOGLE_CLOUD_PROJECT`, `GCS_BUCKET`. AI Studio path: `GOOGLE_GENAI_USE_VERTEXAI=FALSE`, `GOOGLE_API_KEY`, `GCS_BUCKET`. Optional: `GOOGLE_MAPS_API_KEY` (or `MAPS_API_KEY`) for maps tools — tests skip cleanly if unset. Vars go in `app/.env`.
+Vertex AI path: `GOOGLE_GENAI_USE_VERTEXAI=TRUE`, `GOOGLE_CLOUD_PROJECT`, `GCS_BUCKET`. AI Studio path: `GOOGLE_GENAI_USE_VERTEXAI=FALSE`, `GOOGLE_API_KEY`, `GCS_BUCKET`. Optional: `GOOGLE_MAPS_API_KEY` (or `MAPS_API_KEY`) for maps tools — tests skip cleanly if unset. Vars go in `app/.env`. Optional: `APP_MODE=demo|connected` (default `demo`; empty counts as unset; any other value fails startup with a `ValueError` at config load) — inert until Phase 11 wires provider selection, and deliberately the only user-facing mode knob.
 
 ## Gotchas
 

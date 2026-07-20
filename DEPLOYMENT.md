@@ -340,6 +340,7 @@ gcloud ai reasoning-engines delete YOUR_AGENT_ID --region=us-central1
 |----------|-------------|
 | `GOOGLE_MAPS_API_KEY` | For static map generation |
 | `GOOGLE_CLOUD_LOCATION` | Vertex AI region (default: `global`) |
+| `APP_MODE` | `demo` (default) or `connected`; forwarded by both deploy scripts, inert until Phase 11/12 |
 
 ### Auto-Configured by Deploy Scripts
 

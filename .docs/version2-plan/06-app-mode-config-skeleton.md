@@ -25,6 +25,8 @@ No mode concept exists today. The app always uses mock/demo data (`app/database/
 5. Document `APP_MODE` alongside the existing environment variables. **Correction: there is no environment section in `README.md`** — the current environment documentation lives in this repo's `CLAUDE.md` (see its "Environment" section). Add `APP_MODE` there, matching the existing `GOOGLE_GENAI_USE_VERTEXAI` documentation style.
 6. Update `scripts/deploy.sh` to forward `APP_MODE` to the deployed environment (it does not today), so a `connected`-mode deployment is actually possible once Phase 11/12 exist — even though this phase itself has nothing for that value to do yet.
 
+> **Amended (workstream 06, 2026-07-18):** kickoff research found `scripts/deploy.sh` is only one of three deploy paths. `scripts/deploy_ae_inline.py` (`make deploy-ae-global`, the primary Gemini-3 path per CLAUDE.md) has its own hardcoded `env_vars` dict (~line 304) that also does not forward `APP_MODE` — owner decided this phase wires **both** explicit paths. `scripts/deploy_ae.sh` needs no change (`adk deploy agent_engine` reads `app/.env`). The `agent_engine_app.py` force-set workaround for Agent Engine's env-var dropping (DEPLOYMENT.md) is deferred to Phase 11/12, when `connected` first has runtime effect.
+
 ## Validation
 
 - [ ] `APP_MODE` unset → app behaves exactly as it does today, confirmed by running the full existing test suite unchanged.

@@ -305,6 +305,7 @@ Examples:
             "GOOGLE_GENAI_USE_VERTEXAI": "TRUE",  # Use Vertex AI (not AI Studio)
             "GEMINI_MODEL_LOCATION": "global",  # For Gemini 3 models
             "GCS_BUCKET": args.bucket,
+            "APP_MODE": os.environ.get("APP_MODE", "demo"),  # Phase 6: inert until Phase 11/12
         }
 
         # Use standard module-level agent_engines.create()

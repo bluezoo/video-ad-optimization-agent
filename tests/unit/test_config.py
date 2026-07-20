@@ -61,3 +61,43 @@ class TestCampaignCategoriesParity:
         from app import config
 
         assert "holiday" in config.CAMPAIGN_CATEGORIES
+
+
+class TestAppMode:
+    """Phase 6: typed APP_MODE config value (demo|connected), no consumers yet."""
+
+    def test_unset_defaults_to_demo(self, monkeypatch):
+        monkeypatch.delenv("APP_MODE", raising=False)
+        cfg = importlib.reload(config_module)
+        assert cfg.APP_MODE is cfg.AppMode.DEMO
+
+    def test_explicit_demo_is_demo(self, monkeypatch):
+        monkeypatch.setenv("APP_MODE", "demo")
+        cfg = importlib.reload(config_module)
+        assert cfg.APP_MODE is cfg.AppMode.DEMO
+
+    def test_connected_is_valid_and_readable(self, monkeypatch):
+        monkeypatch.setenv("APP_MODE", "connected")
+        cfg = importlib.reload(config_module)
+        assert cfg.APP_MODE is cfg.AppMode.CONNECTED
+
+    def test_value_is_normalized(self, monkeypatch):
+        monkeypatch.setenv("APP_MODE", "  Connected ")
+        cfg = importlib.reload(config_module)
+        assert cfg.APP_MODE is cfg.AppMode.CONNECTED
+
+    def test_empty_value_means_unset(self, monkeypatch):
+        monkeypatch.setenv("APP_MODE", "")
+        cfg = importlib.reload(config_module)
+        assert cfg.APP_MODE is cfg.AppMode.DEMO
+
+    def test_invalid_value_raises_valueerror_at_load(self, monkeypatch):
+        monkeypatch.setenv("APP_MODE", "garbage")
+        with pytest.raises(ValueError, match="APP_MODE"):
+            importlib.reload(config_module)
+
+    def test_app_mode_is_str_enum(self, monkeypatch):
+        monkeypatch.delenv("APP_MODE", raising=False)
+        cfg = importlib.reload(config_module)
+        assert isinstance(cfg.APP_MODE, cfg.AppMode)
+        assert cfg.APP_MODE == "demo"  # str-enum: comparable to its string value
