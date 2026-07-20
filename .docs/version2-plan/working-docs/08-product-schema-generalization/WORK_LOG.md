@@ -17,3 +17,6 @@ Owner rejected the plain approval prompt and instead directed a scope addition i
 
 ## 2026-07-20 — checkpoint 4 complete: all 5 tasks implemented, reviewed, stabilized (workflow run wf_9095d301)
 Task heads: 1@8386089, 2@8f7a96c (golden prompts byte-identical), 3@29d5c83, 4@4d733d4 (incl. insert_product self-service substrate), 5@a37d00d (doc amendments + Scenario F5). All five reviews approved, zero Critical/Important/Minor findings. Stabilize loop (owner-directed): round 1 green — full make test (190 unit/e2e + 5 integration) + ruff clean on branch-touched files after removing a leftover unused typing.List import (02fc504). Next: demo verification (F1.1, F2.1, F5).
+
+## 2026-07-20 — checkpoint 5: demo scenario verification PASS
+Regression (F1 Scene 1 + F2.1): 2/2 PASS through the typed-Product migration (report .superpowers/sdd/regression-verification.md). New F5 (non-fashion campaign): PASS — list_products(category="beverage") returned the core-set SKUs; create_campaign for aurora-cold-brew-330ml produced category "always-on" (not the old silent "essentials"), description names the product with no fashion literals, no "None" strings, no tracebacks (report .superpowers/sdd/f5-verification.md).
