@@ -72,6 +72,8 @@ from .tools.maps_tools import (
 )
 from .tools.metrics_tools import (
     compare_campaigns,
+    compare_creatives_within_campaign,
+    generate_creative_comparison_chart,
     generate_metrics_visualization,
     get_campaign_insights,
     get_campaign_metrics,
@@ -318,6 +320,16 @@ Use generate_metrics_visualization to create professional charts:
 
 Available metrics for visualization: revenue_per_impression, impressions, dwell_time, circulation
 
+## Creative Comparison (RPI across creatives) — NEW
+When the user asks which creative/video/variation is winning WITHIN one campaign:
+- compare_creatives_within_campaign(campaign_id) - per-creative RPI (the primary KPI),
+  impressions, revenue, dwell time, and variation characteristics, ranked by RPI
+- generate_creative_comparison_chart(campaign_id) - deterministic bar chart of RPI per
+  creative (rendered from the exact same numbers, not AI-drawn), saved as an artifact;
+  also returns the full comparison data
+Use compare_campaigns only for comparing WHOLE campaigns against each other;
+use these two for creatives inside a single campaign.
+
 ## Google Maps Integration (NEW)
 **Direct Google Maps Links:**
 - get_campaign_map_data() - Get all campaign locations with:
@@ -354,6 +366,7 @@ All AI visualizations use Gemini 3 Pro Image and saved as artifacts.
 - Compare circulation to impressions to show visibility ratio
 - Provide actionable recommendations based on retail context
 - Offer to generate visualizations when discussing data
+- "Which creative/variation is winning in campaign X" → compare_creatives_within_campaign (add generate_creative_comparison_chart when a visual is asked for or helpful)
 - For "show me on a map" requests:
   1. First use get_campaign_map_data() for data + Google Maps links
   2. Offer generate_static_map() for a real map image
@@ -372,7 +385,9 @@ analytics_agent = LlmAgent(
         get_top_performing_ads,
         get_campaign_insights,
         compare_campaigns,
+        compare_creatives_within_campaign,
         generate_metrics_visualization,
+        generate_creative_comparison_chart,
         # Google Maps integration tools
         get_campaign_map_data,
         generate_static_map,
