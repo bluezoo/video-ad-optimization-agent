@@ -7,3 +7,6 @@ Worktree .claude/worktrees/version_2_rpi-chart, branch version_2_rpi-chart off v
 
 ## 2026-07-19 — DISCOVERY: numpy missing from Agent Engine deploy requirements (ws05 gap)
 Assumed (ws05, SETUP_INSTRUCTIONS numpy note): numpy dependency fully wired. Actual: scripts/deploy_ae_inline.py:291-298 requirements list lacks numpy, while the AE runtime imports it at startup (mock_data.py:28 → demo_data/derive.py → seed.py:27 `import numpy as np`; CLAUDE.md: AE DB repopulates from mock data on restart) — an AE deploy from current version_2 would crash at import. Blast radius: scripts/deploy_ae_inline.py only (app/requirements.txt is correct; deploy_ae.sh path installs from requirements.txt and is fine). Fix lands in this workstream's dependency task (numpy + matplotlib added to that list together).
+
+## 2026-07-19 — working doc approved (checkpoint 2)
+Owner approved the six-dimension restatement. Owner decision at the gate (the ws05-deferred flat-RPI tension): **Option A — deterministic per-creative RPI factor**, constant across days, seeded per (campaign, video), band [0.03, 0.07] around DEMO_RPI; reverses the ws05 strict-flat choice by explicit owner sign-off. Options B (flat + multi-metric) and C (daily jitter) rejected — reasoning recorded in working-doc.md. numpy-AE DISCOVERY fix folded into the dependency task. Next: writing-plans.
