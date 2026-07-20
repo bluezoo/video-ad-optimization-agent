@@ -19,6 +19,7 @@ from contextlib import contextmanager
 from datetime import UTC, datetime
 
 from .. import config
+from ..models.product import Product
 
 
 def get_connection() -> sqlite3.Connection:
@@ -386,14 +387,14 @@ def populate_products() -> None:
     print(f"[DB] Populated {len(PRODUCTS)} products")
 
 
-def get_product(product_id: int) -> dict:
-    """Get a product by ID.
+def get_product(product_id: int) -> Product | None:
+    """Get a product by ID as a typed Product (metadata parsed into attributes).
 
     Args:
         product_id: The product ID
 
     Returns:
-        Product dictionary or None if not found
+        Product or None if not found
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -402,18 +403,18 @@ def get_product(product_id: int) -> dict:
     conn.close()
 
     if row:
-        return dict(row)
+        return Product.from_row(dict(row))
     return None
 
 
-def get_product_by_name(name: str) -> dict:
-    """Get a product by name.
+def get_product_by_name(name: str) -> Product | None:
+    """Get a product by name as a typed Product (metadata parsed into attributes).
 
     Args:
         name: The product name (e.g., 'emerald-satin-slip-dress')
 
     Returns:
-        Product dictionary or None if not found
+        Product or None if not found
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -422,18 +423,18 @@ def get_product_by_name(name: str) -> dict:
     conn.close()
 
     if row:
-        return dict(row)
+        return Product.from_row(dict(row))
     return None
 
 
-def list_products(category: str = None) -> list:
+def list_products(category: str = None) -> list[Product]:
     """List all products, optionally filtered by category.
 
     Args:
         category: Optional category filter
 
     Returns:
-        List of product dictionaries
+        List of typed Products
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -446,7 +447,7 @@ def list_products(category: str = None) -> list:
     rows = cursor.fetchall()
     conn.close()
 
-    return [dict(row) for row in rows]
+    return [Product.from_row(dict(row)) for row in rows]
 
 
 DEMO_ANCHOR_KEY = "demo_anchor_date"

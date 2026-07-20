@@ -67,7 +67,7 @@ def create_campaign(
         }
 
     # Map product category to campaign category
-    product_category = product.get("category", "").lower()
+    product_category = (product.category or "").lower()
     category_mapping = {
         "dress": "summer",
         "top": "essentials",
@@ -80,12 +80,18 @@ def create_campaign(
     # Auto-generate campaign name if not provided
     if not name:
         # Format: "Product Name - Store Name"
-        product_name_title = product["name"].replace("-", " ").title()
+        product_name_title = product.name.replace("-", " ").title()
         name = f"{product_name_title} - {store_name}"
 
     # Auto-generate description if not provided
     if not description:
-        description = f"Campaign for {product.get('style', 'fashion item')} in {product.get('color', 'classic')} at {store_name}, {city}."
+        style = product.attributes.get("style")
+        color = product.attributes.get("color")
+        if style or color:
+            description = f"Campaign for {style or 'fashion item'} in {color or 'classic'} at {store_name}, {city}."
+        else:
+            product_title = product.name.replace("-", " ").title()
+            description = f"Campaign for {product_title} at {store_name}, {city}."
 
     with get_db_cursor() as cursor:
         cursor.execute('''
@@ -106,7 +112,7 @@ def create_campaign(
                 "name": row["name"],
                 "description": row["description"],
                 "product_id": row["product_id"],
-                "product_name": product["name"],
+                "product_name": product.name,
                 "store_name": row["store_name"],
                 "city": row["city"],
                 "state": row["state"],
