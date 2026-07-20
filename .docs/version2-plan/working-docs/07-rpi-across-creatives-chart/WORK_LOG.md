@@ -29,3 +29,6 @@ Agent wiring + F3.2 criteria reshape + new Scenario F4 + phase-doc resolution no
 ## 2026-07-19 — checkpoint 5: demo scenario verification PASS
 F3 (updated criteria): 2/2 scenes PASS — F3.1 metric-day counts 30→+3→33; F3.2 per-ad ratios equal own reported RPI (0.0605/0.0595/0.0589), in band, distinct. Report: .superpowers/sdd/f3-verification.md.
 F4 (new): PASS — generate_creative_comparison_chart fired (campaign 4), artifact_saved true, 1280x720 PNG rendered, winner=max RPI (asian-cafe-sophisticated 0.0546; RPI rank differs from impressions rank — real comparison confirmed), chart_data==comparison payload exactly. Verified via /run event list + fetched artifact bytes (accepted api-server evidence path). Report: .superpowers/sdd/f4-verification.md. Non-failing deviation: one extraneous get_campaign_map_data call before the chart tool.
+
+## 2026-07-19 — final whole-branch review: READY TO MERGE
+Range 49ae21b..c825dbd (15 commits). Zero Critical/Important findings. All deferred per-task Minors triaged acceptable (reviewer empirically tested the $-in-title mathtext hazard — non-issue). Reviewer's STATUS.md note was against the worktree's stale copy; main-checkout row is current. Review: .superpowers/sdd/final-review.md.
