@@ -17,6 +17,7 @@
 - **`Product.id: int`** (Phase 10 pins `product_id` against it).
 - **Adapter must round-trip** (`from_row(to_row(...))` lossless) — Phase 15's `create_product` writes through it.
 - SQLite CHECK can't be ALTERed: the `always-on` addition applies to fresh DBs via CREATE TABLE; existing DBs need `make reset-db` — documented in SETUP_INSTRUCTIONS.md, no automated rebuild migration.
+- **Self-service substrate (owner directive 2026-07-20):** the persistence adapter must support inserting a brand-new product at runtime — db-layer `insert_product(product: Product) -> Product` — and persistence/retrieval/campaign-creation must NOT require the referenced image file to exist (vendor images arrive later via upload or nano-banana generation; Phase 15's agent tools wrap this function). Agent-facing CRUD tools remain Phase 15.
 - **Do NOT touch:** README.md, DEMO_GUIDE.md, `app/database/products_data.py` entries, `presentation_mode` (Phase 9), product CRUD tools (Phase 15), `DEMO_DATASET` runtime selection (Phase 15).
 - Tests run against a copy of `campaigns.db` (conftest) which may predate the retail fixtures — retail-fixture tests must call `populate_retail_test_products()` themselves (it's idempotent).
 - A PostToolUse hook runs `make test-unit` after `app/**/*.py` edits. No AI-attribution trailers in commits.
@@ -639,17 +640,17 @@ git commit -m "Decouple campaign theme taxonomy from product category; add alway
 
 ---
 
-### Task 4: Multi-vertical retail core test set
+### Task 4: Multi-vertical retail core test set + self-service write path
 
 **Files:**
 - Create: `app/database/retail_products_data.py`
-- Modify: `app/database/db.py` (new `populate_retail_test_products()`; call it from `init_database()` right after the `populate_products()` call at :239)
+- Modify: `app/database/db.py` (new `insert_product()` + `populate_retail_test_products()`; call the latter from `init_database()` right after the `populate_products()` call at :239)
 - Modify: `app/tools/video_tools.py` `list_products` tool docstring (:1737-1747) and `app/agent.py` "Product Library" instruction line (~:194) — the "22 products" wording
 - Test: `tests/unit/test_retail_products.py` (new)
 
 **Interfaces:**
 - Consumes: `Product.to_row()` (Task 1), typed reads (Task 2), always-on default (Task 3).
-- Produces: `app.database.retail_products_data.RETAIL_TEST_PRODUCTS` (list of Product-kwargs dicts) and `db.populate_retail_test_products()` (idempotent). Task 5's Scenario F5 uses the beverage SKU by name.
+- Produces: `app.database.retail_products_data.RETAIL_TEST_PRODUCTS` (list of Product-kwargs dicts), `db.insert_product(product: Product) -> Product` (raises sqlite3.IntegrityError on duplicate name; returns the stored Product re-read via get_product), and `db.populate_retail_test_products()` (idempotent). Task 5's Scenario F5 uses the beverage SKU by name; Phase 15's tools wrap insert_product.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -707,6 +708,44 @@ class TestCoreTestSet:
         assert result["campaign"]["category"] == "always-on"
         assert "fashion item" not in result["campaign"]["description"]
         assert "Aurora Cold Brew" in result["campaign"]["description"]
+
+
+class TestSelfServiceOnTheFly:
+    """Owner directive: a vendor's never-before-seen product must work end to
+    end (persist -> typed retrieve -> campaign) with only an image REFERENCE —
+    the file may not exist yet; upload/generation land in Phase 14a/15."""
+
+    def test_vendor_product_end_to_end(self, retail_db):
+        from app.database.db import insert_product
+
+        vendor_product = Product(
+            name="vendor-demo-trail-shoe",
+            category="footwear",  # a vertical NOT in the core set
+            description="lightweight waterproof trail running shoe",
+            image_filename="vendor-demo-trail-shoe.png",  # not on disk anywhere
+            attributes={"brand": "Summit Labs", "sizes": ["8", "9", "10"],
+                        "waterproof_rating": "IPX7", "weight_grams": 240},
+        )
+        stored = insert_product(vendor_product)
+        assert stored.id is not None
+        fetched = get_product_by_name("vendor-demo-trail-shoe")
+        assert fetched.attributes == vendor_product.attributes
+        assert fetched.description == vendor_product.description
+        result = create_campaign(product_id=stored.id, store_name="Vendor Demo Store",
+                                 city="Austin", state="TX")
+        assert result["status"] == "success"
+        assert result["campaign"]["category"] == "always-on"
+        assert "fashion item" not in result["campaign"]["description"]
+
+    def test_duplicate_name_raises_integrity_error(self, retail_db):
+        import sqlite3
+
+        from app.database.db import insert_product
+
+        duplicate = Product(name="aurora-cold-brew-330ml", category="beverage",
+                            description="dup", image_filename="x.png")
+        with pytest.raises(sqlite3.IntegrityError):
+            insert_product(duplicate)
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -816,11 +855,45 @@ RETAIL_TEST_PRODUCTS: List[Dict[str, Any]] = [
 ]
 ```
 
-- [ ] **Step 4: Add `populate_retail_test_products()` to `app/database/db.py`**
+- [ ] **Step 4: Add `insert_product()` and `populate_retail_test_products()` to `app/database/db.py`**
 
-Insert directly after `populate_products()` (after :386):
+Insert both directly after `populate_products()` (after :386):
 
 ```python
+def insert_product(product: Product) -> Product:
+    """Insert a new product through the typed write path (Phase 8).
+
+    The db-layer substrate for self-service onboarding ("run MY product
+    through it"): Phase 15's agent tools (create_product / import /
+    generate_product_image) wrap this. The referenced image file does NOT
+    need to exist yet — image_filename is a reference resolved later by
+    vendor upload or image generation.
+
+    Returns:
+        The stored Product, re-read via get_product() so the caller sees
+        exactly what any later retrieval will see (id populated).
+
+    Raises:
+        sqlite3.IntegrityError: if a product with this name already exists.
+    """
+    row = product.to_row()
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            INSERT INTO products
+            (name, category, style, color, fabric, occasion, details,
+             image_filename, gcs_path, local_path, metadata)
+            VALUES (:name, :category, :style, :color, :fabric, :occasion,
+                    :details, :image_filename, :gcs_path, :local_path, :metadata)
+        ''', row)
+        product_id = cursor.lastrowid
+        conn.commit()
+    finally:
+        conn.close()
+    return get_product(product_id)
+
+
 def populate_retail_test_products() -> None:
     """Seed the multi-vertical retail core test set (Phase 8).
 
@@ -955,7 +1028,12 @@ Update the closing tally line (~:100) to count Q7 as answered.
 > for the reference write path). The multi-vertical retail core test set
 > (`retail_products_data.py`) is the seed this phase's image tools
 > (upload / nano-banana generation) grow into real imagery — consider a
-> `DEMO_DATASET` value for it alongside `fashion|none`.
+> `DEMO_DATASET` value for it alongside `fashion|none`. The self-service
+> vendor flow ("run MY product") has its db substrate ready:
+> `db.insert_product(Product)` accepts on-the-fly products whose image files
+> don't exist yet — this phase's tools are thin wrappers over it (vendor
+> upload fills local_path/gcs_path; nano-banana generation writes the file
+> image_filename already references).
 ```
 
 - [ ] **Step 2: Append Scenario F5 to `docs/demo-scenarios/fashion.md`**
