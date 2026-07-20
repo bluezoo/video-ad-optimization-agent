@@ -16,10 +16,13 @@
 
 import json
 import time
+from io import BytesIO
 
 from google import genai
 from google.adk.tools import ToolContext
 from google.genai import types
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.figure import Figure
 
 from ..config import IMAGE_GENERATION
 from ..database.db import get_db_cursor
@@ -762,6 +765,166 @@ def compare_campaigns(campaign_ids: list[int]) -> dict:
             "summary": f"Compared {len(comparisons)} campaigns. '{best['name']}' leads with RPI of ${best['metrics']['revenue_per_impression']:.4f} (${best['metrics']['total_revenue']:.2f} total revenue).",
             "note": f"{len(no_metrics)} campaign(s) have no metrics yet. Activate videos using Review Agent." if no_metrics else None
         }
+
+
+def compare_creatives_within_campaign(campaign_id: int) -> dict:
+    """Compare all activated creatives (video variations) within ONE campaign.
+
+    Creative-level counterpart to compare_campaigns() (which compares whole
+    campaigns): returns, per activated video, all-time totals and RPI via
+    compute_rpi() (ratio of sums — see docs/METRICS.md), plus variation
+    metadata so the comparison is legible. All-time window by design: demo
+    metrics live in a fixed anchor window that date('now') filters can
+    silently drift past.
+
+    Args:
+        campaign_id: The campaign whose creatives to compare
+
+    Returns:
+        Dictionary with per-creative metrics ranked by RPI
+    """
+    with get_db_cursor() as cursor:
+        cursor.execute("SELECT id, name FROM campaigns WHERE id = ?", (campaign_id,))
+        campaign = cursor.fetchone()
+        if not campaign:
+            return {"status": "error", "message": f"Campaign {campaign_id} not found"}
+
+        cursor.execute('''
+            SELECT
+                cv.id AS video_id,
+                cv.video_filename,
+                cv.variation_name,
+                cv.variation_params,
+                SUM(vm.revenue) AS total_revenue,
+                SUM(vm.impressions) AS total_impressions,
+                AVG(vm.dwell_time_seconds) AS avg_dwell
+            FROM campaign_videos cv
+            LEFT JOIN video_metrics vm ON cv.id = vm.video_id
+            WHERE cv.campaign_id = ? AND cv.status = 'activated'
+            GROUP BY cv.id
+        ''', (campaign_id,))
+        rows = cursor.fetchall()
+
+    if not rows:
+        return {
+            "status": "error",
+            "message": (
+                f"Campaign {campaign_id} has no activated videos to compare. "
+                "Use the Review Agent to activate videos first."
+            ),
+        }
+
+    creatives = []
+    for row in rows:
+        characteristics = {}
+        if row["variation_params"]:
+            try:
+                params = json.loads(row["variation_params"])
+                characteristics = {
+                    key: params.get(key)
+                    for key in ("setting", "mood", "model_ethnicity", "lighting", "time_of_day")
+                    if params.get(key)
+                }
+            except json.JSONDecodeError:
+                pass
+        total_revenue = round(row["total_revenue"] or 0.0, 2)
+        total_impressions = int(row["total_impressions"] or 0)
+        creatives.append({
+            "video_id": row["video_id"],
+            "video_filename": row["video_filename"],
+            "variation_name": row["variation_name"] or "default",
+            "characteristics": characteristics,
+            "metrics": {
+                "total_impressions": total_impressions,
+                "total_revenue": total_revenue,
+                "average_dwell_time": round(row["avg_dwell"], 1) if row["avg_dwell"] else 0.0,
+                "revenue_per_impression": compute_rpi(total_revenue, total_impressions),
+            },
+        })
+
+    creatives.sort(key=lambda c: c["metrics"]["revenue_per_impression"], reverse=True)
+    for rank, creative in enumerate(creatives, start=1):
+        creative["rpi_rank"] = rank
+
+    best = creatives[0]
+    return {
+        "status": "success",
+        "campaign_id": campaign_id,
+        "campaign_name": campaign["name"],
+        "creatives_compared": len(creatives),
+        "creatives": creatives,
+        "best_performer": {
+            "video_id": best["video_id"],
+            "variation_name": best["variation_name"],
+            "revenue_per_impression": best["metrics"]["revenue_per_impression"],
+        },
+        "note": "RPI per creative = compute_rpi() over all-time sums (ratio of sums, never sum of ratios).",
+    }
+
+
+async def generate_creative_comparison_chart(
+    campaign_id: int,
+    tool_context: ToolContext = None
+) -> dict:
+    """Render a deterministic RPI-per-creative bar chart for one campaign.
+
+    Unlike generate_metrics_visualization (AI-image-drawn), this renders with
+    matplotlib, so bar heights are exactly the numbers returned — the chart
+    and the structured data come from the same compare_creatives_within_campaign()
+    call. Saved as a PNG artifact for the web UI; also returns the full
+    comparison payload.
+
+    Args:
+        campaign_id: The campaign whose activated creatives to chart
+        tool_context: ADK tool context for artifact saving
+
+    Returns:
+        Dictionary with chart artifact metadata and the comparison data
+    """
+    comparison = compare_creatives_within_campaign(campaign_id)
+    if comparison["status"] != "success":
+        return comparison
+
+    creatives = comparison["creatives"]
+    labels = [c["variation_name"] for c in creatives]
+    rpi_values = [c["metrics"]["revenue_per_impression"] for c in creatives]
+
+    # 16:9 to match the repo's chart convention (CHART_TEMPLATES enforce it)
+    fig = Figure(figsize=(12.8, 7.2), dpi=100)
+    FigureCanvasAgg(fig)
+    ax = fig.add_subplot(111)
+    bars = ax.bar(labels, rpi_values, color="#4C7DE0")
+    ax.set_title(f"RPI by creative — {comparison['campaign_name']}")
+    ax.set_ylabel("Revenue per impression ($)")
+    ax.bar_label(bars, fmt="$%.4f")
+    ax.tick_params(axis="x", labelrotation=15)
+    fig.tight_layout()
+
+    buffer = BytesIO()
+    fig.savefig(buffer, format="png")
+    image_bytes = buffer.getvalue()
+
+    timestamp = int(time.time())
+    filename = f"creative_comparison_{campaign_id}_{timestamp}.png"
+    if tool_context:
+        image_artifact = types.Part.from_bytes(data=image_bytes, mime_type="image/png")
+        version = await tool_context.save_artifact(filename=filename, artifact=image_artifact)
+        artifact_saved = True
+    else:
+        artifact_saved = False
+        version = None
+
+    return {
+        "status": "success",
+        "message": f"Creative comparison chart generated for campaign {campaign_id}",
+        "chart": {
+            "filename": filename,
+            "artifact_saved": artifact_saved,
+            "artifact_version": version,
+            "chart_data": {"labels": labels, "rpi_values": rpi_values},
+        },
+        "comparison": comparison,
+    }
 
 
 def _aggregate_week(week_slice: list, metric: str) -> float:

@@ -296,6 +296,8 @@ Examples:
             "googlemaps>=4.10.0",
             "Pillow>=10.2.0",
             "pydantic>=2.11.7",
+            "numpy>=1.26.0",
+            "matplotlib>=3.8.0",
         ]
 
         # Environment variables for the deployed container

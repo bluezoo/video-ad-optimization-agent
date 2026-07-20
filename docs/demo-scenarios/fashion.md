@@ -88,9 +88,8 @@ campaign anyway"
 
 Covers Phase 5's deterministic demo data: activating a video seeds a full
 30-day metrics window from the seeded generator (`app/demo_data/`), and every
-number the agent reports must be internally consistent under the flat demo
-revenue model (`revenue = impressions × 0.05`, so RPI is exactly 0.05
-everywhere by construction).
+number the agent reports must be internally consistent under the revenue model
+(revenue = impressions × a deterministic per-creative RPI in [0.03, 0.07] (base `DEMO_RPI` × seeded factor — workstream 07), so each creative's ratio is one stable constant).
 
 ### Scene F3.1 — deterministic 30-day window and anchor extension
 
@@ -132,11 +131,43 @@ campaign name/id comes back in the Query 1 response there).
   for the same campaign — any of these is acceptable so long as per-ad or
   campaign totals with impressions + revenue + RPI come back).
 
-**Pass criteria (the workstream-05 assertion — check the arithmetic, don't
+**Pass criteria (the workstream-05/07 assertion — check the arithmetic, don't
 trust prose):**
-- For every ad/total row reported: `revenue ≈ impressions × 0.05` (within
-  rounding to cents) and any reported RPI value is 0.05 (±0.001).
+- For every ad row reported: `revenue ≈ impressions × its reported RPI`
+  (within cent rounding), and that RPI lies within [0.03, 0.07] (per-creative
+  deterministic band — workstream 07 replaced the flat 0.05 with a seeded
+  per-creative constant).
+- In a multi-creative campaign, the reported RPIs are NOT all identical
+  (at least two distinct values) — all-identical ratios would mean the
+  per-creative factor regressed to flat.
 - Impressions are non-zero for the activated video.
-- FAIL if any row's revenue/impressions ratio deviates from 0.05 beyond
-  rounding — that would mean a non-deterministic or legacy generator path
-  survived.
+- FAIL if any row's revenue/impressions ratio disagrees with its own reported
+  RPI beyond rounding — that would mean a non-deterministic or legacy
+  generator path survived.
+
+## Scenario F4: Creative comparison chart (workstream 07)
+
+Covers Phase 7: creative-level RPI comparison and the deterministic
+(matplotlib, not AI-drawn) chart tool.
+
+### Scene F4.1 — which creative is winning
+
+**Query:** "Which of the creatives in the Sage Satin Camisole campaign is
+winning? Show me a comparison chart."
+
+**Expected tool calls:**
+- `compare_creatives_within_campaign(campaign_id=<resolved id>)` and/or
+  `generate_creative_comparison_chart(campaign_id=<resolved id>)` — the chart
+  tool embeds the comparison payload, so either order (or the chart tool
+  alone) is acceptable, but the CHART tool must fire since a chart was asked
+  for.
+
+**Pass criteria (check the arithmetic):**
+- A chart artifact renders in the UI (PNG; screenshot as evidence) and the
+  tool response has `artifact_saved: true`.
+- The response names a winner whose RPI is the maximum of the reported
+  per-creative RPIs.
+- Every reported creative satisfies `revenue ≈ impressions × RPI` (cent
+  rounding), RPIs lie in [0.03, 0.07], and are not all identical.
+- `chart.chart_data.labels`/`rpi_values` in the tool response match the
+  `comparison.creatives` payload exactly (same order, same numbers).

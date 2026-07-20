@@ -2,6 +2,14 @@
 
 > **Amended (workstream 05, 2026-07-17):** Phase 5's demo data uses a strict flat revenue constant (`revenue = impressions × DEMO_RPI`, owner decision at the ws05 approval gate), so **demo RPI is identical (0.05) across every creative and every day** — per-creative impressions/revenue magnitudes differ, but the RPI ratio does not. An RPI-across-creatives chart over unmodified Phase 5 data is therefore a flat line. This phase's kickoff must decide how to make the comparison meaningful (e.g. introduce deterministic per-creative RPI variance in Phase 5's disposable derivation layer, or chart a different differentiating metric alongside RPI) — the tension was consciously deferred to here.
 
+> **Resolved (workstream 07, 2026-07-19):** owner picked Option A at this
+> workstream's kickoff gate — a deterministic per-(campaign, video) RPI
+> factor in the disposable derivation layer (`app/demo_data/derive.py`,
+> `video_rpi()`: `DEMO_RPI ×` seeded factor in [0.6, 1.4] → per-creative RPI
+> in [0.03, 0.07], constant across days). RPI-across-creatives is now a real
+> comparison; `DEMO_RPI` remains the single base constant. Scenario F3.2's
+> criteria updated accordingly.
+
 ## Goal
 
 Ship the specific comparison view the client is most likely to want to see live: RPI, side by side, across the different video creatives/variations in a campaign. This is BlueZoo's own flagship metric (RPI), applied to the thing this app's whole loop exists to produce (multiple creative variations competing on performance).
