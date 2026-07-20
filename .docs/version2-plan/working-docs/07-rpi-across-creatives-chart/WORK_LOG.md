@@ -10,3 +10,6 @@ Assumed (ws05, SETUP_INSTRUCTIONS numpy note): numpy dependency fully wired. Act
 
 ## 2026-07-19 — working doc approved (checkpoint 2)
 Owner approved the six-dimension restatement. Owner decision at the gate (the ws05-deferred flat-RPI tension): **Option A — deterministic per-creative RPI factor**, constant across days, seeded per (campaign, video), band [0.03, 0.07] around DEMO_RPI; reverses the ws05 strict-flat choice by explicit owner sign-off. Options B (flat + multi-metric) and C (daily jitter) rejected — reasoning recorded in working-doc.md. numpy-AE DISCOVERY fix folded into the dependency task. Next: writing-plans.
+
+## 2026-07-19 — checkpoint 3: plan approved
+Plan committed f27e3c7 (4 tasks: Option A data change; compare_creatives_within_campaign; matplotlib chart tool + deps incl. numpy-AE fix; agent wiring + scenario updates + provenance). Owner approved execution via SDD without check-ins until verification.
