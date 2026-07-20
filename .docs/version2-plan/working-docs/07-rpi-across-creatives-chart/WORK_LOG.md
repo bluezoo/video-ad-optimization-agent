@@ -16,3 +16,6 @@ Plan committed f27e3c7 (4 tasks: Option A data change; compare_creatives_within_
 
 ## 2026-07-19 — Task 1 complete (mirrors .superpowers/sdd/progress.md)
 Option A per-creative RPI factor: commits 5700aad + fix 70bcb48 (range c8d0652..70bcb48), review approved. Controller caught a reviewer-missed deviation — implementer had deleted the DEMO_RPI==0.05 canonical assertion from TestConstants; restored in 70bcb48. Unit suite 151 passed.
+
+## 2026-07-19 — Task 2 complete (mirrors .superpowers/sdd/progress.md)
+compare_creatives_within_campaign tool: commit 4ad6f6f (range 671dc3d..4ad6f6f), review approved. 5 new unit tests; 156 unit tests green. Minor notes deferred to final review: dwell 1dp rounding (plan-mandated), docstring phrasing.
