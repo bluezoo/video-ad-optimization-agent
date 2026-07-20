@@ -38,6 +38,10 @@ Today, `_generate_mock_video_metrics()` (unified in Phase 5) assigns impressions
 ## Steps
 
 1. Define an `AdPlayRecord` DTO **matching the client's schema exactly**: `screen_id: str`, `ad_name: str` (maps to this app's video/creative identifier), `product_id: str | int` (matches this app's `Product.id` from Phase 8), `start_time: datetime`, `end_time: datetime`. This is deliberately the same shape a live CMS feed will eventually produce — defining it here, against fixtures, is what makes a future live CMS/BlueZoo/PoS integration a data-source swap instead of a redesign.
+
+> **Amended (workstream 08, 2026-07-20):** `Product.id` is `int | None`
+> (INTEGER PRIMARY KEY AUTOINCREMENT; None only pre-insert) — the
+> `product_id: str | int` here should key as `int`.
 2. Define a `BlueZooVisitInterval`-shaped DTO for the audience side — sensor/screen ID, a UTC timestamp (or interval), a visit/inner-count field (matching BlueZoo's actual `incoming_inner_count` field name and semantics), and any zone field BlueZoo's schema requires. The sub-15-minute question is answered (see open question 1 / Q17): 15-minute slots are the only documented visit grain, so the live query will be 15-minute slots (apportioned) unless BlueZoo's Q17 fallback answer changes that — model this DTO to represent whatever interval the chosen path actually returns.
 3. Add a minimal `Screen` concept (id, name/location) — check whether `app/database/db.py` already has anything screen-adjacent first (`grep -n "screen" app/database/db.py`). A small number of screens (2-5) is enough — see open questions.
 4. Generate a **small set of deterministic fixtures via Phase 5's ported generator** (amended — no hand-shaping): a handful of `AdPlayRecord`s (matching the client's schema) across 2-5 screens and a few products, with the corresponding `BlueZooVisitInterval` data produced by the generator for those same `(campaign, screen, date)` keys. A few days' worth of keys is enough to prove the join logic; determinism comes from the generator's hash-seeding, not from checked-in fixture files.

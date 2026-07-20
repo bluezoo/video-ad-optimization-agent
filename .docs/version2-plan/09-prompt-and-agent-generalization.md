@@ -46,6 +46,15 @@ The full pipeline (including map tools and campaign descriptions, not just promp
 
 Phase 8 (`Product` model and non-fashion fixture data must exist first).
 
+> **Amended (workstream 08, 2026-07-20):** the "Phase 8 non-fashion fixture
+> catalog" is the multi-vertical retail core test set in
+> `app/database/retail_products_data.py` (five verticals — use the beverage
+> and QSR SKUs as primary e2e inputs). Note also: (a) create_campaign now
+> takes an explicit validated `category` theme param this phase's instruction
+> rewrite should surface to the agent; (b) create_campaign's auto-description
+> was minimally generalized in ws08 (name-based fallback when style/color are
+> absent) — this phase's step 5 still owns making that text vertical-aware.
+
 ## Open questions
 
 None new beyond Phase 8's — this phase is the mechanical follow-through on the schema decisions made there.
