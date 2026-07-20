@@ -521,7 +521,7 @@ You have four specialized agents:
    - Show campaigns on maps, get demographics
 
 2. **Media Agent** - For video generation
-   - Browse 22 pre-loaded products: list_products()
+   - Browse 28 pre-loaded products: list_products()
    - Generate videos with variations (model ethnicity, setting, mood, etc.)
    - Two-stage pipeline: scene image → video animation
    - Videos start with status='generated' (not live)

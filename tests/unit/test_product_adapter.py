@@ -59,6 +59,18 @@ class TestGoldenPrompts:
         expected = (GOLDEN_DIR / "golden_creative_prompt_product1.txt").read_text()
         assert build_creative_prompt(product, variation) == expected
 
+    def test_null_style_falls_back_to_category(self, test_db):
+        from app.models.product import Product
+        product = Product(
+            name="fallback-test-product", category="beverage",
+            description="test description", image_filename="x.png",
+            attributes={},  # no style/color/fabric
+        )
+        variation = CreativeVariation(name="fallback-check")
+        prompt = build_scene_image_prompt(product, variation)
+        assert "beverage" in prompt      # category fallback engaged
+        assert "None" not in prompt      # the old dict-path NULL artifact must not appear
+
 
 class TestToolOutputContractsUnchanged:
     def test_list_products_tool_keys(self, test_db):

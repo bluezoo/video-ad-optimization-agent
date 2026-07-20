@@ -434,17 +434,19 @@ def populate_retail_test_products() -> None:
 
     conn = get_connection()
     cursor = conn.cursor()
-    for entry in RETAIL_TEST_PRODUCTS:
-        row = Product(**entry).to_row()
-        cursor.execute('''
-            INSERT OR IGNORE INTO products
-            (name, category, style, color, fabric, occasion, details,
-             image_filename, gcs_path, local_path, metadata)
-            VALUES (:name, :category, :style, :color, :fabric, :occasion,
-                    :details, :image_filename, :gcs_path, :local_path, :metadata)
-        ''', row)
-    conn.commit()
-    conn.close()
+    try:
+        for entry in RETAIL_TEST_PRODUCTS:
+            row = Product(**entry).to_row()
+            cursor.execute('''
+                INSERT OR IGNORE INTO products
+                (name, category, style, color, fabric, occasion, details,
+                 image_filename, gcs_path, local_path, metadata)
+                VALUES (:name, :category, :style, :color, :fabric, :occasion,
+                        :details, :image_filename, :gcs_path, :local_path, :metadata)
+            ''', row)
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def get_product(product_id: int) -> Product | None:
