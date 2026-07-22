@@ -24,7 +24,7 @@ Ported from `ad-campaign-agent` @ `b6e3302358d61892e388d7ff744b2aff0e04b399`
 | `screen_dwell` | `store_dwell` | `sensor_dwell` |
 | `campaign_uv_daily` | `campaign_uv_daily` | `group_uv_daily` (BlueZoo keys by `group_id`, no campaign column — the donor spec's claim otherwise was wrong) |
 | `campaign_flow_transition` | `campaign_flow_transition` | `group_flow_transition` |
-| `video_attribution` | `video_attribution` | (no BlueZoo equivalent — app-side concept, Phase 10 owns it) |
+| `video_attribution` | `video_attribution` | (no BlueZoo equivalent — app-side concept; now consumed, not just reserved: the DB table carries the live windows, `attribution.py` performs the ad-play join against them, and seed.py's frame remains the shape reference) |
 
 ## Column divergences
 
@@ -39,15 +39,24 @@ Ported from `ad-campaign-agent` @ `b6e3302358d61892e388d7ff744b2aff0e04b399`
 
 ## Provenance-flagged synthetic values (demo conventions, NOT BlueZoo mappings)
 
-- `video_metrics.impressions` = `video_fraction × Σ incoming_inner_count`
-  (inner-only IS the confirmed impressions mapping; the per-video fraction is
-  the synthetic part — Phase 10's ad-play join replaces it).
-- `video_metrics.revenue` = `impressions × DEMO_RPI` (0.05, flat — owner
-  decision, ws05).
+- `video_metrics.impressions` = `Σ incoming_inner_count` over the creative's
+  played slots (inner-only IS the confirmed impressions mapping; the per-video
+  fraction ws05 used before Phase 10 is gone — the ad-play join now derives
+  which slots each video played from its `video_attribution` windows and
+  `AdPlayRecord` schedule, so the visit share emerges rather than being
+  invented).
+- `video_metrics.revenue` = `impressions × video_rpi(ad_campaign_id, video_id)`,
+  a deterministic per-creative RPI in the band [0.03, 0.07] = `DEMO_RPI` ×
+  a seeded factor in [0.6, 1.4] (ws07's per-creative differentiation replaced
+  ws05's flat 0.05). Phase 10 attributes this per play window at the ad-play
+  join rather than as a single per-video daily scalar; the per-window amounts
+  sum to the same daily total.
 - `video_metrics.dwell_time_seconds`: synthetic 4–12 s scalar. The dwell
   histogram → scalar aggregation rule is deferred to Phase 11 per
   `docs/METRICS.md` — deliberately NOT derived from the bins.
-- `video_metrics.circulation` = `video_fraction × Σ outgoing_outer_count`:
-  "circulation" appears nowhere in BlueZoo's docs (Q5); demo convention only.
+- `video_metrics.circulation` = `Σ outgoing_outer_count` over the creative's
+  played slots (Phase 10: same ad-play join as impressions, replacing the
+  ws05 per-video fraction): "circulation" appears nowhere in BlueZoo's docs
+  (Q5); demo convention only.
 - `average_journey_duration_seconds` (flow frame): donor invention — BlueZoo
   keys journey duration by `number_of_groups_visited`, not per store pair.

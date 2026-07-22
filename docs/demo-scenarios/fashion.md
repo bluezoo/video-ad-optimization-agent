@@ -225,3 +225,33 @@ Target Downtown in Austin, Texas"
 - FAIL if: a human model appears in the prompt text, any exception in the
   trace, or the old fashion preamble ("model wearing this exact garment")
   appears anywhere.
+
+## Scenario F6: Attribution windows (Phase 10)
+
+Covers Phase 10's playout attribution: activating a video opens deterministic
+`video_attribution` windows on the campaign's real screens (2–3, `screen_id !=
+ad_campaign_id`), and pausing it closes them.
+
+### Scene F6.1 — activation opens attribution windows
+
+**Query:** "Show me the pending videos for campaign 1, then activate the
+first one."
+
+**Expected tool calls:** `list_pending_videos` (or `get_video_review_table`)
+then `activate_video`.
+
+**Checks:**
+- The activation response reports metrics generated for a 30-day window.
+- **DB assertion** (verifier runs via Bash against the local `campaigns.db`):
+  `SELECT screen_id, active_to FROM video_attribution WHERE video_id = <id>`
+  returns 2–3 rows, every `screen_id != campaign_id`, every `active_to` NULL.
+
+### Scene F6.2 — pausing closes the windows
+
+**Query:** "Pause that video."
+
+**Expected tool call:** `pause_video`.
+
+**Checks:**
+- Success response.
+- DB assertion: the same rows from F6.1 now all have `active_to` NOT NULL.

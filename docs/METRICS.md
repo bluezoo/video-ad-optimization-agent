@@ -11,6 +11,11 @@ Definitions are aligned to BlueZoo's own vocabulary wherever BlueZoo defines the
 This adopts BlueZoo's definition verbatim — BlueZoo's `sensor_visits` table is captioned: "Sensor Visits measure the number of devices seen within the inner detection range of a sensor, **also known as impressions**." An impression is an *event count* (a device entered the inner detection zone), not an occupancy snapshot and not a deduplicated person count — see the appendix for the neighboring concepts it must not be conflated with.
 
 In this app: the `video_metrics.impressions` column (one integer per activated video per day).
+Derivation (demo mode): sum of `incoming_inner_count` over the 15-min slots the
+creative actually played (its deterministic `AdPlayRecord` schedule within its
+`video_attribution` windows, across the campaign's 2–3 screens). Inner-only, as
+before. (Phase 10: derived through the ad-play join, no longer a per-video
+daily fraction.)
 
 ## Revenue
 
@@ -32,11 +37,23 @@ Derived convenience form: revenue per 1,000 impressions (`RPI × 1000`, a CPM-st
 
 Zero-impressions convention: the shared implementation (`compute_rpi()` in `app/tools/metrics_shared.py`, added by Phase 4) returns `0.0` when total impressions are zero — "no impressions yet" is reported as zero RPI, not an error or null. A caller that needs to distinguish "no data" from "genuinely zero RPI" must check the impressions count, not the ratio.
 
+Derivation (demo mode): each creative has a deterministic per-(campaign,
+video) RPI in the band [0.03, 0.07] (Phase 7); this keying and formula are
+unchanged by Phase 10. What changed is *how the paired revenue number is
+attributed* — revenue is now computed per play window (`play visits ×
+video_rpi`) at the ad-play join, rather than as a single per-video daily
+scalar, and those per-window amounts sum to the same daily `impressions ×
+rpi` total as before.
+
 ## Circulation
 
 **App-local synthetic metric; BlueZoo mapping unresolved.**
 
 The `video_metrics.circulation` column exists in this app's schema and is populated by the demo-mode mock generator, but it has **no confirmed BlueZoo counterpart**. Candidate interpretation (unconfirmed): broader foot-traffic / opportunity-to-see near a screen — possibly BlueZoo `sensor_visitors` occupancy or an outer-zone visit count — as distinct from impressions (inner-zone attention). That is a plausible retail-signage-industry pattern (circulation = OTS, impressions = actual attention) but it has **not been confirmed against BlueZoo's docs or the client's own usage**. Do not build anything on the candidate mapping; see open question 5 ("`circulation` metric definition (Phase 3 glossary — does not block Phase 3 itself)") in `.docs/version2-plan/99-open-questions.md`.
+
+Derivation (demo mode): sum of `outgoing_outer_count` over the creative's
+played slots — still the synthetic demo convention (the term appears nowhere
+in BlueZoo's docs); real semantics deferred to Phase 11.
 
 ## Dwell time
 
