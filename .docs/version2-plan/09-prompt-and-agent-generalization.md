@@ -111,6 +111,8 @@ Phase 8 (`Product` model and non-fashion fixture data must exist first).
 >    `tests/integration/test_agents.py` still swallow every exception).
 >    The narrowing is folded into THIS phase's scope — see the 2026-07-21
 >    amendment in `02-bug-fixes-and-cleanup.md`.
+>    
+>    **Amended (workstream 09, 2026-07-22):** xfail narrowing completed in Task 7.
 
 ## Open questions
 
