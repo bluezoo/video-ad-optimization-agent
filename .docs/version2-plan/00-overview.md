@@ -90,6 +90,7 @@ Each phase has its own file with Goal / Current State / Steps / Validation / Exi
 | 14a | `14a-image-model-upgrade-nano-banana.md` | Config-driven image model swap + evaluate Nano Banana 2 Lite | Medium | Phase 1 (decoupled from everything else) |
 | 14b | `14b-video-model-upgrade-omni-flash.md` | Evaluate Gemini Omni Flash (experimental Interactions API) as an optional second video backend | Large | Phase 1, ideally after 14a |
 | 15 | `15-product-onboarding.md` | From-scratch onboarding: local-first storage, gated/selectable seeding, product+image ingestion via agent tools (+ CLI wrapper), auto-attaching deterministic analytics | Medium | Phases 8, 9, 11a |
+| 16 | `16-live-api-testing.md` | Live-API test tier (owner directive 2026-07-22, resolves Q19): un-vacuous the integration evals, `gemini-3.6-flash` default, live Veo/image-gen tests + Gemini-judge review of generated media; fast tier stays LLM-free | Medium | Phase 9 |
 
 Phases 14a/14b are intentionally decoupled — they can run any time after Phase 1 without waiting on the generalization or live-mode track, exactly as in the original plan's Phase 9a/9b split (that part of the original sequencing was correct and is kept). Note Phase 8's exit criterion is deliberately narrower than "full non-fashion video generation" — proving a non-fashion product survives image/video generation end-to-end is Phase 9's job, since Phase 8 alone can't touch prompt construction.
 

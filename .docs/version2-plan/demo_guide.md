@@ -7,7 +7,8 @@ reflect the latest merged + in-review changes. It supersedes the ws08 snapshot a
 `working-docs/08-product-schema-generalization/USER_JOURNEY_TEST_GUIDE.md` (kept as a
 historical record).
 
-**Last updated:** 2026-07-22, workstream 09 (prompt & agent generalization, PR #10).
+**Last updated:** 2026-07-22, workstream 09 (prompt & agent generalization, PR #10) —
+incl. the ad-style policy added after the owner's first manual test round.
 
 ---
 
@@ -62,6 +63,22 @@ Generate a video for the Aurora cold brew using a studio setting
   — **not** `...-diverse-studio-elegant...`.
 - Campaign was created with `category: "always-on"` and a description naming the product
   (no "fashion item", no "classic").
+
+### Journey A1b — ad style policy: music only, clean frame (added 2026-07-22)
+
+Applies to **every** video journey in this guide (fashion included). After any video
+generates, check:
+
+- **Audio:** instrumental background music only — no voiceover, narration, or lyrics.
+- **Frame:** no text badges, captions, titles, or graphic overlays anywhere (the brisket
+  video's "780 Calories / Limited Time" plaques are the failure mode this kills). Text
+  that is part of the product's own packaging (the can's label) is fine.
+- The trace's scene prompt contains a "NO TEXT OR GRAPHICS" block; the video prompt
+  contains an "AUDIO & ON-SCREEN TEXT" block.
+
+Note: this steers the models via prompt directives — Veo occasionally improvises, so an
+odd output can still slip through on a given seed. Phase 16's Gemini-judge tests will
+catch those automatically; report any you see meanwhile.
 
 ### Journey A2 — other verticals route to their own archetypes
 
@@ -237,6 +254,18 @@ product-hero shot rather than erroring.
 - Malformed video-variation requests now return a structured error listing valid fields
   instead of silently producing a default fashion shot.
 - Integration tests' xfail was narrowed to genuine infrastructure errors only.
+
+### Owner feedback from the 2026-07-22 test round — where each item landed
+
+1. **Videos must be music-only with no on-screen text** (brisket badges + speech) —
+   **FIXED in ws09/PR #10** (prompt policy across all archetypes; Journey A1b is the
+   check). Automated judge verification of actual outputs lands with Phase 16.
+2. **Product image links are GCS and 404** — routed to **Phase 15** (its local-first
+   step now hardened by amendment: nothing to/from GCS in local mode incl. videos;
+   demo asset set ships as a Drive bundle auto-downloaded at setup, all-local after).
+3. **Tests must hit the live API** — new **Phase 16** (`16-live-api-testing.md`,
+   resolves Q19): fast + live tiers both green, `gemini-3.6-flash` default, live
+   Veo/image-gen tests, Gemini-judge review script for generated media.
 
 ### Known-not-done (tracked, out of ws09 scope)
 

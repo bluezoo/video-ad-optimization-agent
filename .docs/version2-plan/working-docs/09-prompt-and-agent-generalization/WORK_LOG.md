@@ -584,3 +584,23 @@ process"), `verifying-with-demo-scenarios` (new Step 4 + checklist item), and
 `HOW_TO_RUN_A_WORKSTREAM.md`: every workstream that changes agent-visible behavior must
 refresh demo_guide.md before its PR. Supersedes ws08's one-off USER_JOURNEY_TEST_GUIDE.md
 snapshot.
+
+## 2026-07-22 — owner test round 1: PASS + three directives (one fixed here, two routed)
+
+Owner ran the demo guide: "it worked as expected", then three directives:
+1. **Ad style policy (fixed in ws09, commit 3c05ef8):** all ads music-only (no
+   voiceover/speech/lyrics) + clean frame (no text/badges/overlays; the brisket video
+   rendered its promo/calorie attributes as text plaques and had spoken audio). Added
+   _NO_TEXT_BLOCK to both scene builders and _AUDIO_BLOCK to all three video builders;
+   goldens regenerated deliberately; TestAdStylePolicy pins the policy across archetypes
+   (221 unit green). Demo guide gains Journey A1b.
+2. **All-local storage (routed to Phase 15, amended):** owner reproduced GCS 404 links
+   for retail SKUs; directive hardened — nothing to/from GCS in local mode including
+   videos/charts; demo asset set ships as auto-downloaded Drive bundle at setup. 15 doc
+   amended with provenance under step 1.
+3. **Live-API tests (new Phase 16, resolves Q19):** owner chose full live repair —
+   fast + live tiers both green, model default → gemini-3.6-flash, live Veo/image-gen
+   tests, Gemini-judge review script for generated media, cost accepted. Created
+   16-live-api-testing.md, 00-overview row 16, Q19 marked RESOLVED.
+Per owner ("if the fixes are already part of workstream, update those workstreams, and
+we can do them in that"): 2 and 3 execute in their own workstreams, not in ws09.

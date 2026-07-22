@@ -45,6 +45,20 @@ A brand-new vertical can be onboarded end-to-end **by talking to the agent**: im
 > don't exist yet — this phase's tools are thin wrappers over it (vendor
 > upload fills local_path/gcs_path; nano-banana generation writes the file
 > image_filename already references).
+
+> **Amended (workstream 09, 2026-07-22 — owner directive after manual testing):**
+> the owner reproduced the broken GCS product links again (retail SKUs 404
+> against the personal bucket, `NoSuchKey`) and hardened this step's bar:
+> **nothing goes to or comes from GCS in local/demo mode — including generated
+> videos and charts, not only product images.** `save_video`/`get_public_url`
+> and every `storage.py` write path route through the step-1 seam; GCS remains
+> explicit opt-in for cloud deploys only. Additionally, the shippable demo
+> asset set (product images for the fashion catalog + retail core set) is
+> distributed as a **Drive-link bundle that the setup step auto-downloads**
+> (borrow the donor wizard's manifest-verified zip design, pointed at local
+> storage instead of a bucket); after that one-time download, everything is
+> local. Tool responses must emit local/served URLs, never
+> `storage.googleapis.com` links.
 2. **Gate seeding.** Replace `app/agent.py:111`'s unconditional `populate_mock_data()` with explicit, idempotent, gated seeding: runs only in demo mode **and** when the DB is empty **and** a demo dataset is selected (the 22-product fashion catalog becomes one selectable dataset, e.g. `DEMO_DATASET=fashion|none`, default preserving today's behavior for existing demos). `DEMO_DATASET=none` yields an empty catalog — the from-scratch start.
 3. **Onboarding agent tools** (primary interface, per owner decision): `create_product` (name, category, description, attributes dict → Phase 8's typed `Product`), `import_products_from_folder` (local folder of images; filename/subfolder conventions → products + stored images through the step-1 seam), and `generate_product_image` (no image on hand: generate via the configured image model — nano banana per Phase 14a — and store it as the product's primary image). Wire into the Campaign agent's toolset with instruction text; follow existing tool conventions in `app/tools/`.
 4. **Thin CLI wrapper** (secondary, per owner decision): `scripts/onboard_products.py` calling the *same functions* as the tools (no duplicated logic) for scripted/bulk/CI setup.

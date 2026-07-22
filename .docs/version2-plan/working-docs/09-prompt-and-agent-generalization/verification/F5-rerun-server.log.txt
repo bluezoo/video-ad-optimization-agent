@@ -1,0 +1,138 @@
+2026-07-22 06:34:01,508 - INFO - service_factory.py:266 - Using in-memory memory service
+2026-07-22 06:34:01,508 - INFO - local_storage.py:89 - Using per-agent session storage rooted at /Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization
+2026-07-22 06:34:01,509 - INFO - local_storage.py:121 - Using per-agent artifact storage rooted at /Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization
+/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/cli/fast_api.py:566: UserWarning: [EXPERIMENTAL] InMemoryCredentialService: This feature is experimental and may change or be removed in future versions without notice. It may introduce breaking changes at any time.
+  credential_service = InMemoryCredentialService()
+/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/auth/credential_service/in_memory_credential_service.py:33: UserWarning: [EXPERIMENTAL] BaseCredentialService: This feature is experimental and may change or be removed in future versions without notice. It may introduce breaking changes at any time.
+  super().__init__()
+INFO:     Started server process [86485]
+INFO:     Waiting for application startup.
+
++-----------------------------------------------------------------------------+
+| ADK Web Server started                                                      |
+|                                                                             |
+| For local testing, access at http://127.0.0.1:8501.                         |
++-----------------------------------------------------------------------------+
+
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8501 (Press CTRL+C to quit)
+INFO:     127.0.0.1:56343 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56349 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56351 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56353 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56355 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56359 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56361 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56363 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56365 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56368 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56370 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56372 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56375 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56380 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56382 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56387 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56389 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56391 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56393 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56395 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56397 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56399 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56401 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56403 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56407 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56409 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56412 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56414 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56416 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56418 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56420 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56422 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56422 - "GET /dev-ui/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56427 - "GET /dev-ui/assets/config/runtime-config.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56427 - "GET /dev-ui/prism-dark.css HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56429 - "GET /list-apps?relative_path=./ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56431 - "GET /version HTTP/1.1" 200 OK
+2026-07-22 06:35:19,386 - INFO - envs.py:83 - Loaded .env file for app at /Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/app/.env
+2026-07-22 06:35:20,244 - INFO - agent_loader.py:170 - Found root_agent in app.agent
+[DB] Populated 22 products
+INFO:     127.0.0.1:56431 - "GET /dev/apps/app/build_graph HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56429 - "GET /dev/apps/app/build_graph_image?dark_mode=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56427 - "GET /dev/apps/app/build_graph_image?dark_mode=true HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56433 - "GET /dev/apps/app/builder?ts=1784727319344 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56436 - "GET /dev/apps/app/eval_sets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56437 - "GET /dev/apps/app/eval_results HTTP/1.1" 200 OK
+2026-07-22 06:35:27,554 - INFO - local_storage.py:65 - Creating local session service at /Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/app/.adk/session.db
+INFO:     127.0.0.1:56440 - "GET /apps/app/users/user/sessions HTTP/1.1" 200 OK
+2026-07-22 06:35:42,092 - INFO - api_server.py:948 - New session created: ffd2cca6-e7fd-4b1a-92c0-82ab6b127c9a
+INFO:     127.0.0.1:56445 - "POST /apps/app/users/user/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56445 - "POST /run_sse HTTP/1.1" 200 OK
+/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/tools/function_tool.py:96: UserWarning: [EXPERIMENTAL] feature FeatureName.JSON_SCHEMA_FOR_FUNC_DECL is enabled.
+  build_function_declaration(
+2026-07-22 06:35:42,600 - INFO - google_llm.py:217 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-07-22 06:35:45,146 - INFO - google_llm.py:287 - Response received from the model.
+2026-07-22 06:35:45,201 - INFO - google_llm.py:217 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-07-22 06:35:47,529 - INFO - google_llm.py:287 - Response received from the model.
+2026-07-22 06:35:47,619 - INFO - google_llm.py:217 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-07-22 06:35:51,017 - INFO - google_llm.py:287 - Response received from the model.
+INFO:     127.0.0.1:56445 - "GET /dev/apps/app/debug/trace/session/ffd2cca6-e7fd-4b1a-92c0-82ab6b127c9a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56465 - "GET /apps/app/users/user/sessions/ffd2cca6-e7fd-4b1a-92c0-82ab6b127c9a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56467 - "GET /apps/app/users/user/sessions/ffd2cca6-e7fd-4b1a-92c0-82ab6b127c9a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56482 - "POST /run_sse HTTP/1.1" 200 OK
+2026-07-22 06:36:29,464 - INFO - google_llm.py:217 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-07-22 06:36:31,970 - INFO - google_llm.py:287 - Response received from the model.
+2026-07-22 06:36:32,039 - INFO - google_llm.py:217 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-07-22 06:36:34,904 - INFO - google_llm.py:287 - Response received from the model.
+2026-07-22 06:36:34,932 - INFO - google_llm.py:217 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-07-22 06:36:38,693 - INFO - google_llm.py:287 - Response received from the model.
+INFO:     127.0.0.1:56482 - "GET /dev/apps/app/debug/trace/session/ffd2cca6-e7fd-4b1a-92c0-82ab6b127c9a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56513 - "GET /apps/app/users/user/sessions/ffd2cca6-e7fd-4b1a-92c0-82ab6b127c9a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56522 - "POST /run_sse HTTP/1.1" 200 OK
+2026-07-22 06:37:01,014 - INFO - google_llm.py:217 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-07-22 06:37:03,433 - INFO - google_llm.py:287 - Response received from the model.
+2026-07-22 06:37:03,491 - INFO - google_llm.py:217 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-07-22 06:37:06,627 - INFO - google_llm.py:287 - Response received from the model.
+2026-07-22 06:37:07,574 - INFO - models.py:6542 - AFC is enabled with max remote calls: 10.
+2026-07-22 06:37:30,266 - INFO - _client.py:1025 - HTTP Request: POST https://aiplatform.googleapis.com/v1beta1/projects/kaggle-on-gcp/locations/global/publishers/google/models/gemini-3-pro-image:generateContent "HTTP/1.1 200 OK"
+2026-07-22 06:37:44,634 - INFO - _client.py:1025 - HTTP Request: POST https://aiplatform.googleapis.com/v1beta1/projects/kaggle-on-gcp/locations/global/publishers/google/models/veo-3.1-generate-001:predictLongRunning "HTTP/1.1 200 OK"
+2026-07-22 06:38:15,075 - INFO - _client.py:1025 - HTTP Request: POST https://aiplatform.googleapis.com/v1beta1/projects/kaggle-on-gcp/locations/global/publishers/google/models/veo-3.1-generate-001:fetchPredictOperation "HTTP/1.1 200 OK"
+2026-07-22 06:38:45,304 - INFO - _client.py:1025 - HTTP Request: POST https://aiplatform.googleapis.com/v1beta1/projects/kaggle-on-gcp/locations/global/publishers/google/models/veo-3.1-generate-001:fetchPredictOperation "HTTP/1.1 200 OK"
+2026-07-22 06:39:15,926 - INFO - _client.py:1025 - HTTP Request: POST https://aiplatform.googleapis.com/v1beta1/projects/kaggle-on-gcp/locations/global/publishers/google/models/veo-3.1-generate-001:fetchPredictOperation "HTTP/1.1 200 OK"
+2026-07-22 06:39:17,253 - INFO - local_storage.py:130 - Using file artifact service at /Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/app/.adk/artifacts
+2026-07-22 06:39:17,353 - INFO - google_llm.py:217 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+[DEBUG generate_video_from_product] Starting for campaign_id=5, product_id=23
+[DEBUG generate_video_from_product] Product: aurora-cold-brew-330ml
+[DEBUG generate_video_from_product] Campaign: Aurora Cold Brew 330Ml - Target Downtown
+[DEBUG generate_video_from_product] Variation: diverse-studio-elegant
+[DEBUG generate_video_from_product] Linked product to campaign
+[DEBUG generate_video_from_product] Product image not found: aurora-cold-brew-330ml.png
+[DEBUG generate_video_from_product] Stage 1: Generating scene image...
+[DEBUG generate_scene_image] Starting scene generation for product: aurora-cold-brew-330ml
+[DEBUG generate_scene_image] Variation: beverage-studio-elegant
+[DEBUG generate_scene_image] Scene prompt: Cinematic commercial product photography of Aurora Cold Brew 330ml, presented on a minimalist studio pedestal with a seamless backdrop in bright natural daylight.
+
+Appetizing hero shot. Emphasize fres...
+[DEBUG generate_scene_image] Scene image generated: 1073206 bytes
+[DEBUG generate_video_from_product] Saved thumbnail: gs://kaggle-on-gcp-ad-campaign-assets/generated/aurora-cold-brew-330ml-072226-beverage-studio-elegant-thumbnail.png
+[DEBUG generate_video_from_product] Stage 2: Animating with Veo 3.1...
+[DEBUG animate_scene_with_veo] Starting animation for: aurora-cold-brew-330ml
+[DEBUG animate_scene_with_veo] Duration: 8s
+[DEBUG animate_scene_with_veo] Animation prompt: Camera slowly orbits around the product, showcasing Aurora Cold Brew 330ml from its most appealing angles.
+
+The scene has condensation droplets glistening, gentle steam or fizz, ingredients settling n...
+[DEBUG animate_scene_with_veo] Calling Veo (veo-3.1-generate-001)...
+[DEBUG animate_scene_with_veo] Waiting... (0s elapsed)
+[DEBUG animate_scene_with_veo] Waiting... (20s elapsed)
+[DEBUG animate_scene_with_veo] Waiting... (40s elapsed)
+[DEBUG animate_scene_with_veo] Operation completed after 60s
+[DEBUG animate_scene_with_veo] GOOGLE_GENAI_USE_VERTEXAI=TRUE, is_vertex_ai=True
+[DEBUG animate_scene_with_veo] Video generated: 1743860 bytes
+[DEBUG generate_video_from_product] Total generation time: 128s
+[DEBUG generate_video_from_product] Saved video: gs://kaggle-on-gcp-ad-campaign-assets/generated/aurora-cold-brew-330ml-072226-beverage-studio-elegant.mp4
+[DEBUG save_video_metadata] Saved metadata to: gs://kaggle-on-gcp-ad-campaign-assets/generated/aurora-cold-brew-330ml-072226-beverage-studio-elegant.txt
+[DEBUG generate_video_from_product] Saved artifact version: 0
+INFO:     127.0.0.1:56592 - "GET /apps/app/users/user/sessions/ffd2cca6-e7fd-4b1a-92c0-82ab6b127c9a/artifacts/aurora-cold-brew-330ml-072226-beverage-studio-elegant.mp4/versions/0 HTTP/1.1" 200 OK
+2026-07-22 06:39:20,836 - INFO - google_llm.py:287 - Response received from the model.
+INFO:     127.0.0.1:56522 - "GET /dev/apps/app/debug/trace/session/ffd2cca6-e7fd-4b1a-92c0-82ab6b127c9a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57672 - "GET /apps/app/users/user/sessions/ffd2cca6-e7fd-4b1a-92c0-82ab6b127c9a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57722 - "GET /apps/app/users/user/sessions/ffd2cca6-e7fd-4b1a-92c0-82ab6b127c9a HTTP/1.1" 200 OK

@@ -1,0 +1,35 @@
+Rebuilt via app/tools/prompt_builders.py with product 23 (aurora-cold-brew-330ml) and
+CreativeVariation(name='beverage-studio-elegant', presentation_mode='product_only', setting='studio', mood='elegant')
+
+=== SCENE PROMPT ===
+Cinematic commercial product photography of Aurora Cold Brew 330ml, presented on a minimalist studio pedestal with a seamless backdrop in bright natural daylight.
+
+Appetizing hero shot. Emphasize freshness and appetite appeal: condensation on cold surfaces, gentle steam on hot items, vivid natural textures of the ingredients.
+
+Natural, soft lighting. The product is clearly visible with all its details: slow-steeped single-origin cold brew coffee in a slim can.
+Product details: caffeine mg: 180, dietary tags: ['vegan', 'zero-sugar'], flavor: dark chocolate and toasted hazelnut notes, packaging: slim aluminum can, serving temperature: chilled, volume ml: 330.
+
+CRITICAL - PRODUCT PRESERVATION:
+- The product must match the reference EXACTLY - same shape, colors, materials, branding, and label design
+- Do NOT alter, modify, or reinterpret the product design, packaging, or logo in any way
+
+QUALITY REQUIREMENTS:
+- The product is the clear hero of the frame, sharply in focus
+- Professional advertisement quality with an elegant mood
+- Vertical 9:16 aspect ratio composition
+- The scene should look like the perfect first frame of a premium video ad
+
+Style: Premium retail campaign, magazine-quality, aspirational.
+
+=== ANIMATION PROMPT ===
+Camera slowly orbits around the product, showcasing Aurora Cold Brew 330ml from its most appealing angles.
+
+The scene has condensation droplets glistening, gentle steam or fizz, ingredients settling naturally. The movement is smooth, elegant movement.
+
+CRITICAL - PRODUCT & QUALITY PRESERVATION:
+- Maintain the product's exact appearance from the first frame throughout the video
+- Branding, labels, and materials stay crisp and unaltered
+- Smooth, professional camera work
+- High-end retail advertisement aesthetic
+
+8 seconds. Vertical 9:16. Cinematic quality. Professional product video ad.

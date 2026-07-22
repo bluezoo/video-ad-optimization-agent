@@ -104,7 +104,9 @@ Small confirmations the published docs can't settle, best asked as one batch alo
 - Are `sensor_dwell` distribution bin values 0–1 shares or 0–100 percentages? (Docs say "percentage" with no numeric example; affects the cached-real conformer's normalization.)
 - `group_convert` / `group_dwell` schemas (both exist in `list_tables` with zero documentation), and `sensor_dwell.distribution_weight` semantics.
 
-## 19. Integration eval suite: vacuous under pytest, and eval sets fail when genuinely run (discovered workstream 09, 2026-07-22)
+## 19. Integration eval suite: vacuous under pytest, and eval sets fail when genuinely run (discovered workstream 09, 2026-07-22) — RESOLVED 2026-07-22
+
+**Resolved by the owner (2026-07-22, ws09 manual-testing feedback): full live repair — option (a), expanded.** "We should have both fast test and full test with live api and both should pass. dont worry about the cost." Scoped as new Phase 16 (`16-live-api-testing.md`): real-env integration fixture + vacuity guard, eval-set trajectory repair, default model → `gemini-3.6-flash`, live Veo/image-gen tests, and a Gemini-judge script reviewing generated media. `make test` stays fast-by-default; the live tier gets its own target. Original problem statement kept below for the record.
 
 Two stacked pre-existing problems, mechanism fully pinned in workstream 09's WORK_LOG (2026-07-22 DISCOVERY entry):
 
