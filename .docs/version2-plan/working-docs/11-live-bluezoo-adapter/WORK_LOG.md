@@ -26,3 +26,6 @@ Assumed (11-live-bluezoo-adapter.md:5): the donor interface gets "renamed/merged
 Actual: `AudienceDataSource` appears nowhere in 10-playout-attribution.md — Phase 10 defined DTOs only (`AdPlayRecord`, the `BlueZooVisitInterval` shape); the interface name is coined by doc 11 itself (its step 2, line 37). There was never a second interface to merge; Phase 10 supplied the return-type shape.
 Blast radius: doc 11 line 5 framing only — no downstream doc repeats the claim. Amended doc 11 in this branch with provenance; working doc frames it correctly ("one new interface returning Phase 10's DTO").
 Related minor: `app/demo_data/constants.py` docstring says the donor duplicated 0.05 in *two* places; donor audit found *three* (third: SQL literal `mock_bigquery.py:500`). One-line docstring fix folded into this workstream.
+
+## 2026-07-22 — checkpoint 2: working doc approved
+Owner approved the six-dimension restatement verbatim ("Yes — approved, write the plan"): lean visit-interval seam (AudienceDataSource ABC + SyntheticAudienceDataSource + APP_MODE-keyed factory with fail-closed connected mode), carried items 1+2 via shared app/demo_data/windows.py helper, refactor invariant = byte-identical video_metrics + existing tests unmodified, demo verify = F3 + F4 + connected-mode fail-closed smoke. Working doc: working-doc.md @ 533eb25.
