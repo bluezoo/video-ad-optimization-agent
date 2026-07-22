@@ -49,14 +49,14 @@ class TestGoldenPrompts:
 
     def test_scene_prompt_unchanged(self, test_db):
         product = get_product(1)
-        variation = CreativeVariation(name="golden-baseline")
-        expected = (GOLDEN_DIR / "golden_scene_prompt_product1.txt").read_text()
+        variation = CreativeVariation(name="golden-baseline-asian", model_ethnicity="asian")
+        expected = (GOLDEN_DIR / "golden_scene_prompt_product1_asian.txt").read_text()
         assert build_scene_image_prompt(product, variation) == expected
 
     def test_creative_prompt_unchanged(self, test_db):
         product = get_product(1)
-        variation = CreativeVariation(name="golden-baseline")
-        expected = (GOLDEN_DIR / "golden_creative_prompt_product1.txt").read_text()
+        variation = CreativeVariation(name="golden-baseline-asian", model_ethnicity="asian")
+        expected = (GOLDEN_DIR / "golden_creative_prompt_product1_asian.txt").read_text()
         assert build_creative_prompt(product, variation) == expected
 
     def test_null_style_falls_back_to_category(self, test_db):
