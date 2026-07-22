@@ -113,6 +113,18 @@ Phase 8 (`Product` model and non-fashion fixture data must exist first).
 >    amendment in `02-bug-fixes-and-cleanup.md`.
 >    
 >    **Amended (workstream 09, 2026-07-22):** xfail narrowing completed in Task 7.
+>
+> **Amended (workstream 09, 2026-07-22):** step 7's eval cases were added as
+> specified, but ws09 then discovered the entire integration eval suite passes
+> **vacuously** under pytest (conftest's fake `GOOGLE_CLOUD_PROJECT` makes every
+> inference 403; ADK swallows the errors; `evaluate_eval_set` counts failures only
+> from metric results) — and when genuinely executed, the pre-existing eval sets
+> fail on trajectory authoring (`transfer_to_agent` wrapping vs expected direct
+> tool calls). The acceptance line above ("pass under `make test-integration` …
+> would actually fail if routing regressed") is therefore not currently
+> satisfiable by any eval case; behavioral verification rests on the demo
+> scenarios. Full mechanism + repair options: ws09 WORK_LOG DISCOVERY
+> (2026-07-22) and `99-open-questions.md` Q19.
 
 ## Open questions
 

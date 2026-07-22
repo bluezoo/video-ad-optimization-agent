@@ -45,7 +45,7 @@ make dev            # run ADK web UI locally on :8501 (alias: make playground)
 make test           # unit + integration (default; skips slow tests)
 make test-unit      # tests/unit only, ~4s, no LLM calls — fastest feedback loop
 make test-e2e       # tests/e2e workflow tests, ~1s, no LLM calls
-make test-integration  # tests/integration, uses real LLM via AgentEvaluator eval_sets
+make test-integration  # tests/integration AgentEvaluator eval_sets — currently VACUOUS under pytest (see Gotchas)
 make test-all       # everything including slow Veo tests, ~10+ min
 make test-coverage  # pytest --cov=app, HTML report in htmlcov/
 make reset-db       # wipe campaigns.db, next `make dev` repopulates demo data
@@ -75,3 +75,4 @@ Vertex AI path: `GOOGLE_GENAI_USE_VERTEXAI=TRUE`, `GOOGLE_CLOUD_PROJECT`, `GCS_B
 - Deploying to Agent Engine requires granting `roles/storage.objectAdmin` on the GCS bucket to the Reasoning Engine service agent (`service-<PROJECT_NUMBER>@gcp-sa-aiplatform-re.iam.gserviceaccount.com`) — run `make setup-ae-permissions` or it's handled automatically by `scripts/deploy_ae_inline.py`.
 - DB path differs by environment (see `app/config.py`): project root locally, `app/campaigns.db` on Cloud Run, `/tmp/campaigns.db` on Agent Engine (ephemeral, repopulates from mock data on restart).
 - Tests run against a **copy** of `campaigns.db`, never the real one — see `tests/conftest.py` fixtures (`test_db`, `shared_test_db`, `fresh_test_db`).
+- **The integration eval suite passes vacuously under pytest** (discovered workstream 09, 2026-07-22): `tests/conftest.py`'s autouse fixture sets `GOOGLE_CLOUD_PROJECT=test-project`, every eval inference 403s, ADK's `LocalEvalService` swallows inference exceptions by design, and `AgentEvaluator.evaluate_eval_set` counts failures only from metric results (empty when inference failed) — so "N passed in ~5s" means zero LLM calls happened. Run the evaluator standalone (`asyncio.run(AgentEvaluator.evaluate(...))` with real env) to genuinely execute an eval set — and note the pre-existing eval sets then FAIL as authored (expected direct tool calls vs actual `transfer_to_agent`-wrapped trajectories). Do not cite pytest integration passes as behavioral evidence; see `99-open-questions.md` Q19 for the repair options.
