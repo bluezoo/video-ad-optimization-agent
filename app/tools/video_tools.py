@@ -17,7 +17,8 @@
 Two-Stage Video Generation Pipeline:
     Stage 1: Scene Image (image model from config.IMAGE_GENERATION)
         - Input: Product image + CreativeVariation parameters
-        - Output: Scene-ready first frame (model wearing product)
+        - Output: Scene-ready first frame (model wearing product for
+          wearables; product-centric hero shot otherwise)
         - Saved as: thumbnail
 
     Stage 2: Video Animation (video model from config.VIDEO_GEN_MODEL)
@@ -51,8 +52,10 @@ from ..config import (
     VIDEO_GEN_MODEL,
 )
 from ..database.db import get_db_cursor, get_product
+from ..models.product import Product
 from ..models.variation import PRESET_VARIATIONS, CreativeVariation, get_default_variation
 from ..models.video_properties import VideoProperties
+from .prompt_archetypes import resolve_archetype
 from .prompt_builders import (
     build_creative_prompt,
     build_scene_image_prompt,
@@ -138,7 +141,7 @@ async def analyze_video(video_path: str) -> VideoProperties:
     # Create video part for Gemini
     video_part = types.Part.from_bytes(data=video_bytes, mime_type="video/mp4")
 
-    prompt = """Analyze this fashion video advertisement and extract structured properties.
+    prompt = """Analyze this retail video advertisement and extract structured properties.
 
 Focus on:
 1. **Mood and emotional tone**: What feeling does the video evoke? (quirky, warm, bold, serene, mysterious, playful, sophisticated, energetic, elegant, romantic)
@@ -153,7 +156,7 @@ Focus on:
 10. **Dominant colors**: List the primary 2-4 colors in the video
 11. **Color saturation**: How saturated are the colors? (0.0 to 1.0)
 12. **Subject count**: Number of models/subjects visible
-13. **Garment visibility**: How prominently is the garment featured? (0.0 to 1.0)
+13. **Product visibility**: How prominently is the product featured? (0.0 to 1.0)
 14. **Setting type**: Setting category (outdoor, studio, urban, nature, indoor, beach, etc.)
 15. **Time of day**: Time depicted (golden_hour, day, night, dawn, dusk)
 16. **Style tags**: List of 3-5 descriptive style tags
@@ -191,19 +194,23 @@ Respond with a JSON object matching the VideoProperties schema. Be precise and c
 # =============================================================================
 
 async def generate_scene_image(
-    product: dict[str, Any],
+    product: Product,
     variation: CreativeVariation,
-    product_image_bytes: bytes = None
+    product_image_bytes: bytes = None,
+    archetype: str = "wearable"
 ) -> tuple[bytes, str]:
     """Stage 1: Generate a scene-ready first frame image.
 
-    Creates an image of a model wearing the product in the desired setting,
-    which will be used as the first frame for video generation.
+    Creates an image of a model wearing the product in the desired setting
+    (wearable archetype), or a product-centric hero shot (all other
+    archetypes), which will be used as the first frame for video generation.
 
     Args:
-        product: Product dictionary with metadata (from products table)
+        product: Product object with metadata (from products table)
         variation: CreativeVariation parameters controlling the scene
         product_image_bytes: Optional product image bytes for reference
+        archetype: Prompt archetype from resolve_archetype() — controls the
+            reference-image preamble sent to the image model
 
     Returns:
         Tuple of (scene_image_bytes, scene_prompt)
@@ -229,11 +236,14 @@ async def generate_scene_image(
                 data=product_image_bytes,
                 mime_type="image/png"
             )
-            contents = [
-                "Use this product image as reference for the garment. Generate a scene with a model wearing this exact garment:\n",
-                image_part,
-                "\n" + scene_prompt
-            ]
+            if archetype == "wearable":
+                reference_instruction = ("Use this product image as reference for the garment. "
+                                         "Generate a scene with a model wearing this exact garment:\n")
+            else:
+                reference_instruction = ("Use this product image as the exact visual reference for the product. "
+                                         "Generate a scene featuring this exact product — same shape, colors, "
+                                         "branding, and label design:\n")
+            contents = [reference_instruction, image_part, "\n" + scene_prompt]
 
         response = client.models.generate_content(
             model=IMAGE_GENERATION,
@@ -263,7 +273,7 @@ async def generate_scene_image(
 
 async def animate_scene_with_veo(
     scene_image_bytes: bytes,
-    product: dict[str, Any],
+    product: Product,
     variation: CreativeVariation,
     duration_seconds: int = 8
 ) -> tuple[bytes, str]:
@@ -271,7 +281,7 @@ async def animate_scene_with_veo(
 
     Args:
         scene_image_bytes: Scene image bytes from Stage 1
-        product: Product dictionary with metadata
+        product: Product object with metadata
         variation: CreativeVariation parameters
         duration_seconds: Video duration (4, 6, or 8 seconds)
 
@@ -489,21 +499,36 @@ async def generate_video_from_product(
         variation_obj = get_default_variation()
     elif isinstance(variation, dict):
         try:
-            variation_obj = CreativeVariation.model_validate(variation)
+            variation_obj = CreativeVariation.model_validate({"name": "custom", **variation})
         except Exception as e:
-            print(f"[DEBUG generate_video_from_product] Variation validation error: {e}")
-            # Fall back to default with any valid fields from dict
-            variation_obj = get_default_variation()
-            for key, value in variation.items():
-                if hasattr(variation_obj, key):
-                    setattr(variation_obj, key, value)
+            return {
+                "status": "error",
+                "error": f"Invalid variation parameters: {e}",
+                "hint": "Valid fields: " + ", ".join(CreativeVariation.model_fields.keys()),
+            }
     elif isinstance(variation, CreativeVariation):
         # Already a CreativeVariation object (internal calls)
         variation_obj = variation
     else:
-        variation_obj = get_default_variation()
+        return {
+            "status": "error",
+            "error": f"Invalid variation type: {type(variation).__name__}",
+            "hint": "Valid fields: " + ", ".join(CreativeVariation.model_fields.keys()),
+        }
 
     print(f"[DEBUG generate_video_from_product] Variation: {variation_obj.name}")
+
+    # Resolve the prompt archetype once — drives the reference-image preamble
+    # (Stage 1) and product-centric naming below. Raises ValueError for
+    # malformed presentation_mode inputs (e.g. with_model on a non-wearable
+    # category) — surfaced as a structured error rather than a silent default.
+    try:
+        archetype = resolve_archetype(product, variation_obj)
+    except ValueError as e:
+        return {"status": "error", "error": str(e)}
+
+    if archetype != "wearable" and variation_obj.name.startswith(f"{variation_obj.model_ethnicity}-"):
+        variation_obj.name = f"{product.category}-{variation_obj.setting}-{variation_obj.mood}"
 
     # Check if product is linked to campaign
     with get_db_cursor() as cursor:
@@ -533,6 +558,8 @@ async def generate_video_from_product(
         except Exception as e:
             print(f"[DEBUG generate_video_from_product] Could not load product image: {e}")
 
+    reference_image_used = product_image_bytes is not None
+
     # Generate video filename
     video_filename = generate_video_filename(product.name, variation_obj.name)
     thumbnail_filename = video_filename.replace('.mp4', '-thumbnail.png')
@@ -546,7 +573,8 @@ async def generate_video_from_product(
             scene_image_bytes, scene_prompt = await generate_scene_image(
                 product=product,
                 variation=variation_obj,
-                product_image_bytes=product_image_bytes
+                product_image_bytes=product_image_bytes,
+                archetype=archetype
             )
 
             # Save scene image as thumbnail
@@ -675,7 +703,7 @@ async def generate_video_from_product(
             ))
             video_id = cursor.lastrowid
 
-        return {
+        result = {
             "status": "success",
             "message": "Video generated successfully. Use activate_video to push live.",
             "video": {
@@ -698,8 +726,15 @@ async def generate_video_from_product(
                 "scene_prompt": scene_prompt[:200] + "..." if len(scene_prompt) > 200 else scene_prompt,
                 "video_prompt": video_prompt[:200] + "..." if len(video_prompt) > 200 else video_prompt
             },
-            "note": "Video is in 'generated' status. Metrics will only be created after activation."
+            "note": "Video is in 'generated' status. Metrics will only be created after activation.",
+            "reference_image_used": reference_image_used,
         }
+        if not reference_image_used:
+            result["warning"] = (
+                f"No product image found for {product.name} — scene generated "
+                "from text description only"
+            )
+        return result
 
     except Exception as e:
         import traceback
@@ -1866,6 +1901,7 @@ async def generate_video_with_variation(
     energy: str = "moderate",
     duration_seconds: int = 8,
     use_two_stage: bool = True,
+    presentation_mode: str = None,
     tool_context: ToolContext = None
 ) -> dict:
     """Generate a video with variation parameters as individual arguments.
@@ -1888,6 +1924,9 @@ async def generate_video_with_variation(
         energy: Energy level (calm, moderate, dynamic, high-energy)
         duration_seconds: Video duration (4, 6, or 8 seconds)
         use_two_stage: Use two-stage pipeline (default True)
+        presentation_mode: How the product is presented — "auto" (default,
+            decided by product category), "with_model" (wearables only), or
+            "product_only" (no human model, forces a product-centric shot)
         tool_context: Optional ADK ToolContext for artifact storage
 
     Returns:
@@ -1908,7 +1947,8 @@ async def generate_video_with_variation(
         camera_movement=camera_movement,
         time_of_day=time_of_day,
         visual_style=visual_style,
-        energy=energy
+        energy=energy,
+        presentation_mode=presentation_mode
     )
 
     # Call the main function
