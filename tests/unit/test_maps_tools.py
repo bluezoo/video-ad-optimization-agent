@@ -20,8 +20,8 @@ Tests the Google Maps integration tools:
 - generate_map_visualization (requires LLM, marked slow)
 """
 
-from unittest.mock import MagicMock, patch
 from datetime import date, timedelta
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -121,7 +121,12 @@ class TestGenerateStaticMap:
         result = generate_static_map()
 
         # Should return URL or error if API key not set
-        assert "url" in result or "error" in result or "map" in str(result).lower() or result is not None
+        assert (
+            "url" in result
+            or "error" in result
+            or "map" in str(result).lower()
+            or result is not None
+        )
 
     def test_generate_static_map_by_status(self, test_db, mock_storage_module):
         """generate_static_map should color-code by status."""
@@ -155,18 +160,14 @@ class TestGenerateStaticMap:
 class TestGenerateMapVisualization:
     """Tests for generate_map_visualization tool (LLM call is mocked)."""
 
-    async def test_generate_map_visualization_performance_map(
-        self, test_db, mock_storage_module
-    ):
+    async def test_generate_map_visualization_performance_map(self, test_db, mock_storage_module):
         with patch("google.genai.Client") as mock_client:
-            mock_client.return_value.models.generate_content.side_effect = (
-                RuntimeError("mocked API failure")
+            mock_client.return_value.models.generate_content.side_effect = RuntimeError(
+                "mocked API failure"
             )
             from app.tools.maps_tools import generate_map_visualization
 
-            result = await generate_map_visualization(
-                visualization_type="performance_map"
-            )
+            result = await generate_map_visualization(visualization_type="performance_map")
 
             assert result["status"] == "error"
             assert "mocked API failure" in result["message"]
@@ -175,24 +176,20 @@ class TestGenerateMapVisualization:
         self, test_db, mock_storage_module
     ):
         with patch("google.genai.Client") as mock_client:
-            mock_client.return_value.models.generate_content.side_effect = (
-                RuntimeError("mocked API failure")
+            mock_client.return_value.models.generate_content.side_effect = RuntimeError(
+                "mocked API failure"
             )
             from app.tools.maps_tools import generate_map_visualization
 
-            result = await generate_map_visualization(
-                visualization_type="regional_comparison"
-            )
+            result = await generate_map_visualization(visualization_type="regional_comparison")
 
             assert result["status"] == "error"
             assert "mocked API failure" in result["message"]
 
-    async def test_generate_map_visualization_styles(
-        self, test_db, mock_storage_module
-    ):
+    async def test_generate_map_visualization_styles(self, test_db, mock_storage_module):
         with patch("google.genai.Client") as mock_client:
-            mock_client.return_value.models.generate_content.side_effect = (
-                RuntimeError("mocked API failure")
+            mock_client.return_value.models.generate_content.side_effect = RuntimeError(
+                "mocked API failure"
             )
             from app.tools.maps_tools import generate_map_visualization
 
@@ -208,8 +205,8 @@ class TestGenerateMapVisualization:
         Regression: default was "revenue", which the tool itself rejects.
         """
         with patch("google.genai.Client") as mock_client:
-            mock_client.return_value.models.generate_content.side_effect = (
-                RuntimeError("mocked API failure")
+            mock_client.return_value.models.generate_content.side_effect = RuntimeError(
+                "mocked API failure"
             )
             from app.tools.maps_tools import generate_map_visualization
 
@@ -223,8 +220,10 @@ class TestGetCampaignLocationsCurrentSchema:
     not the legacy campaign_ads/campaign_metrics tables (which are empty)."""
 
     def test_locations_report_real_video_metrics(self, test_db):
-        with patch("app.tools.maps_tools.GOOGLE_MAPS_API_KEY", "test-key"), \
-             patch("googlemaps.Client") as mock_gmaps:
+        with (
+            patch("app.tools.maps_tools.GOOGLE_MAPS_API_KEY", "test-key"),
+            patch("googlemaps.Client") as mock_gmaps,
+        ):
             mock_gmaps.return_value.geocode.return_value = [
                 {"geometry": {"location": {"lat": 34.05, "lng": -118.24}}}
             ]
@@ -237,14 +236,10 @@ class TestGetCampaignLocationsCurrentSchema:
             # pre-loaded campaigns — the legacy tables are empty, so any
             # non-zero count proves the query reads the current schema.
             campaigns_with_ads = [
-                loc for loc in result["locations"]
-                if loc["metrics"]["ad_count"] > 0
+                loc for loc in result["locations"] if loc["metrics"]["ad_count"] > 0
             ]
             assert len(campaigns_with_ads) >= 1
-            assert any(
-                loc["metrics"]["total_impressions"] > 0
-                for loc in campaigns_with_ads
-            )
+            assert any(loc["metrics"]["total_impressions"] > 0 for loc in campaigns_with_ads)
 
 
 class TestRpiCentralization:
@@ -253,18 +248,25 @@ class TestRpiCentralization:
         from app.tools.metrics_shared import compute_rpi
 
         _make_campaign_with_metrics(
-            [{"metric_date": _days_ago(1), "impressions": 1000, "revenue": 10.0},
-             {"metric_date": _days_ago(2), "impressions": 500, "revenue": 50.0}]
+            [
+                {"metric_date": _days_ago(1), "impressions": 1000, "revenue": 10.0},
+                {"metric_date": _days_ago(2), "impressions": 500, "revenue": 50.0},
+            ]
         )
         result = get_campaign_map_data()
         assert result["status"] == "success"
         for loc in result["locations"]:
             if loc.get("metrics"):
                 m = loc["metrics"]
-                assert m["rpi"] == compute_rpi(
-                    m["total_revenue"], m["total_impressions"]
-                )
+                assert m["rpi"] == compute_rpi(m["total_revenue"], m["total_impressions"])
         s = result["summary"]
-        assert s["overall_rpi"] == compute_rpi(
-            s["total_revenue"], s["total_impressions"]
-        )
+        assert s["overall_rpi"] == compute_rpi(s["total_revenue"], s["total_impressions"])
+
+
+def test_demographics_uses_retail_market_index(test_db):
+    from app.tools.maps_tools import get_location_demographics
+
+    result = get_location_demographics(city="Austin", state="TX")
+    flat = str(result)
+    assert "fashion_market_index" not in flat
+    assert "retail_market_index" in flat
