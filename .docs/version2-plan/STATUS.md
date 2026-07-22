@@ -26,6 +26,6 @@ Update rows in place as a workstream progresses; don't append new rows for the s
 | 13 | `13` | production-hardening-live-mode | not started | - | - | 2026-07-13 | depends on Phases 11, 12 |
 | 14a | `14a` | image-model-upgrade-nano-banana | not started | - | - | 2026-07-13 | depends on Phase 1 only |
 | 14b | `14b` | video-model-upgrade-omni-flash | not started | - | - | 2026-07-13 | depends on Phase 1, ideally after 14a |
-| 15 | `15` | product-onboarding | implement in progress | version_2_product-onboarding | - | 2026-07-22 | deps 8/9/11a all merged; owner: honor ws09 no-GCS-in-demo directive, ws08 broken-image amendments, DEMO_DATASET gated seeding; journeys -> root DEMO_GUIDE.md |
+| 15 | `15` | product-onboarding | verify in progress | version_2_product-onboarding | - | 2026-07-22 | deps 8/9/11a all merged; owner: honor ws09 no-GCS-in-demo directive, ws08 broken-image amendments, DEMO_DATASET gated seeding; journeys -> root DEMO_GUIDE.md |
 | — | `—` | replan-data-track (docs only) | merged | version_2_replan-data-track | [#5](https://github.com/bluezoo/video-ad-optimization-agent/pull/5) | 2026-07-17 | merged a4e0e76 (squash); replan + 1-based renumbering + BlueZoo mimic verification (working-docs/replan-data-track/bluezoo-mapping-verification.md); 11a/11b + Phase 15 rows added above |
 | 16 | `16` | live-api-testing | not started | - | - | 2026-07-22 | new phase (owner directive, resolves Q19); dependency: Phase 9 merged |
