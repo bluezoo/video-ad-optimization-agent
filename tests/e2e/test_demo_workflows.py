@@ -69,7 +69,7 @@ class TestAgentDiscoveryWorkflow:
             assert "id" in product
             assert "name" in product
             assert "category" in product
-            assert "image_url" in product
+            assert product["image_status"] in ("available", "missing")
 
     def test_products_have_categories(self, shared_test_db):
         """Products should be organized by category."""

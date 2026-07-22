@@ -235,6 +235,8 @@ def mock_storage_module():
         get_public_url=MagicMock(return_value="https://storage.googleapis.com/test-bucket/test.mp4"),
         get_video_public_url=MagicMock(return_value="https://storage.googleapis.com/test-bucket/video.mp4"),
         get_thumbnail_public_url=MagicMock(return_value="https://storage.googleapis.com/test-bucket/thumb.jpg"),
+        product_image_exists=MagicMock(return_value=True),
+        get_product_image_public_url=MagicMock(return_value="https://storage.googleapis.com/test-bucket/product-images/test.png"),
     ) as mocks:
         yield mocks
 

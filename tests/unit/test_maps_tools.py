@@ -243,7 +243,7 @@ class TestGetCampaignLocationsCurrentSchema:
 
 
 class TestRpiCentralization:
-    def test_map_data_rpi_is_thin_wrapper(self, test_db):
+    def test_map_data_rpi_is_thin_wrapper(self, test_db, mock_storage_module):
         from app.tools.maps_tools import get_campaign_map_data
         from app.tools.metrics_shared import compute_rpi
 
