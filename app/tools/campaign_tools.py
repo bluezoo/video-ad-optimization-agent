@@ -104,8 +104,9 @@ def create_campaign(
     if not description:
         style = product.attributes.get("style")
         color = product.attributes.get("color")
-        if style or color:
-            description = f"Campaign for {style or 'fashion item'} in {color or 'classic'} at {store_name}, {city}."
+        if style:
+            in_color = f" in {color}" if color else ""
+            description = f"Campaign for {style}{in_color} at {store_name}, {city}."
         else:
             product_title = product.name.replace("-", " ").title()
             description = f"Campaign for {product_title} at {store_name}, {city}."
