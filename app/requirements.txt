@@ -15,6 +15,9 @@ google-cloud-aiplatform[adk,agent_engines]>=1.111
 # Google Cloud Storage for asset persistence
 google-cloud-storage>=2.19.0
 
+# Demo-asset bundle download from Google Drive (scripts/demo_assets.py)
+gdown>=5.2.0
+
 # Google Gen AI SDK
 google-genai>=1.55.0
 
