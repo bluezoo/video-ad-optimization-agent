@@ -62,3 +62,9 @@ template registry** (wearable = preserved fashion path; consumable-hero; staged-
 generic product-hero fallback for unknown categories; presentation_mode as override knob;
 LLM prompt-writer deferred to Phase 15 as a registry extension seam). Proceeding to
 writing-plans.
+
+## 2026-07-21 — checkpoint 3: plan approved
+Owner approved the 8-task plan (plan.md in this folder). Execution: ultracode workflow,
+sequential implementer->reviewer per task (Task 1 golden re-baseline first, from
+unmodified code), then loop-until-green stabilize (full make test + integration), then
+demo verification F1 / F5.1 / new F5.2.
