@@ -55,3 +55,6 @@ Final whole-branch review (opus): "Ready to merge", zero Critical/Important; two
 
 ## 2026-07-22 — owner rule change at merge gate: testing journeys → root DEMO_GUIDE.md
 Owner directive (pre-merge): workstream testing journeys always go in the root DEMO_GUIDE.md, not workstream-side files — confirmed via question ("Root DEMO_GUIDE.md (rule change)"). Applied on this branch: ws11a journeys moved to DEMO_GUIDE.md "Workstream Testing Journeys" (11a.1-11a.3); .docs/version2-plan/demo_guide.md Part 0b replaced with a pointer (file is now historical, pre-ws11a record); CLAUDE.md amended in both places that stated the old "DEMO_GUIDE.md stays untouched" rule; rule promoted to memory.
+
+## 2026-07-22 — checkpoint 6: merged
+Owner confirmed merge. PR #12 squash-merged into version_2 as 4e0ce6a. STATUS row → merged. Post-merge: worktree/branch cleanup done; next unblocked phases per STATUS: 14a (deps: Phase 1), 15 (deps 8/9/11a now all merged), 16 (dep: Phase 9); 11b remains blocked on Q1/Q2.
