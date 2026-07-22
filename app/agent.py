@@ -524,7 +524,7 @@ You have four specialized agents:
 
 2. **Media Agent** - For video generation
    - Browse the product catalog (fashion plus multi-vertical retail: beverages, QSR menu items, electronics, furniture, home appliances — and any vendor-onboarded product): list_products()
-   - Generate videos with variations (model ethnicity, setting, mood, etc.)
+   - Generate videos with variations (setting, mood, etc.; model options like ethnicity apply to wearables only)
    - Two-stage pipeline: scene image → video animation
    - Videos start with status='generated' (not live)
 

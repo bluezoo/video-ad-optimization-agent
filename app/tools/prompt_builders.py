@@ -473,7 +473,9 @@ def _product_title(product: Product) -> str:
 
 
 def _with_article(phrase: str) -> str:
-    return f"an {phrase}" if phrase[:1].lower() in "aeiou" else f"a {phrase}"
+    if phrase and phrase[0].lower() in "aeiou":
+        return f"an {phrase}"
+    return f"a {phrase}"
 
 
 def _render_attributes(product: Product) -> str:
@@ -516,13 +518,15 @@ def _build_product_scene_prompt(product: Product, variation: CreativeVariation, 
     }
     style_desc = style_map.get(variation.visual_style, "Professional commercial product photography")
     key_features = product.description or "its signature design details"
+    presented_clause = " ".join(filter(None, [setting_desc, time_desc]))
+    attrs = _render_attributes(product)
+    attr_line = f"\n{attrs}" if attrs else ""
 
-    return f"""{style_desc} of {product_title}, presented {setting_desc} {time_desc}.
+    return f"""{style_desc} of {product_title}, presented {presented_clause}.
 
 {_ARCHETYPE_SCENE_FLAVOR[archetype]}
 
-{lighting_desc}. The product is clearly visible with all its details: {key_features}.
-{_render_attributes(product)}
+{lighting_desc}. The product is clearly visible with all its details: {key_features}.{attr_line}
 
 CRITICAL - PRODUCT PRESERVATION:
 - The product must match the reference EXACTLY - same shape, colors, materials, branding, and label design

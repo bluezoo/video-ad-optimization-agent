@@ -125,6 +125,13 @@ Phase 8 (`Product` model and non-fashion fixture data must exist first).
 > satisfiable by any eval case; behavioral verification rests on the demo
 > scenarios. Full mechanism + repair options: ws09 WORK_LOG DISCOVERY
 > (2026-07-22) and `99-open-questions.md` Q19.
+>
+> **Amended (workstream 09, 2026-07-22):** `image_tools.py`'s `analyze_image`
+> ("Analyze this fashion image", still wired on the media agent, labeled
+> "(legacy)" in its instruction) joins the accepted-legacy list alongside the
+> legacy `video_tools` strings and `video_properties.py` garment fields — a
+> deliberate omission (final-review finding), revisit with Phase 15's vendor
+> onboarding.
 
 ## Open questions
 

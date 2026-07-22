@@ -59,7 +59,8 @@ if not eval_sets_exist():
 
 
 _INFRA_MARKERS = (
-    "credential", "permission denied", "quota", "resource_exhausted", "429",
+    "credential", "permission denied", "permission_denied", "403", "quota",
+    "resource_exhausted", "429",
     "unavailable", "503", "deadline", "connection", "getaddrinfo",
 )
 
