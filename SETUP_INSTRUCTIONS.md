@@ -100,3 +100,56 @@ This section accumulates setup steps introduced by `.docs/version2-plan/` phases
 - **Phase 1 (workstream 01):** all three model config values now default to GA IDs and are env-overridable via `AGENT_MODEL` (default `gemini-3.5-flash`), `IMAGE_GENERATION_MODEL` (default `gemini-3-pro-image`), and `VIDEO_GEN_MODEL` (default `veo-3.1-generate-001`) — set them in `app/.env` only when testing a different (e.g. preview) model. `scripts/smoke_media_models.py` smoke-tests Stage 1 + Stage 2 generation against whatever is configured (`--skip-video` for the cheap image-only check). Note `make install` runs bare `python`; on machines with only versioned interpreters, create the venv manually (`python3.12 -m venv .venv && .venv/bin/pip install -r app/requirements.txt`).
 - **Phase 6 (workstream 06):** `APP_MODE=demo|connected` exists as a typed config value (`app/config.py`), default `demo`; invalid values fail startup with a `ValueError`. Nothing consumes it yet — Phase 11a resolves it to a data-provider selection internally (it stays the only user-facing mode knob). Both explicit deploy paths forward it (`scripts/deploy.sh` via `--set-env-vars`, `scripts/deploy_ae_inline.py` via its `env_vars` dict); `scripts/deploy_ae.sh` picks it up from `app/.env` automatically.
 - **Phase 8 (workstream 08):** Workstream 08 added the `always-on` campaign category to the campaigns table's CHECK constraint. SQLite can't ALTER a CHECK, so a `campaigns.db` created before this change must be regenerated: `make reset-db`, then restart `make dev` (demo data repopulates automatically).
+
+## Local-first mode (Phase 15)
+
+The app is local-first: with `GCS_BUCKET` **unset**, every asset (product
+images, videos, thumbnails) lives under the local assets root and tool
+responses never contain `storage.googleapis.com` URLs. GCS is an explicit
+opt-in for cloud deploys (`GCS_BUCKET=<bucket>`); the old hardcoded default
+bucket is gone.
+
+**Check your `app/.env`:** older dev `.env` files set `GCS_BUCKET` — as long
+as that line is present you are in GCS mode. Comment it out (or delete it)
+for local-first mode.
+
+- `LOCAL_ASSETS_DIR` (optional): local asset root; defaults to the project
+  root, giving the pre-existing `selected/` and `generated/` folders plus the
+  new `product-images/`.
+- `DEMO_DATASET=fashion|none` (default `fashion`): which demo catalog gets
+  seeded at startup. `fashion` = today's full demo (22 fashion + 6 retail
+  core products, 4 campaigns). `none` = empty catalog — the from-scratch
+  onboarding path (`docs/demo-scenarios/from-scratch-onboarding.md`).
+  This is a demo-scoped dataset selector, NOT a mode knob — `APP_MODE`
+  remains the only mode env var.
+
+### Demo asset bundle (product images without GCS)
+
+Demo product images ship as an owner-hosted Google Drive zip:
+
+```bash
+python -m scripts.demo_assets install                     # uses DEMO_ASSETS_DRIVE_ID
+python -m scripts.demo_assets install --from-file x.zip   # or a local bundle
+```
+
+Unset `DEMO_ASSETS_DRIVE_ID` → the installer skips gracefully; the app still
+works, seeded products just report `image_status: missing` locally.
+
+**Owner: publishing/refreshing the bundle** — collect the demo images into a
+folder tree (`<src>/product-images/<file>...`), then:
+
+```bash
+python -m scripts.demo_assets build --source <src> --out demo-assets.zip
+# upload demo-assets.zip to Google Drive (anyone-with-link), then set
+# DEMO_ASSETS_DRIVE_ID=<drive-file-id> in app/.env
+```
+
+### Onboarding products from the CLI
+
+Same functions as the Campaign agent's tools:
+
+```bash
+python -m scripts.onboard_products create --name "Aurora Cold Brew 330ml" --category beverage --attr volume_ml=330
+python -m scripts.onboard_products import-folder /path/to/images --category homeware
+python -m scripts.onboard_products generate-image --product-id 3
+```
