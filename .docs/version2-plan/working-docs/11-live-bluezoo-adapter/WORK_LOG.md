@@ -49,3 +49,6 @@ Reviewer cannotVerify items adjudicated by controller: each covered by a later t
 - Connected-mode fail-closed smoke: APP_MODE=connected factory call raises the specific RuntimeError (names connected/Phase 11b/APP_MODE=demo). Evidence /tmp/ws11a-evidence/connected_fail_closed.txt; also pinned by tests/unit/test_audience_factory.py.
 - Controller sanity pass: make test-unit 264 passed / 1 skipped on the finished branch.
 Both verifier scenes ran against this worktree's own make dev on :8501 (fresh reset-db), sequentially. Two non-blocking LLM-prose nits noted by verifiers (a stray text fragment in one answer; one wrong video-id digit in a prose table) — tool payloads clean in both, not defects of this change.
+
+## 2026-07-22 — checkpoint 6 (partial): PR open
+Final whole-branch review (opus): "Ready to merge", zero Critical/Important; two non-blocking Minor notes (one addressed in 357a9d7, one documented behavioral note on the synthetic screen_id//100 convention). PR #12 → version_2: https://github.com/bluezoo/video-ad-optimization-agent/pull/12. Awaiting owner confirmation before self-merge per finishing-a-development-branch Path A.
