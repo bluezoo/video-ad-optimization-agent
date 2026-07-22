@@ -105,3 +105,48 @@ class TestDiverseWordingFix:
                     attributes={"style": "tailored wide-leg trousers"})
         out = build_scene_image_prompt(p, CreativeVariation(name="t", model_ethnicity="martian"))
         assert "a beautiful woman" not in out
+
+
+class TestAdStylePolicy:
+    """Owner directive (2026-07-22): every ad is music-only with a clean frame —
+    no rendered text/graphics in images, no speech and no overlays in videos."""
+
+    def _wearable(self):
+        return Product(name="sage-satin-camisole", category="dress",
+                       description="Soft sage satin camisole",
+                       image_filename="sage-satin-camisole.png",
+                       attributes={"style": "satin camisole", "color": "sage"})
+
+    def test_scene_prompts_forbid_rendered_text_all_archetypes(self):
+        from app.tools.prompt_builders import build_scene_image_prompt
+        v = CreativeVariation(name="t")
+        for product in (self._wearable(), _beverage(), _electronics(), _unknown()):
+            out = build_scene_image_prompt(product, v)
+            assert "NO TEXT OR GRAPHICS" in out, product.category
+            assert "Do NOT render any text" in out, product.category
+
+    def test_video_prompts_music_only_no_speech_all_archetypes(self):
+        from app.tools.prompt_builders import (
+            build_creative_prompt,
+            build_video_animation_prompt,
+        )
+        v = CreativeVariation(name="t")
+        for product in (self._wearable(), _beverage(), _electronics(), _unknown()):
+            for builder in (build_video_animation_prompt, build_creative_prompt):
+                out = builder(product, v)
+                assert "Instrumental background music only" in out, (product.category, builder.__name__)
+                assert "No voiceover" in out, (product.category, builder.__name__)
+                assert "No on-screen text" in out, (product.category, builder.__name__)
+
+    def test_attribute_heavy_product_still_forbids_badges(self):
+        # Regression for the brisket video: promo/calorie attributes fed into the
+        # prompt must not become rendered text plaques in the frame.
+        from app.tools.prompt_builders import build_scene_image_prompt
+        p = Product(name="smoky-brisket-stack-sandwich", category="qsr-menu-item",
+                    description="Slow-smoked brisket sandwich",
+                    image_filename="smoky-brisket-stack-sandwich.png",
+                    attributes={"calories": "780", "promo": "Limited Time: Summer 2026",
+                                "combo_options": "fries + drink, coleslaw + drink"})
+        out = build_scene_image_prompt(p, CreativeVariation(name="t"))
+        assert "NO TEXT OR GRAPHICS" in out
+        assert out.index("Product details") < out.index("NO TEXT OR GRAPHICS")

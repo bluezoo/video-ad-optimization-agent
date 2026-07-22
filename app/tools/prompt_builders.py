@@ -28,6 +28,17 @@ from .prompt_archetypes import (
     resolve_archetype,
 )
 
+# Ad style policy (owner directive, ws09): all generated ads are music-only with a
+# clean frame — no rendered text and no spoken audio, for every archetype.
+_NO_TEXT_BLOCK = """NO TEXT OR GRAPHICS:
+- Do NOT render any text, words, numbers, labels, badges, captions, watermarks, or graphic overlays anywhere in the frame
+- The only text allowed is text that is physically part of the product's own packaging or label"""
+
+_AUDIO_BLOCK = """AUDIO & ON-SCREEN TEXT:
+- Instrumental background music only, matched to the mood and theme of the scene
+- No voiceover, no narration, no spoken words, no lyrics, no dialogue
+- No on-screen text, captions, subtitles, titles, badges, or graphic overlays"""
+
 
 def build_scene_image_prompt(product: Product, variation: CreativeVariation) -> str:
     """Build a prompt for generating a scene-ready first frame image."""
@@ -199,6 +210,8 @@ HUMAN FIGURE QUALITY:
 - Natural skin texture and tone
 - Elegant, natural body posture
 
+{_NO_TEXT_BLOCK}
+
 Style: Luxury fashion campaign, magazine-quality, aspirational."""
 
     return prompt
@@ -287,6 +300,8 @@ HUMAN FIGURE QUALITY:
 - Properly proportioned hands and fingers during movement
 - Fluid, natural body movement without anatomical errors
 - Consistent model appearance from start to end
+
+{_AUDIO_BLOCK}
 
 8 seconds. Vertical 9:16. Cinematic quality. Professional fashion video ad."""
 
@@ -418,6 +433,8 @@ HUMAN FIGURE QUALITY:
 - Properly proportioned hands and fingers
 - Fluid, natural body movement
 
+{_AUDIO_BLOCK}
+
 Professional high-end fashion advertisement. 8 seconds. Vertical 9:16 format."""
 
     return prompt
@@ -538,6 +555,8 @@ QUALITY REQUIREMENTS:
 - Vertical 9:16 aspect ratio composition
 - The scene should look like the perfect first frame of a premium video ad
 
+{_NO_TEXT_BLOCK}
+
 Style: Premium retail campaign, magazine-quality, aspirational."""
 
 
@@ -577,6 +596,8 @@ CRITICAL - PRODUCT & QUALITY PRESERVATION:
 - Branding, labels, and materials stay crisp and unaltered
 - Smooth, professional camera work
 - High-end retail advertisement aesthetic
+
+{_AUDIO_BLOCK}
 
 8 seconds. Vertical 9:16. Cinematic quality. Professional product video ad."""
 

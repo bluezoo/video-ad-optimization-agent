@@ -24,4 +24,8 @@ HUMAN FIGURE QUALITY:
 - Natural skin texture and tone
 - Elegant, natural body posture
 
+NO TEXT OR GRAPHICS:
+- Do NOT render any text, words, numbers, labels, badges, captions, watermarks, or graphic overlays anywhere in the frame
+- The only text allowed is text that is physically part of the product's own packaging or label
+
 Style: Luxury fashion campaign, magazine-quality, aspirational.
