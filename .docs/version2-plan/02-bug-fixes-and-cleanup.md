@@ -93,6 +93,15 @@ These are copy-paste-drift bugs, not "hardcoded fashion" (which is handled delib
 
 **Test:** deliberately break one eval expectation locally and confirm `make test-integration` actually fails (then revert). (Adding the non-fashion eval *cases* themselves is Phase 9's job — see `09-prompt-and-agent-generalization.md` — since the products they exercise don't exist until the generalization work lands.)
 
+> **Amended (workstream 09, 2026-07-21):** this item's xfail narrowing was
+> **not** implemented by workstream 02 (silently dropped from its executed
+> scope — its WORK_LOG carries only the loud-ImportError half from the
+> workstream-01 amendment above). Verified during ws09 kickoff: all six
+> tests still carry the broad `except Exception: pytest.xfail` at
+> `tests/integration/test_agents.py:73-75, 90-91, 106-107, 122-123,
+> 138-139, 157-158`. The narrowing is now **folded into workstream 09's
+> scope** (its step 7 eval cases are meaningless without it).
+
 ### 8. `tests/conftest.py` DB-path mismatch — already fixed in workstream 01
 
 > **Amended (workstream 01, 2026-07-14):** discovered and fixed during Phase 1, because it blocked that phase's `make test-unit` validation on a fresh checkout. `tests/conftest.py:43` hardcoded `MAIN_DB_PATH = APP_DIR / "campaigns.db"`, but `_ensure_main_db_exists()` populates via `init_database()`, which writes to `app.config.DB_PATH` — the **project root** in local dev. On any checkout without a leftover `app/campaigns.db` (all fresh clones and worktrees), every DB-dependent unit test errored with `FileNotFoundError`. Fixed by deriving `MAIN_DB_PATH` from `app.config.DB_PATH`. No action left for this phase; listed so the record of what Phase 2 "inherited already-fixed" is complete.

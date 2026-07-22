@@ -72,6 +72,46 @@ Phase 8 (`Product` model and non-fashion fixture data must exist first).
 > generic fallback; (C) LLM prompt-writer from the typed `Product`;
 > (D) hybrid B+C — registry for known verticals, LLM fallback for unknown.
 
+> **Amended (workstream 09, 2026-07-21, kickoff research):** three corrections
+> from re-verifying this doc against current code:
+>
+> 1. **Golden-test premise (validation bullet 1) is wrong.** Both ws08 goldens
+>    (`tests/unit/data/golden_*_product1.txt`, pinned by
+>    `tests/unit/test_product_adapter.py:46-60`) use the bare-default variation
+>    whose output contains "a beautiful woman" — the exact text step 4 removes.
+>    There is no non-default golden to keep; the goldens must be **regenerated
+>    on an explicit non-default `model_ethnicity`** (regression pair) plus a
+>    direct assertion for the new "diverse" wording — replacement, not
+>    exclusion. Note also the goldens use bare `CreativeVariation()` class
+>    defaults, not `get_default_variation()` (different lighting/activity):
+>    changing *field defaults* breaks goldens even without touching
+>    `get_default_variation()`. And "a beautiful woman" is additionally the
+>    `ethnicity_map.get()` miss-fallback (`prompt_builders.py:66/:299`) — step
+>    4 must change both sites.
+> 2. **`app/tools/video_tools.py` is missing from this doc's inventory and
+>    step-5 validation grep.** On the ACTIVE two-stage path: the Stage-1
+>    reference-image preamble at `:233` ("model wearing this exact garment")
+>    sits UPSTREAM of `build_scene_image_prompt` — a `product_only` branch in
+>    prompt_builders alone cannot fix the cold-brew failure; `analyze_video`'s
+>    prompt (`:141`, `:156`) is also fashion-framed. Additional missed
+>    surfaces: the four `LlmAgent description=` params (`agent.py:165/:261/
+>    :381/:480` — the coordinator routes on them; `:261` still says "22
+>    pre-loaded products"), the flattened `generate_video_with_variation`
+>    wrapper (`video_tools.py:1854-1922`, needs the `presentation_mode`
+>    param and a `product_only` filename-naming branch since `:1898`'s
+>    ethnicity-based name flows into filenames/DB), and the silent
+>    dict-validation fallback (`:492-499`) that would turn a malformed
+>    `product_only` request into a default with-model fashion shot — make it
+>    loud. Add `video_tools.py` (and agent `description=` strings) to the
+>    step-5 grep list; legacy-only strings (`:63-90`, `:807-812`, `:1481`)
+>    and `app/models/video_properties.py`'s garment-typed fields may be
+>    marked accepted-legacy rather than rewritten.
+> 3. **Step 7's precondition doesn't exist yet:** Phase 2 item 7's xfail
+>    narrowing was never implemented (all six tests in
+>    `tests/integration/test_agents.py` still swallow every exception).
+>    The narrowing is folded into THIS phase's scope — see the 2026-07-21
+>    amendment in `02-bug-fixes-and-cleanup.md`.
+
 ## Open questions
 
 None new beyond Phase 8's — this phase is the mechanical follow-through on the schema decisions made there. (But see the 2026-07-19 amendment above: the prompt-construction approach — presentation-mode branch vs vertical template registry vs LLM prompt-writer vs hybrid — is now an explicit design choice for this phase's kickoff working doc.)
