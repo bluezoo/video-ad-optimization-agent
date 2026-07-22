@@ -3,10 +3,15 @@
 from datetime import date, datetime, timedelta
 
 from app.demo_data.attribution import (
+    derive_rows_from_windows,
     expand_ad_plays,
     screens_for_campaign,
     slot_budget,
+    video_rpi,
 )
+from app.demo_data.constants import DEMO_RPI, DEMO_WINDOW_DAYS
+from app.demo_data.derive import derive_video_metrics_rows
+from app.tools.metrics_shared import compute_rpi
 
 CID = 9001
 D_FROM = date(2026, 6, 1)
@@ -99,3 +104,116 @@ class TestPlaySchedule:
             if p.video_id == 101
         ]
         assert solo == both
+
+
+class TestConstants:
+    def test_canonical_values(self):
+        assert DEMO_RPI == 0.05
+        assert DEMO_WINDOW_DAYS == 30
+
+
+class TestJoinDerivation:
+    def test_one_row_per_video_per_day(self):
+        rows = derive_video_metrics_rows(CID, [101, 102], D_FROM, D_TO)
+        assert len(rows) == 2 * 7
+        dates = {r["metric_date"] for r in rows}
+        assert min(dates) == D_FROM.isoformat()
+        assert max(dates) == D_TO.isoformat()
+
+    def test_impressions_are_played_slot_inner_visits_only(self):
+        """impressions = sum of incoming_inner_count over the video's played
+        slots — computed independently here from the schedule + frames. An
+        inner+outer computation (the donor's bug) must NOT match."""
+        from app.demo_data.attribution import _campaign_seed_config
+        from app.demo_data.seed import generate_frames
+
+        screens = screens_for_campaign(CID)
+        rows = derive_video_metrics_rows(CID, [101], D_FROM, D_FROM)
+        frames = generate_frames(_campaign_seed_config(CID, D_FROM, D_FROM))
+        ix = {(v["screen_id"], v["timestamp"]): v for v in frames["screen_visits"]}
+        plays = expand_ad_plays(CID, _open_windows([101], screens), D_FROM, D_FROM)
+        inner = sum(ix[(p.screen_id, p.start)]["incoming_inner_count"] for p in plays)
+        both = sum(
+            ix[(p.screen_id, p.start)]["incoming_inner_count"]
+            + ix[(p.screen_id, p.start)]["incoming_outer_count"]
+            for p in plays
+        )
+        assert rows[0]["impressions"] == int(round(inner))
+        assert rows[0]["impressions"] != int(round(both))
+
+    def test_revenue_uses_per_creative_rpi(self):
+        rows = derive_video_metrics_rows(CID, [101, 102], D_FROM, D_TO)
+        for r in rows:
+            assert r["revenue"] == round(r["impressions"] * video_rpi(CID, r["video_id"]), 2)
+
+    def test_video_rpi_band_determinism_and_divergence(self):
+        for vid in (101, 102, 999):
+            factor = video_rpi(CID, vid)
+            assert 0.03 <= factor <= 0.07
+            assert factor == video_rpi(CID, vid)
+        assert video_rpi(CID, 101) != video_rpi(CID, 102)
+
+    def test_window_rpi_matches_creative_constant(self):
+        rows = derive_video_metrics_rows(CID, [101], D_FROM, D_TO)
+        total_rev = sum(r["revenue"] for r in rows)
+        total_imp = sum(r["impressions"] for r in rows)
+        assert abs(compute_rpi(total_rev, total_imp) - video_rpi(CID, 101)) < 0.001
+
+    def test_per_video_schedules_differ(self):
+        rows = derive_video_metrics_rows(CID, [101, 102], D_FROM, D_FROM)
+        by_video = {r["video_id"]: r["impressions"] for r in rows}
+        assert by_video[101] != by_video[102]
+
+    def test_later_activation_never_changes_existing_rows(self):
+        solo = derive_video_metrics_rows(CID, [101], D_FROM, D_TO)
+        both = [
+            r
+            for r in derive_video_metrics_rows(CID, [101, 102], D_FROM, D_TO)
+            if r["video_id"] == 101
+        ]
+        assert solo == both
+
+    def test_deterministic_across_calls(self):
+        r1 = derive_video_metrics_rows(CID, [101, 102], D_FROM, D_TO)
+        r2 = derive_video_metrics_rows(CID, [101, 102], D_FROM, D_TO)
+        assert r1 == r2
+
+    def test_windows_are_load_bearing(self):
+        """A window covering only part of the range yields rows ONLY for the
+        covered days — metrics accrue where the video was actually live."""
+        screens = screens_for_campaign(CID)
+        w = [
+            {
+                "video_id": 101,
+                "screen_id": sid,
+                "active_from": datetime.combine(D_FROM, datetime.min.time()),
+                "active_to": datetime.combine(D_FROM + timedelta(days=2), datetime.min.time()),
+            }
+            for sid in screens
+        ]
+        rows = derive_rows_from_windows(CID, [101], w, D_FROM, D_TO)
+        days = {r["metric_date"] for r in rows}
+        assert days == {(D_FROM + timedelta(days=i)).isoformat() for i in range(3)}
+
+    def test_more_screens_more_impressions(self):
+        screens = screens_for_campaign(CID)
+        one = derive_rows_from_windows(
+            CID, [101], _open_windows([101], screens[:1]), D_FROM, D_FROM
+        )
+        all_screens = derive_rows_from_windows(
+            CID, [101], _open_windows([101], screens), D_FROM, D_FROM
+        )
+        assert all_screens[0]["impressions"] > one[0]["impressions"]
+
+    def test_dwell_is_synthetic_seconds_scale(self):
+        rows = derive_video_metrics_rows(CID, [101], D_FROM, D_TO)
+        for r in rows:
+            assert 4.0 <= r["dwell_time_seconds"] <= 12.0
+
+    def test_plausible_magnitudes(self):
+        """Charts stay sane: per-video daily impressions in the
+        hundreds-to-low-thousands, circulation positive."""
+        rows = derive_video_metrics_rows(CID, [101], D_FROM, D_TO)
+        for r in rows:
+            assert 200 <= r["impressions"] <= 8000
+            assert r["circulation"] > 0

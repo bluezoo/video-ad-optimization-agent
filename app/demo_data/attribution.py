@@ -30,7 +30,7 @@ from datetime import date, timedelta
 
 from ..models.attribution import AdPlayRecord
 from .constants import DEMO_RPI
-from .seed import _seeded_rng, _slot_starts
+from .seed import SeedConfig, _seeded_rng, _slot_starts, generate_frames
 
 SLOTS_PER_DAY = 48  # seed.py's grain: 15-min slots, 09:00-21:00
 SLOT_MINUTES = 15
@@ -118,3 +118,75 @@ def expand_ad_plays(
                 plays.extend(_plays_for_day(ad_campaign_id, w["video_id"], w["screen_id"], d))
             d += timedelta(days=1)
     return plays
+
+
+def _campaign_seed_config(ad_campaign_id: int, date_from: date, date_to: date) -> SeedConfig:
+    """One campaign across its real 2-3 screens (the ws05 1:1
+    campaign-as-screen proxy is gone)."""
+    return SeedConfig(
+        screen_ids=screens_for_campaign(ad_campaign_id),
+        campaigns=[
+            (
+                ad_campaign_id,
+                f"campaign-{ad_campaign_id}",
+                date_from,
+                date_to,
+                campaign_uplift(ad_campaign_id),
+            )
+        ],
+        date_from=date_from,
+        date_to=date_to,
+    )
+
+
+def derive_rows_from_windows(
+    ad_campaign_id: int,
+    video_ids: list,
+    windows: list[dict],
+    date_from: date,
+    date_to: date,
+) -> list[dict]:
+    """The ad-play join: windows -> plays -> visits/revenue -> daily rows.
+
+    impressions = summed incoming_inner_count over the video's played slots
+    (inner-only — outer is ~100 m passersby, never impressions).
+    revenue = impressions x video_rpi(campaign, video) — the demo stand-in
+    for the PoS revenue lookup, coupled to the play schedule so each
+    creative's RPI stays its ws07 constant.
+    Returned dicts carry exactly the video_metrics insert columns."""
+    wanted = set(video_ids)
+    frames = generate_frames(_campaign_seed_config(ad_campaign_id, date_from, date_to))
+    visits_ix = {(v["screen_id"], v["timestamp"]): v for v in frames["screen_visits"]}
+
+    plays = expand_ad_plays(
+        ad_campaign_id, [w for w in windows if w["video_id"] in wanted], date_from, date_to
+    )
+
+    agg: dict = {}
+    for p in plays:
+        v = visits_ix.get((p.screen_id, p.start))
+        if v is None:
+            continue
+        a = agg.setdefault((p.video_id, p.start.date()), {"inner": 0.0, "outer_out": 0.0})
+        a["inner"] += v["incoming_inner_count"]
+        a["outer_out"] += v["outgoing_outer_count"]
+
+    order = {vid: i for i, vid in enumerate(video_ids)}
+    rows = []
+    for video_id, d in sorted(agg, key=lambda key: (key[1], order.get(key[0], 0))):
+        a = agg[(video_id, d)]
+        impressions = int(round(a["inner"]))
+        rpi = video_rpi(ad_campaign_id, video_id)
+        dwell_rng = _seeded_rng("dwell-scalar", ad_campaign_id, video_id, d.isoformat())
+        rows.append(
+            {
+                "video_id": video_id,
+                "metric_date": d.isoformat(),
+                "impressions": impressions,
+                # Synthetic seconds-scale scalar — see module docstring.
+                "dwell_time_seconds": float(round(4.0 + dwell_rng.uniform() * 8.0, 1)),
+                "circulation": int(round(a["outer_out"])),
+                "revenue": round(impressions * rpi, 2),
+            }
+        )
+    return rows
