@@ -207,6 +207,21 @@ class TestCreateCampaign:
         # Should return error
         assert "error" in result or "not found" in str(result).lower()
 
+    def test_color_without_style_uses_product_name_not_fashion_item(self, fresh_test_db):
+        """ws09: a product with color but no style must not get the 'fashion item'
+        placeholder in its auto-generated campaign description."""
+        from app.database.db import insert_product
+        from app.models.product import Product
+        from app.tools.campaign_tools import create_campaign
+
+        p = insert_product(Product(name="crimson-travel-mug", category="drinkware",
+                                   description="Insulated mug", image_filename="m.png",
+                                   attributes={"color": "crimson"}))
+        result = create_campaign(product_id=p.id, store_name="Test Store", city="Austin", state="TX")
+        assert result["status"] == "success"
+        assert "fashion item" not in result["campaign"]["description"]
+        assert "Crimson Travel Mug" in result["campaign"]["description"]
+
 
 class TestUpdateCampaign:
     """Tests for update_campaign tool."""

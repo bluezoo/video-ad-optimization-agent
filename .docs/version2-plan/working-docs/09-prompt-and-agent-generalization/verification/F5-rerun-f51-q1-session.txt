@@ -1,0 +1,268 @@
+{
+    "id": "ffd2cca6-e7fd-4b1a-92c0-82ab6b127c9a",
+    "appName": "app",
+    "userId": "user",
+    "state": {
+        "__session_metadata__": {
+            "displayName": "List the beverage products"
+        }
+    },
+    "events": [
+        {
+            "content": {
+                "parts": [
+                    {
+                        "text": "List the beverage products"
+                    }
+                ],
+                "role": "user"
+            },
+            "invocationId": "e-03c5c6c7-d8ff-41e5-a4dd-024a94ae2596",
+            "author": "user",
+            "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+            },
+            "nodeInfo": {
+                "path": ""
+            },
+            "id": "9fb5f82b-4394-403d-86e4-4353700ad3d9",
+            "timestamp": 1784727342.123899
+        },
+        {
+            "modelVersion": "gemini-3.5-flash",
+            "content": {
+                "parts": [
+                    {
+                        "functionCall": {
+                            "id": "l6o9u3vk",
+                            "args": {
+                                "agent_name": "media_agent"
+                            },
+                            "name": "transfer_to_agent"
+                        },
+                        "thoughtSignature": "AY89a1_VDjjIYxPEThLtqd3U9khf2qtNWwJkTSQjVaLFTJLvYttdHhF0CxGGMPcd5OohqY6mPQ4nLL77B_vGiMfpEnS1b9sJQHi9bnKwXFu1Og2KUJnqhmMNoTX3cEKaZp9SE4wdLe6JQvPLAhqcAcB86Clc-ghB9AU3mvFh1jme6HgTkE0yrlNq5Kbd30RO_dfpGT9h7i-RE51HjWRkcNQQuqdANksI39cW5AMRj7u7AHoZMFI0jM23El7WXJNCLXnr7nOubTc7JnRc5WafALmD4GfF2WfopdzJ9oHZPVVZgRsofhbJIQ0fnzS8Oi15LqJbE0yiY-kI5bUMdmX-hE7utIjB6ZitKnevzYDXlhocGQpH4R-AYqWH3DuZdoWwUblGUlann347q2qoqwaq8FL_36pyhSlaxgGVdcNgu4FwAnoQeCzvzCqvoNibEAezdOh_huD61C3eS4PqEOtFu8C97IzNoCa_R37pWWgAZY2o4Fb7DLKzFnJOrqjuD5o8MPQRgTZ4bz8xwIZ-2D5HDw40E6Fz1nEb5nDRcHaO3C_YH4BcV2gNVfuLPCXnzcmvdnDSzkfd_H-dr0ovLdFQv4bHf_sZ_8Be6YAsxjKjJTkLzqWO2bka6IPV1j5s08ySyISVYoOUp34HDLPh6Vr593QH19k7Ukhjrm9pdlCnjmsCIyJBOIwdcUzk_hQ991om-3K6HelaWyeMZySUtzI1VpfG61tJW66v4hv2UipqUixFHJz9KKvw36Ww"
+                    }
+                ],
+                "role": "model"
+            },
+            "finishReason": "STOP",
+            "usageMetadata": {
+                "candidatesTokenCount": 22,
+                "candidatesTokensDetails": [
+                    {
+                        "modality": "TEXT",
+                        "tokenCount": 22
+                    }
+                ],
+                "promptTokenCount": 1149,
+                "promptTokensDetails": [
+                    {
+                        "modality": "TEXT",
+                        "tokenCount": 1149
+                    }
+                ],
+                "thoughtsTokenCount": 129,
+                "totalTokenCount": 1300,
+                "trafficType": "ON_DEMAND"
+            },
+            "invocationId": "e-03c5c6c7-d8ff-41e5-a4dd-024a94ae2596",
+            "author": "ad_campaign_agent",
+            "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+            },
+            "nodeInfo": {
+                "path": "ad_campaign_agent@1"
+            },
+            "longRunningToolIds": [],
+            "id": "be496cb9-95ab-453f-abea-bc0a61bed2cd",
+            "timestamp": 1784727342.562054
+        },
+        {
+            "content": {
+                "parts": [
+                    {
+                        "functionResponse": {
+                            "id": "l6o9u3vk",
+                            "name": "transfer_to_agent",
+                            "response": {
+                                "result": null
+                            }
+                        }
+                    }
+                ],
+                "role": "user"
+            },
+            "invocationId": "e-03c5c6c7-d8ff-41e5-a4dd-024a94ae2596",
+            "author": "ad_campaign_agent",
+            "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "transferToAgent": "media_agent",
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+            },
+            "nodeInfo": {
+                "path": "ad_campaign_agent@1"
+            },
+            "id": "edee18b4-ffed-4551-94d5-d0e90d7a773a",
+            "timestamp": 1784727345.152174
+        },
+        {
+            "modelVersion": "gemini-3.5-flash",
+            "content": {
+                "parts": [
+                    {
+                        "functionCall": {
+                            "id": "umkijxjg",
+                            "args": {
+                                "category": "beverage"
+                            },
+                            "name": "list_products"
+                        },
+                        "thoughtSignature": "AY89a1826Z0sDBuMErLkddKJKb9ny8m8FFN5rlAzEmyClREDH_Sgt-QWE3g-3xyzk_TVFrK75B5xKd7XRtGsVzkF414re0rcPrzRNcaxwgrnxA4WAeZ3hbuVcmeXdCYTjYQDyPsquWiPdAOTMDnXNSzoH3si9YEggQw0yOPCwFy7s2rVp7K2IHdGXM1P6TbUXlQVKk8e-jhvO3JEVjxHqpr_8GUry_g3tHV-rx48ewE7THq8cgbLNfVntbBzeCM7jpEviJ5zjhAzHoSoHIQtbIMHHS0YFu5fd6HPouLSuwqBPG_itl6JvN0bHPkDfS9uDft6SHeBwxffbbX8lKHAcJwGfTAT6LUajNHMh41eqIxK1x0OCCKjpSR5FcXfv9VIHlMnqfLFoEHCi73t3k7HlMYzoiBgokkh3CFA6mojV7zY2deUdzhnkSaZRqg8jyye_YJOKmbKIIvSKVVZSpM09v4KrAeVCsrg7X62M9I6ut5Zvw=="
+                    }
+                ],
+                "role": "model"
+            },
+            "finishReason": "STOP",
+            "usageMetadata": {
+                "candidatesTokenCount": 17,
+                "candidatesTokensDetails": [
+                    {
+                        "modality": "TEXT",
+                        "tokenCount": 17
+                    }
+                ],
+                "promptTokenCount": 5473,
+                "promptTokensDetails": [
+                    {
+                        "modality": "TEXT",
+                        "tokenCount": 5473
+                    }
+                ],
+                "thoughtsTokenCount": 75,
+                "totalTokenCount": 5565,
+                "trafficType": "ON_DEMAND"
+            },
+            "invocationId": "e-03c5c6c7-d8ff-41e5-a4dd-024a94ae2596",
+            "author": "media_agent",
+            "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+            },
+            "nodeInfo": {
+                "path": "ad_campaign_agent@1/media_agent@1"
+            },
+            "longRunningToolIds": [],
+            "id": "df8c7a22-bfec-4de3-9b2c-2af28111f68c",
+            "timestamp": 1784727345.17905
+        },
+        {
+            "content": {
+                "parts": [
+                    {
+                        "functionResponse": {
+                            "id": "umkijxjg",
+                            "name": "list_products",
+                            "response": {
+                                "status": "success",
+                                "product_count": 2,
+                                "products": [
+                                    {
+                                        "id": 23,
+                                        "name": "aurora-cold-brew-330ml",
+                                        "category": "beverage",
+                                        "style": null,
+                                        "color": null,
+                                        "fabric": null,
+                                        "image_filename": "aurora-cold-brew-330ml.png",
+                                        "image_url": "https://storage.googleapis.com/kaggle-on-gcp-ad-campaign-assets/product-images/aurora-cold-brew-330ml.png"
+                                    },
+                                    {
+                                        "id": 24,
+                                        "name": "citrus-grove-sparkling-water-500ml",
+                                        "category": "beverage",
+                                        "style": null,
+                                        "color": null,
+                                        "fabric": null,
+                                        "image_filename": "citrus-grove-sparkling-water-500ml.png",
+                                        "image_url": "https://storage.googleapis.com/kaggle-on-gcp-ad-campaign-assets/product-images/citrus-grove-sparkling-water-500ml.png"
+                                    }
+                                ],
+                                "note": "Click image_url links to view product images in browser"
+                            }
+                        }
+                    }
+                ],
+                "role": "user"
+            },
+            "invocationId": "e-03c5c6c7-d8ff-41e5-a4dd-024a94ae2596",
+            "author": "media_agent",
+            "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+            },
+            "nodeInfo": {
+                "path": "ad_campaign_agent@1/media_agent@1"
+            },
+            "id": "99a9f5bf-0bb4-4a43-9f0b-599eb353e92d",
+            "timestamp": 1784727347.551906
+        },
+        {
+            "modelVersion": "gemini-3.5-flash",
+            "content": {
+                "parts": [
+                    {
+                        "text": "I have found **2 beverage products** in the catalog:\n\n1. **Aurora Cold Brew (330ml)**\n   * **Product ID**: 23\n   * **Product Name**: `aurora-cold-brew-330ml`\n   * **Image URL**: [View Image](https://storage.googleapis.com/kaggle-on-gcp-ad-campaign-assets/product-images/aurora-cold-brew-330ml.png)\n\n2. **Citrus Grove Sparkling Water (500ml)**\n   * **Product ID**: 24\n   * **Product Name**: `citrus-grove-sparkling-water-500ml`\n   * **Image URL**: [View Image](https://storage.googleapis.com/kaggle-on-gcp-ad-campaign-assets/product-images/citrus-grove-sparkling-water-500ml.png)\n\nThese can be used with our **two-stage video generation pipeline** to generate product-centric promotional video ads. Let me know if you would like to generate an ad for either of these!",
+                        "thoughtSignature": "AY89a19gqtinALg_7VzXcI3mioIjwRaSciySxHX0Z8VCJD6UQ4UZf5qsF1uSkAAZ7nJhoNZIOUdNQ7sjv3YngIDkci0lQIfBNBsAmw0L27YqNfE6DLKZDtKxUFx42u9ThyvYSHuAi5Qqmeapvgtm5KygSJnPW5qVnRggGu-3GhfXhIbpLMvHg2OjJBi6TNZfkp4xcghJ-R_HW1ZRT_7JZaCaKLDtLEkwY1YbmdOYLaF430Cd6tlSJH0pBBlKr6V5ryI6_if7I0j9fwaJAbtMQ5Mhmr3n5k5UU7wsv2buif-5"
+                    }
+                ],
+                "role": "model"
+            },
+            "finishReason": "STOP",
+            "usageMetadata": {
+                "candidatesTokenCount": 246,
+                "candidatesTokensDetails": [
+                    {
+                        "modality": "TEXT",
+                        "tokenCount": 246
+                    }
+                ],
+                "promptTokenCount": 5755,
+                "promptTokensDetails": [
+                    {
+                        "modality": "TEXT",
+                        "tokenCount": 5755
+                    }
+                ],
+                "thoughtsTokenCount": 69,
+                "totalTokenCount": 6070,
+                "trafficType": "ON_DEMAND"
+            },
+            "invocationId": "e-03c5c6c7-d8ff-41e5-a4dd-024a94ae2596",
+            "author": "media_agent",
+            "actions": {
+                "stateDelta": {},
+                "artifactDelta": {},
+                "requestedAuthConfigs": {},
+                "requestedToolConfirmations": {}
+            },
+            "nodeInfo": {
+                "path": "ad_campaign_agent@1/media_agent@1"
+            },
+            "id": "7224672d-1375-4ab5-a59c-e504222b5398",
+            "timestamp": 1784727347.576697
+        }
+    ],
+    "lastUpdateTime": 1784727347.576697
+}

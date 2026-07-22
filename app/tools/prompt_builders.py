@@ -20,9 +20,51 @@ Stage 2: Video Animation Prompt - Animates the scene image
 
 from ..models.product import Product
 from ..models.variation import CreativeVariation
+from .prompt_archetypes import (
+    CONSUMABLE_HERO,
+    PRODUCT_HERO,
+    STAGED_PRODUCT,
+    WEARABLE,
+    resolve_archetype,
+)
+
+# Ad style policy (owner directive, ws09): all generated ads are music-only with a
+# clean frame — no rendered text and no spoken audio, for every archetype.
+_NO_TEXT_BLOCK = """NO TEXT OR GRAPHICS:
+- Do NOT render any text, words, numbers, labels, badges, captions, watermarks, or graphic overlays anywhere in the frame
+- The only text allowed is text that is physically part of the product's own packaging or label"""
+
+_AUDIO_BLOCK = """AUDIO & ON-SCREEN TEXT:
+- Instrumental background music only, matched to the mood and theme of the scene
+- No voiceover, no narration, no spoken words, no lyrics, no dialogue
+- No on-screen text, captions, subtitles, titles, badges, or graphic overlays"""
 
 
-def build_scene_image_prompt(
+def build_scene_image_prompt(product: Product, variation: CreativeVariation) -> str:
+    """Build a prompt for generating a scene-ready first frame image."""
+    archetype = resolve_archetype(product, variation)
+    if archetype == WEARABLE:
+        return _build_wearable_scene_prompt(product, variation)
+    return _build_product_scene_prompt(product, variation, archetype)
+
+
+def build_video_animation_prompt(product: Product, variation: CreativeVariation) -> str:
+    """Build a prompt focused on animating an existing scene image."""
+    archetype = resolve_archetype(product, variation)
+    if archetype == WEARABLE:
+        return _build_wearable_animation_prompt(product, variation)
+    return _build_product_animation_prompt(product, variation, archetype)
+
+
+def build_creative_prompt(product: Product, variation: CreativeVariation) -> str:
+    """Build a single-stage video prompt (fallback when not using two-stage)."""
+    archetype = resolve_archetype(product, variation)
+    if archetype == WEARABLE:
+        return _build_wearable_creative_prompt(product, variation)
+    return _build_product_creative_prompt(product, variation, archetype)
+
+
+def _build_wearable_scene_prompt(
     product: Product,
     variation: CreativeVariation
 ) -> str:
@@ -40,15 +82,11 @@ def build_scene_image_prompt(
     """
     # Extract product details (style -> category -> literal fallback preserved
     # from the pre-Product dict era; golden test pins the output)
-    garment_description = product.description
     garment_type = product.attributes.get("style") or product.category or "elegant fashion piece"
     color = product.attributes.get("color") or ""
     fabric = product.attributes.get("fabric") or ""
 
-    if garment_description:
-        garment_desc = f"{color} {fabric} {garment_type}".strip()
-    else:
-        garment_desc = f"{color} {fabric} {garment_type}".strip()
+    garment_desc = f"{color} {fabric} {garment_type}".strip()
 
     if not garment_desc:
         garment_desc = "elegant fashion piece"
@@ -61,9 +99,10 @@ def build_scene_image_prompt(
         "latina": "a vibrant Latina woman with warm features",
         "middle-eastern": "an elegant Middle Eastern woman with captivating eyes",
         "south-asian": "a beautiful South Asian woman with flowing dark hair",
-        "diverse": "a beautiful woman",
+        "diverse": "a confident, radiant woman with a warm, engaging presence",
     }
-    model_desc = variation.model_description or ethnicity_map.get(variation.model_ethnicity, "a beautiful woman")
+    model_desc = variation.model_description or ethnicity_map.get(
+        variation.model_ethnicity or "diverse", "a confident, radiant woman with a warm, engaging presence")
 
     # Build setting description
     setting_map = {
@@ -102,7 +141,7 @@ def build_scene_image_prompt(
         "posing": "striking an elegant fashion pose",
         "running": "in dynamic motion",
     }
-    pose_desc = pose_map.get(variation.activity, "in an elegant pose")
+    pose_desc = pose_map.get(variation.activity or "walking", "in an elegant pose")
 
     # Lighting
     lighting_map = {
@@ -171,12 +210,14 @@ HUMAN FIGURE QUALITY:
 - Natural skin texture and tone
 - Elegant, natural body posture
 
+{_NO_TEXT_BLOCK}
+
 Style: Luxury fashion campaign, magazine-quality, aspirational."""
 
     return prompt
 
 
-def build_video_animation_prompt(
+def _build_wearable_animation_prompt(
     product: Product,
     variation: CreativeVariation
 ) -> str:
@@ -201,7 +242,7 @@ def build_video_animation_prompt(
         "posing": "The model transitions between elegant poses fluidly",
         "running": "The model moves dynamically, fabric flowing with motion",
     }
-    activity_desc = activity_animation.get(variation.activity, "The model moves gracefully")
+    activity_desc = activity_animation.get(variation.activity or "walking", "The model moves gracefully")
 
     # Camera movement
     camera_map = {
@@ -260,12 +301,14 @@ HUMAN FIGURE QUALITY:
 - Fluid, natural body movement without anatomical errors
 - Consistent model appearance from start to end
 
+{_AUDIO_BLOCK}
+
 8 seconds. Vertical 9:16. Cinematic quality. Professional fashion video ad."""
 
     return prompt
 
 
-def build_creative_prompt(
+def _build_wearable_creative_prompt(
     product: Product,
     variation: CreativeVariation
 ) -> str:
@@ -294,9 +337,10 @@ def build_creative_prompt(
         "latina": "a vibrant Latina woman with warm features",
         "middle-eastern": "an elegant Middle Eastern woman with captivating eyes",
         "south-asian": "a beautiful South Asian woman with flowing dark hair",
-        "diverse": "a beautiful woman",
+        "diverse": "a confident, radiant woman with a warm, engaging presence",
     }
-    model_desc = variation.model_description or ethnicity_map.get(variation.model_ethnicity, "a beautiful woman")
+    model_desc = variation.model_description or ethnicity_map.get(
+        variation.model_ethnicity or "diverse", "a confident, radiant woman with a warm, engaging presence")
 
     # Build setting
     setting_map = {
@@ -334,7 +378,7 @@ def build_creative_prompt(
         "posing": "striking elegant poses",
         "running": "moving dynamically",
     }
-    activity_desc = activity_map.get(variation.activity, variation.activity)
+    activity_desc = activity_map.get(variation.activity or "walking", variation.activity)
 
     # Camera
     camera_map = {
@@ -389,6 +433,176 @@ HUMAN FIGURE QUALITY:
 - Properly proportioned hands and fingers
 - Fluid, natural body movement
 
+{_AUDIO_BLOCK}
+
 Professional high-end fashion advertisement. 8 seconds. Vertical 9:16 format."""
 
     return prompt
+
+
+# --- Product-centric prompt builders (non-wearable archetypes) ---
+
+_ARCHETYPE_SCENE_FLAVOR = {
+    CONSUMABLE_HERO: (
+        "Appetizing hero shot. Emphasize freshness and appetite appeal: "
+        "condensation on cold surfaces, gentle steam on hot items, vivid "
+        "natural textures of the ingredients."
+    ),
+    STAGED_PRODUCT: (
+        "Styled environment staging. Place the product in a realistic, "
+        "aspirational setting that shows how it lives in a customer's space, "
+        "with supporting props kept subtle and out of focus."
+    ),
+    PRODUCT_HERO: (
+        "Clean product hero shot. The product is the sole subject, centered, "
+        "with generous negative space and a premium, minimal backdrop."
+    ),
+}
+
+_PRODUCT_SETTING_MAP = {
+    "studio": "on a minimalist studio pedestal with a seamless backdrop",
+    "cafe": "on a rustic wooden cafe table with soft ambient depth behind it",
+    "urban": "against a stylish urban backdrop with modern architectural lines",
+    "beach": "on sun-warmed driftwood with the shoreline softly blurred behind",
+    "rooftop": "on a rooftop terrace ledge overlooking a city skyline",
+    "garden": "on a stone surface amid lush greenery and blooming flowers",
+    "street": "on a bistro table along a charming cobblestone street",
+    "luxury-interior": "on a marble surface in an opulent interior",
+    "nature": "on natural stone in a serene landscape",
+    "park": "on a picnic table in a sunlit park",
+}
+
+
+_TITLE_ACRONYMS = {"anc", "led", "usb", "uhd", "qsr", "tv"}
+
+
+def _product_title(product: Product) -> str:
+    """Display title from a slug-style name; keeps unit tokens like "330ml" verbatim."""
+    words = []
+    for word in product.name.replace("_", " ").replace("-", " ").split():
+        if word.lower() in _TITLE_ACRONYMS:
+            words.append(word.upper())
+        elif any(c.isdigit() for c in word):
+            words.append(word)
+        else:
+            words.append(word.capitalize())
+    return " ".join(words)
+
+
+def _with_article(phrase: str) -> str:
+    if phrase and phrase[0].lower() in "aeiou":
+        return f"an {phrase}"
+    return f"a {phrase}"
+
+
+def _render_attributes(product: Product) -> str:
+    if not product.attributes:
+        return ""
+    details = ", ".join(f"{k.replace('_', ' ')}: {v}" for k, v in sorted(product.attributes.items()))
+    return f"Product details: {details}."
+
+
+def _build_product_scene_prompt(product: Product, variation: CreativeVariation, archetype: str) -> str:
+    product_title = _product_title(product)
+    setting_desc = _PRODUCT_SETTING_MAP.get(
+        variation.setting, f"in {_with_article(variation.setting)} setting")
+    time_map = {
+        "golden-hour": "during golden hour with warm, soft light",
+        "sunrise": "at sunrise with soft pink and orange morning light",
+        "day": "in bright natural daylight",
+        "sunset": "at sunset with warm orange and purple hues",
+        "dusk": "at dusk with purple twilight ambiance",
+        "night": "at night with atmospheric city lights and ambient glow",
+        "morning": "in soft morning light",
+    }
+    time_desc = time_map.get(variation.time_of_day, "")
+    lighting_map = {
+        "natural": "Natural, soft lighting",
+        "studio": "Professional studio lighting with soft shadows",
+        "dramatic": "Dramatic contrast lighting with deep shadows",
+        "soft": "Soft, diffused ethereal lighting",
+        "golden": "Warm golden hour lighting",
+        "neon": "Atmospheric neon lighting with colorful accents",
+        "moody": "Moody, atmospheric low-key lighting",
+    }
+    lighting_desc = lighting_map.get(variation.lighting, f"{variation.lighting} lighting")
+    style_map = {
+        "cinematic": "Cinematic commercial product photography",
+        "editorial": "High-end editorial product photography",
+        "commercial": "Polished commercial advertising photography",
+        "artistic": "Artistic still-life product photography",
+        "documentary": "Natural documentary-style product photography",
+    }
+    style_desc = style_map.get(variation.visual_style, "Professional commercial product photography")
+    key_features = product.description or "its signature design details"
+    presented_clause = " ".join(filter(None, [setting_desc, time_desc]))
+    attrs = _render_attributes(product)
+    attr_line = f"\n{attrs}" if attrs else ""
+
+    return f"""{style_desc} of {product_title}, presented {presented_clause}.
+
+{_ARCHETYPE_SCENE_FLAVOR[archetype]}
+
+{lighting_desc}. The product is clearly visible with all its details: {key_features}.{attr_line}
+
+CRITICAL - PRODUCT PRESERVATION:
+- The product must match the reference EXACTLY - same shape, colors, materials, branding, and label design
+- Do NOT alter, modify, or reinterpret the product design, packaging, or logo in any way
+
+QUALITY REQUIREMENTS:
+- The product is the clear hero of the frame, sharply in focus
+- Professional advertisement quality with {_with_article(variation.mood)} mood
+- Vertical 9:16 aspect ratio composition
+- The scene should look like the perfect first frame of a premium video ad
+
+{_NO_TEXT_BLOCK}
+
+Style: Premium retail campaign, magazine-quality, aspirational."""
+
+
+def _build_product_animation_prompt(product: Product, variation: CreativeVariation, archetype: str) -> str:
+    camera_map = {
+        "orbit": "Camera slowly orbits around the product",
+        "pan": "Camera pans smoothly across the scene",
+        "dolly": "Camera dollies in slowly toward the product",
+        "static": "Camera holds steady with subtle breathing movement",
+        "tracking": "Camera glides alongside the product",
+        "crane": "Camera sweeps with elegant crane movement",
+        "handheld": "Camera has subtle natural handheld movement",
+    }
+    camera_desc = camera_map.get(variation.camera_movement, "Camera moves smoothly")
+    motion_flavor = {
+        CONSUMABLE_HERO: "condensation droplets glistening, gentle steam or fizz, "
+                         "ingredients settling naturally",
+        STAGED_PRODUCT: "ambient light shifting across surfaces, subtle environmental "
+                        "movement around the product",
+        PRODUCT_HERO: "light sweeping slowly across the product's surfaces",
+    }[archetype]
+    energy_map = {
+        "calm": "slow, graceful, meditative pace",
+        "moderate": "smooth, elegant movement",
+        "dynamic": "energetic, fluid motion",
+        "high-energy": "vibrant, dynamic, fast-paced movement",
+    }
+    energy_desc = energy_map.get(variation.energy, "smooth, elegant movement")
+    product_title = _product_title(product)
+
+    return f"""{camera_desc}, showcasing {product_title} from its most appealing angles.
+
+The scene has {motion_flavor}. The movement is {energy_desc}.
+
+CRITICAL - PRODUCT & QUALITY PRESERVATION:
+- Maintain the product's exact appearance from the first frame throughout the video
+- Branding, labels, and materials stay crisp and unaltered
+- Smooth, professional camera work
+- High-end retail advertisement aesthetic
+
+{_AUDIO_BLOCK}
+
+8 seconds. Vertical 9:16. Cinematic quality. Professional product video ad."""
+
+
+def _build_product_creative_prompt(product: Product, variation: CreativeVariation, archetype: str) -> str:
+    scene = _build_product_scene_prompt(product, variation, archetype)
+    motion = _build_product_animation_prompt(product, variation, archetype)
+    return f"{scene}\n\n{motion}"

@@ -103,7 +103,7 @@ else:
 
 # App metadata
 APP_NAME = "ad_campaign_agent"
-APP_DESCRIPTION = "Fashion retail ad campaign management agent with video generation"
+APP_DESCRIPTION = "Retail ad campaign management agent with video generation for in-store media networks"
 
 # Campaign categories — mirrors the CHECK constraint on campaigns.category
 # in app/database/db.py (the source of truth). Keep the two in sync.

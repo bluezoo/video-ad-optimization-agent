@@ -201,3 +201,27 @@ Target Downtown in Austin, Texas"
   and does NOT contain "fashion item" or "classic".
 - No traceback anywhere; product fields in responses are populated from the
   typed model (name/category present; no literal "None" strings).
+
+### Scene F5.2 — non-fashion video generation (workstream 09)
+
+**Query:** "Generate a video for the Aurora cold brew using a studio setting"
+
+**Expected tool calls:**
+- `generate_video_from_product` or `generate_video_with_variation` for the
+  aurora-cold-brew-330ml product (campaign resolved from F5.1's campaign or
+  created on the fly). Stage 1 + Stage 2 run (~1-4 min).
+
+**Pass criteria (check the trace, not prose):**
+- The scene/creative prompt visible in the trace (or the tool's debug output)
+  contains NONE of: "fashion", "garment", "wearing", "model wearing",
+  "she is" (case-insensitive) — it must read as a product-centric hero shot
+  (condensation/appetite cues for the beverage archetype).
+- The tool response surfaces `reference_image_used: false` with a warning that
+  no product image exists (retail SKUs ship without images until Phase 14a/15)
+  — generation still succeeds from the text description.
+- Video registered with status generated/pending review; filename derives from
+  a product-centric variation name (e.g. `beverage-studio-elegant`), NOT an
+  ethnicity-prefixed name.
+- FAIL if: a human model appears in the prompt text, any exception in the
+  trace, or the old fashion preamble ("model wearing this exact garment")
+  appears anywhere.

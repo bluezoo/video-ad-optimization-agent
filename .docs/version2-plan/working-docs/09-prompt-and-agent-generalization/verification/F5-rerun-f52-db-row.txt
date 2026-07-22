@@ -1,0 +1,21 @@
+{
+ "id": 11,
+ "campaign_id": 5,
+ "product_id": 23,
+ "video_filename": "aurora-cold-brew-330ml-072226-beverage-studio-elegant.mp4",
+ "gcs_path": null,
+ "local_path": "gs://kaggle-on-gcp-ad-campaign-assets/generated/aurora-cold-brew-330ml-072226-beverage-studio-elegant.mp4",
+ "thumbnail_path": "gs://kaggle-on-gcp-ad-campaign-assets/generated/aurora-cold-brew-330ml-072226-beverage-studio-elegant-thumbnail.png",
+ "scene_prompt": "Cinematic commercial product photography of Aurora Cold Brew 330ml, presented on a minimalist studio pedestal with a seamless backdrop in bright natural daylight.\n\nAppetizing hero shot. Emphasize freshness and appetite appeal: condensation on cold surfaces, gentle steam on hot items, vivid natural textures of the ingredients.\n\nNatural, soft lighting. The product is clearly visible with all its details: slow-steeped single-origin cold brew coffee in a slim can.\nProduct details: caffeine mg: 180, dietary tags: ['vegan', 'zero-sugar'], flavor: dark chocolate and toasted hazelnut notes, packaging: slim aluminum can, serving temperature: chilled, volume ml: 330.\n\nCRITICAL - PRODUCT PRESERVATION:\n- The product must match the reference EXACTLY - same shape, colors, materials, branding, and label design\n- Do NOT alter, modify, or reinterpret the product design, packaging, or logo in any way\n\nQUALITY REQUIREMENTS:\n- The product is the clear hero of the frame, sharply in focus\n- Professional advertisement quality with an elegant mood\n- Vertical 9:16 aspect ratio composition\n- The scene should look like the perfect first frame of a premium video ad\n\nStyle: Premium retail campaign, magazine-quality, aspirational.",
+ "video_prompt": "Camera slowly orbits around the product, showcasing Aurora Cold Brew 330ml from its most appealing angles.\n\nThe scene has condensation droplets glistening, gentle steam or fizz, ingredients settling naturally. The movement is smooth, elegant movement.\n\nCRITICAL - PRODUCT & QUALITY PRESERVATION:\n- Maintain the product's exact appearance from the first frame throughout the video\n- Branding, labels, and materials stay crisp and unaltered\n- Smooth, professional camera work\n- High-end retail advertisement aesthetic\n\n8 seconds. Vertical 9:16. Cinematic quality. Professional product video ad.",
+ "pipeline_type": "two-stage",
+ "variation_name": "beverage-studio-elegant",
+ "variation_params": "{\"name\": \"beverage-studio-elegant\", \"presentation_mode\": null, \"model_ethnicity\": \"diverse\", \"model_description\": \"\", \"setting\": \"studio\", \"location_detail\": \"\", \"season\": \"neutral\", \"time_of_day\": \"day\", \"weather\": \"clear\", \"mood\": \"elegant\", \"energy\": \"moderate\", \"camera_movement\": \"orbit\", \"camera_angle\": \"eye-level\", \"props\": [], \"activity\": \"walking\", \"lighting\": \"natural\", \"visual_style\": \"cinematic\", \"color_grading\": \"neutral\"}",
+ "duration_seconds": 8,
+ "aspect_ratio": "9:16",
+ "status": "generated",
+ "activated_at": null,
+ "activated_by": null,
+ "created_at": "2026-07-22 13:39:17",
+ "generation_time_seconds": 128
+}

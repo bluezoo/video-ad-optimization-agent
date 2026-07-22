@@ -1,4 +1,4 @@
-Cinematic fashion photography of a beautiful woman wearing a stunning classic black wool blend suiting tailored wide-leg trousers.
+Cinematic fashion photography of a graceful Asian woman with sleek dark hair wearing a stunning classic black wool blend suiting tailored wide-leg trousers.
 
 She is mid-stride in an elegant walking pose in a minimalist professional photography studio in bright natural daylight.
 
@@ -23,5 +23,9 @@ HUMAN FIGURE QUALITY:
 - Properly proportioned hands and fingers
 - Natural skin texture and tone
 - Elegant, natural body posture
+
+NO TEXT OR GRAPHICS:
+- Do NOT render any text, words, numbers, labels, badges, captions, watermarks, or graphic overlays anywhere in the frame
+- The only text allowed is text that is physically part of the product's own packaging or label
 
 Style: Luxury fashion campaign, magazine-quality, aspirational.

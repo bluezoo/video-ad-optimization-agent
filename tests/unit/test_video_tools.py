@@ -23,8 +23,9 @@ Tests the video-related tools:
 - generate_video_with_variation (marked slow - uses Veo)
 """
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
 
 
 class TestListProducts:
@@ -219,6 +220,23 @@ class TestCreativeVariation:
         assert variation.setting == "beach"
         assert variation.mood == "romantic"
 
+    def test_presentation_mode_defaults_to_none(self):
+        from app.models.variation import CreativeVariation
+        v = CreativeVariation(name="t")
+        assert v.presentation_mode is None
+
+    def test_presentation_mode_accepts_product_only(self):
+        from app.models.variation import CreativeVariation
+        v = CreativeVariation.model_validate({"name": "t", "presentation_mode": "product_only"})
+        assert v.presentation_mode == "product_only"
+
+    def test_human_fields_accept_none(self):
+        from app.models.variation import CreativeVariation
+        v = CreativeVariation.model_validate(
+            {"name": "t", "model_ethnicity": None, "activity": None, "model_description": None})
+        assert v.model_ethnicity is None
+        assert v.get_summary()  # must not raise
+
 
 class TestVideoGenerationParameters:
     """Tests for video generation parameter validation."""
@@ -240,6 +258,29 @@ class TestVideoGenerationParameters:
         except Exception:
             # If validation fails, the function should use defaults
             pass
+
+
+class TestVariationValidationLoud:
+    """ws09 Task 4: malformed variation input must fail loudly, not silently
+    fall back to defaults."""
+
+    @pytest.mark.asyncio
+    async def test_malformed_variation_returns_structured_error(self, test_db):
+        from app.tools.video_tools import generate_video_from_product
+        result = await generate_video_from_product(
+            campaign_id=1, product_id=1, variation={"model_ethnicity": ["not", "a", "string"]})
+        assert result.get("status") == "error"
+        assert "Invalid variation parameters" in result.get("error", "")
+
+    @pytest.mark.asyncio
+    async def test_with_model_on_beverage_errors(self, test_db):
+        from app.database.db import get_product_by_name
+        from app.tools.video_tools import generate_video_from_product
+        p = get_product_by_name("aurora-cold-brew-330ml")
+        result = await generate_video_from_product(
+            campaign_id=1, product_id=p.id, variation={"presentation_mode": "with_model"})
+        assert result.get("status") == "error"
+        assert "with_model" in result.get("error", "")
 
 
 @pytest.mark.slow

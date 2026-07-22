@@ -1,4 +1,4 @@
-Cinematic fashion video advertisement featuring a beautiful woman wearing a stunning classic black wool blend suiting tailored wide-leg trousers.
+Cinematic fashion video advertisement featuring a graceful Asian woman with sleek dark hair wearing a stunning classic black wool blend suiting tailored wide-leg trousers.
 
 She is walking gracefully in a minimalist professional studio in natural daylight.
 
@@ -15,5 +15,10 @@ HUMAN FIGURE QUALITY:
 - Natural, beautiful facial features - no distortion or artifacts
 - Properly proportioned hands and fingers
 - Fluid, natural body movement
+
+AUDIO & ON-SCREEN TEXT:
+- Instrumental background music only, matched to the mood and theme of the scene
+- No voiceover, no narration, no spoken words, no lyrics, no dialogue
+- No on-screen text, captions, subtitles, titles, badges, or graphic overlays
 
 Professional high-end fashion advertisement. 8 seconds. Vertical 9:16 format.

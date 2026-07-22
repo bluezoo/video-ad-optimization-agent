@@ -1,0 +1,745 @@
+2026-07-22 06:19:22,466 - INFO - service_factory.py:266 - Using in-memory memory service
+2026-07-22 06:19:22,466 - INFO - local_storage.py:89 - Using per-agent session storage rooted at /Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization
+2026-07-22 06:19:22,466 - INFO - local_storage.py:121 - Using per-agent artifact storage rooted at /Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization
+/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/cli/fast_api.py:566: UserWarning: [EXPERIMENTAL] InMemoryCredentialService: This feature is experimental and may change or be removed in future versions without notice. It may introduce breaking changes at any time.
+  credential_service = InMemoryCredentialService()
+/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/auth/credential_service/in_memory_credential_service.py:33: UserWarning: [EXPERIMENTAL] BaseCredentialService: This feature is experimental and may change or be removed in future versions without notice. It may introduce breaking changes at any time.
+  super().__init__()
+INFO:     Started server process [80182]
+INFO:     Waiting for application startup.
+
++-----------------------------------------------------------------------------+
+| ADK Web Server started                                                      |
+|                                                                             |
+| For local testing, access at http://127.0.0.1:8501.                         |
++-----------------------------------------------------------------------------+
+
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8501 (Press CTRL+C to quit)
+INFO:     127.0.0.1:54742 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54745 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54747 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54752 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54754 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54759 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54761 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54763 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54765 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54768 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54770 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54772 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54775 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54777 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54779 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54781 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54783 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54785 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54787 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54790 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54792 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54794 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54796 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54799 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54802 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54808 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54810 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54812 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54814 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54816 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54818 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54820 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:54820 - "GET /dev-ui/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54825 - "GET /dev-ui/?app=app HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54825 - "GET /dev-ui/chunk-PDRDFWTH.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54827 - "GET /dev-ui/chunk-UFYCV57Y.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54833 - "GET /dev-ui/chunk-QL2SWWYM.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54832 - "GET /dev-ui/chunk-ZMOC4H7T.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54834 - "GET /dev-ui/chunk-VZBWMYZM.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54836 - "GET /dev-ui/chunk-FDMPUWDP.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54825 - "GET /dev-ui/chunk-3TW5HJSC.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54827 - "GET /dev-ui/chunk-NRMNZ7EH.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54832 - "GET /dev-ui/chunk-PRKFGJVH.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54834 - "GET /dev-ui/polyfills-5CFQRCPP.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54833 - "GET /dev-ui/chunk-VWUZC4UJ.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54836 - "GET /dev-ui/main-J55AWKXR.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54836 - "GET /dev-ui/styles-LBC36Z6S.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54836 - "GET /dev-ui/chunk-4V3PIBXT.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54833 - "GET /dev-ui/chunk-UKZIEWH5.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54832 - "GET /dev-ui/chunk-GP6TCC26.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54834 - "GET /dev-ui/chunk-37QI3DOO.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54825 - "GET /dev-ui/chunk-F57K64GP.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54827 - "GET /dev-ui/chunk-JRNAXTJ7.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54836 - "GET /dev-ui/chunk-URMDZFG4.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54833 - "GET /dev-ui/chunk-2SRK2U7X.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54832 - "GET /dev-ui/chunk-RMXJBC7V.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54832 - "GET /dev-ui/assets/config/runtime-config.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54832 - "GET /dev-ui/prism-dark.css HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54833 - "GET /list-apps?relative_path=./ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54832 - "GET /version HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54836 - "GET /dev-ui/assets/ADK-512-color.svg HTTP/1.1" 304 Not Modified
+2026-07-22 06:20:37,004 - INFO - envs.py:83 - Loaded .env file for app at /Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/app/.env
+2026-07-22 06:20:37,867 - INFO - agent_loader.py:170 - Found root_agent in app.agent
+INFO:     127.0.0.1:54836 - "GET /dev/apps/app/build_graph HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54832 - "GET /dev/apps/app/build_graph_image?dark_mode=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54833 - "GET /dev/apps/app/build_graph_image?dark_mode=true HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54827 - "GET /dev/apps/app/builder?ts=1784726436996 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54825 - "GET /dev/apps/app/eval_sets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54834 - "GET /dev/apps/app/eval_results HTTP/1.1" 200 OK
+2026-07-22 06:20:45,183 - INFO - local_storage.py:65 - Creating local session service at /Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/app/.adk/session.db
+INFO:     127.0.0.1:54839 - "GET /apps/app/users/user/sessions HTTP/1.1" 200 OK
+2026-07-22 06:21:00,632 - INFO - api_server.py:948 - New session created: 39659fc3-ebf4-459c-99ba-8c4d6ae98227
+INFO:     127.0.0.1:54849 - "POST /apps/app/users/user/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54849 - "POST /run_sse HTTP/1.1" 200 OK
+/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/tools/function_tool.py:96: UserWarning: [EXPERIMENTAL] feature FeatureName.JSON_SCHEMA_FOR_FUNC_DECL is enabled.
+  build_function_declaration(
+2026-07-22 06:21:01,194 - INFO - google_llm.py:217 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-07-22 06:21:09,618 - INFO - google_llm.py:287 - Response received from the model.
+2026-07-22 06:21:09,663 - INFO - google_llm.py:217 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-07-22 06:21:16,037 - INFO - google_llm.py:287 - Response received from the model.
+2026-07-22 06:21:16,091 - INFO - google_llm.py:217 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-07-22 06:21:23,009 - INFO - google_llm.py:287 - Response received from the model.
+INFO:     127.0.0.1:54849 - "GET /dev/apps/app/debug/trace/session/39659fc3-ebf4-459c-99ba-8c4d6ae98227 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54896 - "POST /run_sse HTTP/1.1" 200 OK
+2026-07-22 06:21:45,833 - INFO - google_llm.py:217 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-07-22 06:21:52,599 - INFO - google_llm.py:287 - Response received from the model.
+2026-07-22 06:21:52,627 - INFO - google_llm.py:217 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-07-22 06:21:59,832 - INFO - google_llm.py:287 - Response received from the model.
+2026-07-22 06:21:59,915 - INFO - google_llm.py:217 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-07-22 06:22:03,870 - INFO - google_llm.py:287 - Response received from the model.
+INFO:     127.0.0.1:54896 - "GET /dev/apps/app/debug/trace/session/39659fc3-ebf4-459c-99ba-8c4d6ae98227 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54930 - "POST /run_sse HTTP/1.1" 200 OK
+2026-07-22 06:22:37,330 - INFO - google_llm.py:217 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-07-22 06:22:41,735 - INFO - google_llm.py:287 - Response received from the model.
+2026-07-22 06:22:41,791 - INFO - google_llm.py:217 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-07-22 06:22:42,994 - ERROR - _node_runner.py:154 - Node execution failed with exception
+Traceback (most recent call last):
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/models/google_llm.py", line 282, in generate_content_async
+    response = await self.api_client.aio.models.generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/models.py", line 8711, in generate_content
+    return await self._generate_content(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/models.py", line 7185, in _generate_content
+    response = await self._api_client.async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/_api_client.py", line 1746, in async_request
+    result = await self._async_request(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/_api_client.py", line 1679, in _async_request
+    return await self._async_retry(  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/asyncio/__init__.py", line 112, in __call__
+    do = await self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/asyncio/__init__.py", line 157, in iter
+    result = await action(retry_state)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/_utils.py", line 111, in inner
+    return call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+          ^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/asyncio/__init__.py", line 116, in __call__
+    result = await fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/_api_client.py", line 1607, in _async_request_once
+    await errors.APIError.raise_for_async_response(response)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/errors.py", line 247, in raise_for_async_response
+    await cls.raise_error_async(status_code, response_json, response)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/errors.py", line 269, in raise_error_async
+    raise ClientError(status_code, response_json, response)
+google.genai.errors.ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource exhausted. Please try again later. Please refer to https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429 for more details.', 'status': 'RESOURCE_EXHAUSTED'}}
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_node_runner.py", line 136, in run
+    await self._execute_node(ctx, node_input)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_node_runner.py", line 274, in _execute_node
+    await self._run_node_loop(ctx, node_input)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_node_runner.py", line 288, in _run_node_loop
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_base_node.py", line 166, in run
+    async for item in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/agents/llm_agent.py", line 601, in _run_impl
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_llm_agent_wrapper.py", line 370, in run_llm_agent_as_node
+    async for event in run_iter:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/agents/base_agent.py", line 306, in run_async
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/agents/llm_agent.py", line 550, in _run_async_impl
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 932, in run_async
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1011, in _run_one_step_async
+    async for llm_response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1453, in _call_llm_async
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1431, in _call_llm_with_tracing
+    async for llm_response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1514, in _run_and_handle_error
+    async for response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 418, in _run_and_handle_error
+    raise model_error
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 395, in _run_and_handle_error
+    async for llm_response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/models/google_llm.py", line 302, in generate_content_async
+    raise _ResourceExhaustedError(ce) from ce
+google.adk.models.google_llm._ResourceExhaustedError: 
+On how to mitigate this issue, please refer to:
+
+https://google.github.io/adk-docs/agents/models/google-gemini/#error-code-429-resource_exhausted
+
+
+429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource exhausted. Please try again later. Please refer to https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429 for more details.', 'status': 'RESOURCE_EXHAUSTED'}}
+2026-07-22 06:22:42,998 - ERROR - runners.py:910 - Root node ad_campaign_agent failed.
+Traceback (most recent call last):
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/models/google_llm.py", line 282, in generate_content_async
+    response = await self.api_client.aio.models.generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/models.py", line 8711, in generate_content
+    return await self._generate_content(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/models.py", line 7185, in _generate_content
+    response = await self._api_client.async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/_api_client.py", line 1746, in async_request
+    result = await self._async_request(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/_api_client.py", line 1679, in _async_request
+    return await self._async_retry(  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/asyncio/__init__.py", line 112, in __call__
+    do = await self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/asyncio/__init__.py", line 157, in iter
+    result = await action(retry_state)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/_utils.py", line 111, in inner
+    return call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+          ^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/asyncio/__init__.py", line 116, in __call__
+    result = await fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/_api_client.py", line 1607, in _async_request_once
+    await errors.APIError.raise_for_async_response(response)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/errors.py", line 247, in raise_for_async_response
+    await cls.raise_error_async(status_code, response_json, response)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/errors.py", line 269, in raise_error_async
+    raise ClientError(status_code, response_json, response)
+google.genai.errors.ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource exhausted. Please try again later. Please refer to https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429 for more details.', 'status': 'RESOURCE_EXHAUSTED'}}
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/runners.py", line 906, in _cleanup_root_task
+    await task
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/runners.py", line 610, in _drive_root_node
+    raise e.error
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_node_runner.py", line 136, in run
+    await self._execute_node(ctx, node_input)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_node_runner.py", line 274, in _execute_node
+    await self._run_node_loop(ctx, node_input)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_node_runner.py", line 288, in _run_node_loop
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_base_node.py", line 166, in run
+    async for item in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/agents/llm_agent.py", line 601, in _run_impl
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_llm_agent_wrapper.py", line 370, in run_llm_agent_as_node
+    async for event in run_iter:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/agents/base_agent.py", line 306, in run_async
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/agents/llm_agent.py", line 550, in _run_async_impl
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 932, in run_async
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1011, in _run_one_step_async
+    async for llm_response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1453, in _call_llm_async
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1431, in _call_llm_with_tracing
+    async for llm_response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1514, in _run_and_handle_error
+    async for response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 418, in _run_and_handle_error
+    raise model_error
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 395, in _run_and_handle_error
+    async for llm_response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/models/google_llm.py", line 302, in generate_content_async
+    raise _ResourceExhaustedError(ce) from ce
+google.adk.models.google_llm._ResourceExhaustedError: 
+On how to mitigate this issue, please refer to:
+
+https://google.github.io/adk-docs/agents/models/google-gemini/#error-code-429-resource_exhausted
+
+
+429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource exhausted. Please try again later. Please refer to https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429 for more details.', 'status': 'RESOURCE_EXHAUSTED'}}
+2026-07-22 06:22:43,001 - ERROR - api_server.py:1700 - Error in event_generator: 
+On how to mitigate this issue, please refer to:
+
+https://google.github.io/adk-docs/agents/models/google-gemini/#error-code-429-resource_exhausted
+
+
+429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource exhausted. Please try again later. Please refer to https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429 for more details.', 'status': 'RESOURCE_EXHAUSTED'}}
+Traceback (most recent call last):
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/models/google_llm.py", line 282, in generate_content_async
+    response = await self.api_client.aio.models.generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/models.py", line 8711, in generate_content
+    return await self._generate_content(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/models.py", line 7185, in _generate_content
+    response = await self._api_client.async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/_api_client.py", line 1746, in async_request
+    result = await self._async_request(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/_api_client.py", line 1679, in _async_request
+    return await self._async_retry(  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/asyncio/__init__.py", line 112, in __call__
+    do = await self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/asyncio/__init__.py", line 157, in iter
+    result = await action(retry_state)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/_utils.py", line 111, in inner
+    return call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+          ^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/asyncio/__init__.py", line 116, in __call__
+    result = await fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/_api_client.py", line 1607, in _async_request_once
+    await errors.APIError.raise_for_async_response(response)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/errors.py", line 247, in raise_for_async_response
+    await cls.raise_error_async(status_code, response_json, response)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/errors.py", line 269, in raise_error_async
+    raise ClientError(status_code, response_json, response)
+google.genai.errors.ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource exhausted. Please try again later. Please refer to https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429 for more details.', 'status': 'RESOURCE_EXHAUSTED'}}
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/cli/api_server.py", line 1672, in event_generator
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/runners.py", line 1111, in run_async
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/runners.py", line 628, in _run_node_async
+    await self._cleanup_root_task(task, self.agent.name)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/runners.py", line 906, in _cleanup_root_task
+    await task
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/runners.py", line 610, in _drive_root_node
+    raise e.error
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_node_runner.py", line 136, in run
+    await self._execute_node(ctx, node_input)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_node_runner.py", line 274, in _execute_node
+    await self._run_node_loop(ctx, node_input)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_node_runner.py", line 288, in _run_node_loop
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_base_node.py", line 166, in run
+    async for item in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/agents/llm_agent.py", line 601, in _run_impl
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_llm_agent_wrapper.py", line 370, in run_llm_agent_as_node
+    async for event in run_iter:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/agents/base_agent.py", line 306, in run_async
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/agents/llm_agent.py", line 550, in _run_async_impl
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 932, in run_async
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1011, in _run_one_step_async
+    async for llm_response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1453, in _call_llm_async
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1431, in _call_llm_with_tracing
+    async for llm_response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1514, in _run_and_handle_error
+    async for response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 418, in _run_and_handle_error
+    raise model_error
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 395, in _run_and_handle_error
+    async for llm_response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/models/google_llm.py", line 302, in generate_content_async
+    raise _ResourceExhaustedError(ce) from ce
+google.adk.models.google_llm._ResourceExhaustedError: 
+On how to mitigate this issue, please refer to:
+
+https://google.github.io/adk-docs/agents/models/google-gemini/#error-code-429-resource_exhausted
+
+
+429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource exhausted. Please try again later. Please refer to https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429 for more details.', 'status': 'RESOURCE_EXHAUSTED'}}
+INFO:     127.0.0.1:54930 - "GET /dev/apps/app/debug/trace/session/39659fc3-ebf4-459c-99ba-8c4d6ae98227 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55012 - "POST /run_sse HTTP/1.1" 200 OK
+2026-07-22 06:25:00,637 - INFO - google_llm.py:217 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-07-22 06:25:04,291 - INFO - google_llm.py:287 - Response received from the model.
+2026-07-22 06:25:05,123 - INFO - models.py:6542 - AFC is enabled with max remote calls: 10.
+2026-07-22 06:25:33,576 - INFO - _client.py:1025 - HTTP Request: POST https://aiplatform.googleapis.com/v1beta1/projects/kaggle-on-gcp/locations/global/publishers/google/models/gemini-3-pro-image:generateContent "HTTP/1.1 200 OK"
+2026-07-22 06:25:48,003 - INFO - _client.py:1025 - HTTP Request: POST https://aiplatform.googleapis.com/v1beta1/projects/kaggle-on-gcp/locations/global/publishers/google/models/veo-3.1-generate-001:predictLongRunning "HTTP/1.1 200 OK"
+2026-07-22 06:26:08,250 - INFO - _client.py:1025 - HTTP Request: POST https://aiplatform.googleapis.com/v1beta1/projects/kaggle-on-gcp/locations/global/publishers/google/models/veo-3.1-generate-001:fetchPredictOperation "HTTP/1.1 200 OK"
+2026-07-22 06:26:38,665 - INFO - _client.py:1025 - HTTP Request: POST https://aiplatform.googleapis.com/v1beta1/projects/kaggle-on-gcp/locations/global/publishers/google/models/veo-3.1-generate-001:fetchPredictOperation "HTTP/1.1 200 OK"
+2026-07-22 06:27:09,722 - INFO - _client.py:1025 - HTTP Request: POST https://aiplatform.googleapis.com/v1beta1/projects/kaggle-on-gcp/locations/global/publishers/google/models/veo-3.1-generate-001:fetchPredictOperation "HTTP/1.1 200 OK"
+2026-07-22 06:27:11,031 - INFO - local_storage.py:130 - Using file artifact service at /Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/app/.adk/artifacts
+2026-07-22 06:27:11,112 - INFO - google_llm.py:217 - Sending out request, model: gemini-3.5-flash, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+[DEBUG generate_video_from_product] Starting for campaign_id=6, product_id=23
+[DEBUG generate_video_from_product] Product: aurora-cold-brew-330ml
+[DEBUG generate_video_from_product] Campaign: Aurora Cold Brew 330Ml - Target Downtown
+[DEBUG generate_video_from_product] Variation: diverse-studio-elegant
+[DEBUG generate_video_from_product] Linked product to campaign
+[DEBUG generate_video_from_product] Product image not found: aurora-cold-brew-330ml.png
+[DEBUG generate_video_from_product] Stage 1: Generating scene image...
+[DEBUG generate_scene_image] Starting scene generation for product: aurora-cold-brew-330ml
+[DEBUG generate_scene_image] Variation: beverage-studio-elegant
+[DEBUG generate_scene_image] Scene prompt: Cinematic commercial product photography of Aurora Cold Brew 330ml, presented on a minimalist studio pedestal with a seamless backdrop in bright natural daylight.
+
+Appetizing hero shot. Emphasize fres...
+[DEBUG generate_scene_image] Scene image generated: 1172436 bytes
+[DEBUG generate_video_from_product] Saved thumbnail: gs://kaggle-on-gcp-ad-campaign-assets/generated/aurora-cold-brew-330ml-072226-beverage-studio-elegant-thumbnail.png
+[DEBUG generate_video_from_product] Stage 2: Animating with Veo 3.1...
+[DEBUG animate_scene_with_veo] Starting animation for: aurora-cold-brew-330ml
+[DEBUG animate_scene_with_veo] Duration: 8s
+[DEBUG animate_scene_with_veo] Animation prompt: Camera slowly orbits around the product, showcasing Aurora Cold Brew 330ml from its most appealing angles.
+
+The scene has condensation droplets glistening, gentle steam or fizz, ingredients settling n...
+[DEBUG animate_scene_with_veo] Calling Veo (veo-3.1-generate-001)...
+[DEBUG animate_scene_with_veo] Waiting... (0s elapsed)
+[DEBUG animate_scene_with_veo] Waiting... (20s elapsed)
+[DEBUG animate_scene_with_veo] Waiting... (40s elapsed)
+[DEBUG animate_scene_with_veo] Operation completed after 60s
+[DEBUG animate_scene_with_veo] GOOGLE_GENAI_USE_VERTEXAI=TRUE, is_vertex_ai=True
+[DEBUG animate_scene_with_veo] Video generated: 2423664 bytes
+[DEBUG generate_video_from_product] Total generation time: 124s
+[DEBUG generate_video_from_product] Saved video: gs://kaggle-on-gcp-ad-campaign-assets/generated/aurora-cold-brew-330ml-072226-beverage-studio-elegant.mp4
+[DEBUG save_video_metadata] Saved metadata to: gs://kaggle-on-gcp-ad-campaign-assets/generated/aurora-cold-brew-330ml-072226-beverage-studio-elegant.txt
+[DEBUG generate_video_from_product] Saved artifact version: 0
+[DEBUG generate_video_from_product] Error: UNIQUE constraint failed: campaign_videos.video_filename
+[DEBUG generate_video_from_product] Traceback: Traceback (most recent call last):
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/app/tools/video_tools.py", line 683, in generate_video_from_product
+    cursor.execute('''
+sqlite3.IntegrityError: UNIQUE constraint failed: campaign_videos.video_filename
+
+INFO:     127.0.0.1:55062 - "GET /apps/app/users/user/sessions/39659fc3-ebf4-459c-99ba-8c4d6ae98227/artifacts/aurora-cold-brew-330ml-072226-beverage-studio-elegant.mp4/versions/0 HTTP/1.1" 200 OK
+2026-07-22 06:27:12,773 - ERROR - _node_runner.py:154 - Node execution failed with exception
+Traceback (most recent call last):
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/models/google_llm.py", line 282, in generate_content_async
+    response = await self.api_client.aio.models.generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/models.py", line 8711, in generate_content
+    return await self._generate_content(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/models.py", line 7185, in _generate_content
+    response = await self._api_client.async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/_api_client.py", line 1746, in async_request
+    result = await self._async_request(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/_api_client.py", line 1679, in _async_request
+    return await self._async_retry(  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/asyncio/__init__.py", line 112, in __call__
+    do = await self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/asyncio/__init__.py", line 157, in iter
+    result = await action(retry_state)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/_utils.py", line 111, in inner
+    return call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+          ^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/asyncio/__init__.py", line 116, in __call__
+    result = await fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/_api_client.py", line 1607, in _async_request_once
+    await errors.APIError.raise_for_async_response(response)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/errors.py", line 247, in raise_for_async_response
+    await cls.raise_error_async(status_code, response_json, response)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/errors.py", line 269, in raise_error_async
+    raise ClientError(status_code, response_json, response)
+google.genai.errors.ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource exhausted. Please try again later. Please refer to https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429 for more details.', 'status': 'RESOURCE_EXHAUSTED'}}
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_node_runner.py", line 136, in run
+    await self._execute_node(ctx, node_input)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_node_runner.py", line 274, in _execute_node
+    await self._run_node_loop(ctx, node_input)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_node_runner.py", line 288, in _run_node_loop
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_base_node.py", line 166, in run
+    async for item in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/agents/llm_agent.py", line 601, in _run_impl
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_llm_agent_wrapper.py", line 370, in run_llm_agent_as_node
+    async for event in run_iter:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/agents/base_agent.py", line 306, in run_async
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/agents/llm_agent.py", line 550, in _run_async_impl
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 932, in run_async
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1011, in _run_one_step_async
+    async for llm_response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1453, in _call_llm_async
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1431, in _call_llm_with_tracing
+    async for llm_response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1514, in _run_and_handle_error
+    async for response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 418, in _run_and_handle_error
+    raise model_error
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 395, in _run_and_handle_error
+    async for llm_response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/models/google_llm.py", line 302, in generate_content_async
+    raise _ResourceExhaustedError(ce) from ce
+google.adk.models.google_llm._ResourceExhaustedError: 
+On how to mitigate this issue, please refer to:
+
+https://google.github.io/adk-docs/agents/models/google-gemini/#error-code-429-resource_exhausted
+
+
+429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource exhausted. Please try again later. Please refer to https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429 for more details.', 'status': 'RESOURCE_EXHAUSTED'}}
+2026-07-22 06:27:12,779 - ERROR - runners.py:910 - Root node ad_campaign_agent failed.
+Traceback (most recent call last):
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/models/google_llm.py", line 282, in generate_content_async
+    response = await self.api_client.aio.models.generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/models.py", line 8711, in generate_content
+    return await self._generate_content(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/models.py", line 7185, in _generate_content
+    response = await self._api_client.async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/_api_client.py", line 1746, in async_request
+    result = await self._async_request(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/_api_client.py", line 1679, in _async_request
+    return await self._async_retry(  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/asyncio/__init__.py", line 112, in __call__
+    do = await self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/asyncio/__init__.py", line 157, in iter
+    result = await action(retry_state)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/_utils.py", line 111, in inner
+    return call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+          ^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/asyncio/__init__.py", line 116, in __call__
+    result = await fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/_api_client.py", line 1607, in _async_request_once
+    await errors.APIError.raise_for_async_response(response)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/errors.py", line 247, in raise_for_async_response
+    await cls.raise_error_async(status_code, response_json, response)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/errors.py", line 269, in raise_error_async
+    raise ClientError(status_code, response_json, response)
+google.genai.errors.ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource exhausted. Please try again later. Please refer to https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429 for more details.', 'status': 'RESOURCE_EXHAUSTED'}}
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/runners.py", line 906, in _cleanup_root_task
+    await task
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/runners.py", line 610, in _drive_root_node
+    raise e.error
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_node_runner.py", line 136, in run
+    await self._execute_node(ctx, node_input)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_node_runner.py", line 274, in _execute_node
+    await self._run_node_loop(ctx, node_input)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_node_runner.py", line 288, in _run_node_loop
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_base_node.py", line 166, in run
+    async for item in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/agents/llm_agent.py", line 601, in _run_impl
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_llm_agent_wrapper.py", line 370, in run_llm_agent_as_node
+    async for event in run_iter:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/agents/base_agent.py", line 306, in run_async
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/agents/llm_agent.py", line 550, in _run_async_impl
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 932, in run_async
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1011, in _run_one_step_async
+    async for llm_response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1453, in _call_llm_async
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1431, in _call_llm_with_tracing
+    async for llm_response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1514, in _run_and_handle_error
+    async for response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 418, in _run_and_handle_error
+    raise model_error
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 395, in _run_and_handle_error
+    async for llm_response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/models/google_llm.py", line 302, in generate_content_async
+    raise _ResourceExhaustedError(ce) from ce
+google.adk.models.google_llm._ResourceExhaustedError: 
+On how to mitigate this issue, please refer to:
+
+https://google.github.io/adk-docs/agents/models/google-gemini/#error-code-429-resource_exhausted
+
+
+429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource exhausted. Please try again later. Please refer to https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429 for more details.', 'status': 'RESOURCE_EXHAUSTED'}}
+2026-07-22 06:27:12,783 - ERROR - api_server.py:1700 - Error in event_generator: 
+On how to mitigate this issue, please refer to:
+
+https://google.github.io/adk-docs/agents/models/google-gemini/#error-code-429-resource_exhausted
+
+
+429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource exhausted. Please try again later. Please refer to https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429 for more details.', 'status': 'RESOURCE_EXHAUSTED'}}
+Traceback (most recent call last):
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/models/google_llm.py", line 282, in generate_content_async
+    response = await self.api_client.aio.models.generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/models.py", line 8711, in generate_content
+    return await self._generate_content(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/models.py", line 7185, in _generate_content
+    response = await self._api_client.async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/_api_client.py", line 1746, in async_request
+    result = await self._async_request(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/_api_client.py", line 1679, in _async_request
+    return await self._async_retry(  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/asyncio/__init__.py", line 112, in __call__
+    do = await self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/asyncio/__init__.py", line 157, in iter
+    result = await action(retry_state)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/_utils.py", line 111, in inner
+    return call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+          ^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/tenacity/asyncio/__init__.py", line 116, in __call__
+    result = await fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/_api_client.py", line 1607, in _async_request_once
+    await errors.APIError.raise_for_async_response(response)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/errors.py", line 247, in raise_for_async_response
+    await cls.raise_error_async(status_code, response_json, response)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/genai/errors.py", line 269, in raise_error_async
+    raise ClientError(status_code, response_json, response)
+google.genai.errors.ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource exhausted. Please try again later. Please refer to https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429 for more details.', 'status': 'RESOURCE_EXHAUSTED'}}
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/cli/api_server.py", line 1672, in event_generator
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/runners.py", line 1111, in run_async
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/runners.py", line 628, in _run_node_async
+    await self._cleanup_root_task(task, self.agent.name)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/runners.py", line 906, in _cleanup_root_task
+    await task
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/runners.py", line 610, in _drive_root_node
+    raise e.error
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_node_runner.py", line 136, in run
+    await self._execute_node(ctx, node_input)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_node_runner.py", line 274, in _execute_node
+    await self._run_node_loop(ctx, node_input)
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_node_runner.py", line 288, in _run_node_loop
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_base_node.py", line 166, in run
+    async for item in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/agents/llm_agent.py", line 601, in _run_impl
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/workflow/_llm_agent_wrapper.py", line 370, in run_llm_agent_as_node
+    async for event in run_iter:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/agents/base_agent.py", line 306, in run_async
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/agents/llm_agent.py", line 550, in _run_async_impl
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 932, in run_async
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1011, in _run_one_step_async
+    async for llm_response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1453, in _call_llm_async
+    async for event in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1431, in _call_llm_with_tracing
+    async for llm_response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 1514, in _run_and_handle_error
+    async for response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 418, in _run_and_handle_error
+    raise model_error
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 395, in _run_and_handle_error
+    async for llm_response in agen:
+  File "/Users/lavi/gwork/video-ad-optimization-agent/.claude/worktrees/version_2_prompt-generalization/.venv/lib/python3.12/site-packages/google/adk/models/google_llm.py", line 302, in generate_content_async
+    raise _ResourceExhaustedError(ce) from ce
+google.adk.models.google_llm._ResourceExhaustedError: 
+On how to mitigate this issue, please refer to:
+
+https://google.github.io/adk-docs/agents/models/google-gemini/#error-code-429-resource_exhausted
+
+
+429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource exhausted. Please try again later. Please refer to https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429 for more details.', 'status': 'RESOURCE_EXHAUSTED'}}
+INFO:     127.0.0.1:55012 - "GET /dev/apps/app/debug/trace/session/39659fc3-ebf4-459c-99ba-8c4d6ae98227 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55094 - "GET /apps/app/users/user/sessions/39659fc3-ebf4-459c-99ba-8c4d6ae98227 HTTP/1.1" 200 OK

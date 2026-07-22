@@ -71,6 +71,29 @@
         }
       ],
       "session_input": null
+    },
+    {
+      "eval_id": "create-campaign-beverage",
+      "conversation": [
+        {
+          "invocation_id": "test-c04",
+          "user_content": {
+            "parts": [{"text": "Create a campaign for the Aurora cold brew at Target Downtown in Austin, Texas"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "Your campaign for Aurora Cold Brew at Target Downtown in Austin, Texas has been created."}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {"name": "create_campaign", "args": {"product_id": 23, "store_name": "Target Downtown", "city": "Austin", "state": "Texas"}}
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": null
     }
   ],
   "creation_timestamp": 1735000000.0
