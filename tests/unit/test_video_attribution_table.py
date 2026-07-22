@@ -21,6 +21,10 @@ class TestVideoAttributionTable:
         with get_db_cursor() as cursor:
             cursor.execute("SELECT id FROM campaign_videos LIMIT 1")
             video_id = cursor.fetchone()["id"]
+            # Phase 10 bulk seed (mock_data.populate_mock_data) pre-opens
+            # windows for every activated video; clear them so this test's
+            # roundtrip is isolated to the single window it manages.
+            cursor.execute("DELETE FROM video_attribution WHERE video_id = ?", (video_id,))
             cursor.execute(
                 """
                 INSERT INTO video_attribution
