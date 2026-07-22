@@ -50,3 +50,19 @@ Owner approved the six-dimension restatement as-is ("Yes — approved, write the
 ## 2026-07-22 — checkpoint 3: plan approved
 
 Owner approved the 8-task implementation plan (plan.md, commit 3eaf5e4): DTOs → video_attribution table → screens/schedule → join+facade → HITL bridge → bulk seed windows → docs/F6/demo_guide → gates. Execution via subagent-driven-development.
+
+## 2026-07-22 — checkpoint 4: all plan tasks complete (mirrors .superpowers/sdd/progress.md)
+
+Implementation via ultracode workflow wf_c4a0486e-109 (14 agents, 7 implement+review pairs, zero fix rounds needed — every task spec-compliant and quality-approved on round 1):
+
+- Task 1 complete (f2661fd..af73b8c) — DTOs; BlueZooVisitInterval validates seed frames verbatim, extra="forbid".
+- Task 2 complete (..351eac1) — video_attribution table + index + reset drop; stale local campaigns.db cleared.
+- Task 3 complete (..eebad9f) — screens_for_campaign (2-3 screens, ids != campaign id), slot_budget, expand_ad_plays; absoluteness pinned.
+- Task 4 complete (..ddf1aed) — derive_rows_from_windows join; derive.py rewritten as signature-stable facade; test_demo_derive.py replaced by test_demo_attribution.py (21 tests).
+- Task 5 complete (..e68b496) — dual-write bridge; metrics derive through stored windows (load-bearing, proven by test); close-on-miss warns.
+- Task 6 complete (..b53071e) — bulk seed path opens windows; scoped isolation fix to task-2's roundtrip test (flagged, reviewer-approved).
+- Task 7 complete (..734c66f) — METRICS.md derivation notes, BLUEZOO_MAPPING.md fixes, fashion.md scene F6, demo_guide.md refreshed. NOTE: brief's METRICS.md find-and-replace target text never existed there (formulas lived in BLUEZOO_MAPPING.md only) — implementer added equivalent "Derivation (demo mode)" content instead; reviewer verified against base.
+- Task 8 gates (inline): make test-unit 241 passed / make test-e2e 25 passed; tests/unit/test_metrics_tools.py provably untouched (empty diff vs 759d0c8) = consumers-insulated proof; lint delta -1 vs base (6 pre-existing legacy typing errors remain in review_tools.py, were 7); fresh-DB smoke: 26 windows, 10 distinct screens, 300 metric rows.
+- Housekeeping: .superpowers/ scratch untracked + gitignored (ws09 had accidentally committed its reports).
+
+Carried minors for final whole-branch review: db.py init docstring table list omits video_attribution; _load_attribution_windows IN() invalid on empty list (no current call site); reactivation opens a fresh window overlapping the video's closed history; mock_data duplicates the 4-line window load (plan-mandated).
