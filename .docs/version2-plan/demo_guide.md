@@ -1,0 +1,261 @@
+# Owner Demo Guide — manual test journeys (living document)
+
+**This file is the always-current manual testing guide.** Every workstream that changes
+agent-visible behavior must update it before its PR (rule recorded in `CLAUDE.md`
+"Workstream process" and `HOW_TO_RUN_A_WORKSTREAM.md`), so the journeys here always
+reflect the latest merged + in-review changes. It supersedes the ws08 snapshot at
+`working-docs/08-product-schema-generalization/USER_JOURNEY_TEST_GUIDE.md` (kept as a
+historical record).
+
+**Last updated:** 2026-07-22, workstream 09 (prompt & agent generalization, PR #10).
+
+---
+
+## Setup (once per test session)
+
+```bash
+make reset-db   # wipe campaigns.db so journeys start from the seeded demo state
+make dev        # ADK web UI on http://localhost:8501 (~20-30s to seed demo data)
+```
+
+Open http://localhost:8501, pick the app, start a **new session**. For any journey that
+says "check the trace", use the **Trace tab** on the response (Event → functionCall /
+functionResponse) — tool responses carry the real values; the chat prose is secondary.
+
+> **Known quirk (pre-existing, not from ws09):** generated-video filenames embed only
+> the date (MMDDYY) + variation name, so regenerating the **same product with the same
+> setting/mood on the same day** fails with a `UNIQUE constraint` error *after* the
+> (paid) generation. If you repeat a video journey in one day, vary the setting or mood
+> ("use a rooftop setting", "make it moody"), or `make reset-db` first.
+
+---
+
+## Part A — What workstream 09 changed (test these first)
+
+### Journey A1 — THE fix: cold-brew video is now a product ad, not a fashion shot
+
+This is the bug you caught on 2026-07-19 (video showed a model wearing a dress made of
+cold-brew cans). Prompts now route through a **category → archetype registry**:
+beverages/QSR get an appetizing product-hero treatment, electronics/furniture/appliances
+get styled product staging, unknown categories get a clean generic hero shot — and the
+fashion path is untouched for wearables.
+
+```
+List the beverage products
+```
+```
+Create a campaign for the Aurora cold brew at Target Downtown in Austin, Texas
+```
+```
+Generate a video for the Aurora cold brew using a studio setting
+```
+
+**Expect (~2-3 min for the video):**
+- The scene/video prompts in the trace contain **no** "fashion", "garment", "wearing",
+  "model", "she" — they read like a drinks commercial (condensation, steam/fizz,
+  appetite cues).
+- The tool response shows `reference_image_used: false` **with a warning** that no
+  product image exists (retail SKUs ship without images until Phase 14a/15 — the video
+  is generated from the text description alone, so the can's look is plausible, not
+  pixel-faithful to a real SKU).
+- Filename is product-centric: `aurora-cold-brew-330ml-<date>-beverage-studio-elegant.mp4`
+  — **not** `...-diverse-studio-elegant...`.
+- Campaign was created with `category: "always-on"` and a description naming the product
+  (no "fashion item", no "classic").
+
+### Journey A2 — other verticals route to their own archetypes
+
+```
+Generate a video for the smoky brisket stack sandwich in a cafe setting with a warm mood
+```
+```
+Generate a video for the Nordic oak lounge chair in a luxury interior setting
+```
+
+**Expect:** sandwich → appetizing food treatment (steam, fresh ingredients); chair →
+styled-environment product staging. Same checks as A1: no fashion/model language in the
+prompts, `reference_image_used: false` warning, product-centric filenames
+(`qsr-menu-item-cafe-warm`, `furniture-luxury-interior-...`). Bonus detail: the earbuds
+product renders its acronym correctly in prompts ("Pulse ANC Wireless Earbuds", not
+"Anc") — visible if you try `Generate a video for the Pulse ANC earbuds`.
+
+### Journey A3 — product-only mode for fashion products (new knob)
+
+```
+Generate a product-only video for the sage satin camisole — just the garment, no model. Studio setting.
+```
+
+**Expect:** the media agent passes `presentation_mode: "product_only"`; the prompt is a
+product hero shot of the camisole (no human), and the filename uses the product-centric
+name (`dress-studio-...`), not an ethnicity-prefixed one.
+
+### Journey A4 — asking for a model on a non-wearable fails loudly (no silent fashion shot)
+
+```
+Generate a video of a model holding the Aurora cold brew
+```
+
+**Expect:** the agent should either explain that model presentation is only supported
+for wearables (its instructions now say so), or — if it tries anyway with
+`presentation_mode: "with_model"` — the tool returns a **structured error** saying
+with-model presentation isn't supported for this category. What must NOT happen: a
+fashion-style prompt for the beverage. (Person-using-product shots for non-wearables are
+explicitly future work.)
+
+### Journey A5 — the agents no longer claim to be a fashion company
+
+```
+What can you do? What kind of products do you work with?
+```
+
+**Expect:** the answer describes an **in-store retail media network** for any retail
+vertical (beverage, QSR, electronics, furniture, fashion, …). It must not say "fashion
+retail company" and must not hard-claim a product count like "22 products" (counts are
+now non-numeric in the instructions so they can't drift).
+
+---
+
+## Part B — Regression journeys (workstreams 1–8 fixes, still current)
+
+### Journey B1 — fashion two-stage video generation (ws01/ws06; the release gate)
+
+```
+Show me all campaigns
+```
+```
+Generate 1 new video for the sage-satin-camisole product using the two-stage pipeline. Use a studio setting with an elegant mood.
+```
+
+**Expect:** 4 seeded campaigns listed; then Stage 1 (scene image) + Stage 2 (Veo, ~1-4
+min), success with `sage-satin-camisole-<date>-diverse-studio-elegant.mp4`,
+`reference_image_used: true` (fashion products have images). The scene prompt is still
+the with-model fashion prompt — note the default model wording is now "a confident,
+radiant woman with a warm, engaging presence" (ws09's deliberate rewrite of the old
+reductive "diverse → a beautiful woman" mapping). Explicit options still work:
+`...with an Asian model` → `asian-studio-elegant` naming.
+
+### Journey B2 — HITL review + activation (ws05)
+
+After B1's video generates:
+
+```
+Show me videos pending review
+```
+```
+Activate that video
+```
+```
+What's the status of that video, including how many days of metrics it has?
+```
+
+**Expect:** the new video appears pending; activation succeeds; status shows
+**30 days** of deterministic metrics seeded on activation (not 7, not random).
+
+### Journey B3 — analytics charts and the no-data guard (ws02)
+
+```
+Show me a performance chart for the Blue Floral Maxi Dress campaign
+```
+
+**Expect:** a chart artifact renders; no "Invalid metric" (default metric is valid since
+ws02).
+
+```
+Create a campaign for product 1 at Test Mall in Austin, Texas, then show me its performance chart
+```
+```
+Generate the trendline chart for that campaign anyway
+```
+
+**Expect:** no crash — the clean "No metrics data available … activate videos first"
+guidance instead of a traceback.
+
+### Journey B4 — deterministic, internally-consistent metrics (ws05/ws07)
+
+```
+Give me the top performing ads for the Sage Satin Camisole campaign, with their impressions, revenue and RPI
+```
+
+**Expect (check the arithmetic, not the prose):** every row satisfies
+`revenue ≈ impressions × RPI` (cent rounding), RPIs sit in [0.03, 0.07], and in a
+multi-creative campaign the RPIs are **not all identical** (per-creative seeded factor,
+ws07).
+
+### Journey B5 — creative comparison chart (ws07)
+
+```
+Which of the creatives in the Sage Satin Camisole campaign is winning? Show me a comparison chart.
+```
+
+**Expect:** a matplotlib chart artifact renders (`artifact_saved: true`); the named
+winner has the max RPI; chart numbers match the comparison payload.
+
+### Journey B6 — non-fashion products are first-class in the catalog (ws08)
+
+```
+List all products grouped by category
+```
+```
+Add a new product: "Verde Matcha Latte Can", category beverage, description "Ceremonial matcha latte in a 250ml can", price 4.5
+```
+```
+Create a campaign for the Verde Matcha Latte at Whole Foods Midtown in New York
+```
+
+**Expect:** fashion + retail categories listed without crashes (retail rows have null
+style/color/fabric); self-service product insert works (ws08); the new product's
+campaign gets `always-on` category and a product-named description. A video for it
+routes to the beverage archetype — unknown categories would fall back to a generic
+product-hero shot rather than erroring.
+
+---
+
+## Part C — Status of the issues you reported, and what's deliberately not done
+
+### Your two reported issues (2026-07-19)
+
+1. **"Cold brew video shows a fashion model wearing the product" — FIXED in ws09**
+   (this PR). Root cause was the fashion template's `style → category` fallback
+   ("wearing a stunning beverage"). Now every category routes to an archetype; verified
+   live in demo scenario F5.2 (prompts scanned clean from the DB row, video registered).
+   Journey A1 is your direct re-test.
+
+2. **"Products still saved in GCS / broken product links" — NOT fixed in ws09
+   (deliberately).** Your local-first decision (2026-07-16) is recorded as the plan:
+   local save/load for product images and videos, GCS as opt-in for cloud deploys —
+   that's **Phase 15** (`15-product-onboarding.md`, step 1), with the image model work
+   in Phase 14a. ws09's contribution: the missing-image case is now **loud and honest**
+   (`reference_image_used: false` + explicit warning in every video response) instead of
+   silently generating or 404ing. Retail SKUs still have no images at all until 14a/15.
+
+### Also fixed along the way (ws09)
+
+- Campaign descriptions for a product with a color but no style no longer say "fashion
+  item" (the last hole from ws08's fallback fix).
+- Maps analysis renamed `fashion_market_index` → `retail_market_index`, defaults
+  generalized to "retail store" (needs `GOOGLE_MAPS_API_KEY` to test live).
+- Malformed video-variation requests now return a structured error listing valid fields
+  instead of silently producing a default fashion shot.
+- Integration tests' xfail was narrowed to genuine infrastructure errors only.
+
+### Known-not-done (tracked, out of ws09 scope)
+
+- **Integration eval suite is vacuous under pytest** — discovered this workstream:
+  `make test-integration` has *never* actually called the LLM (conftest's fake project
+  + ADK swallowing inference errors), and the pre-existing eval sets fail when genuinely
+  executed. Documented in `CLAUDE.md` (Gotchas) and `99-open-questions.md` **Q19** —
+  needs your decision (repairing it makes `make test` spend real LLM calls). Demo
+  scenarios (this guide's automated siblings in `docs/demo-scenarios/`) are the real
+  behavioral gate meanwhile.
+- Product **image generation** for retail SKUs (Phase 14a) and **local-first storage**
+  (Phase 15) — see item 2 above.
+- Person-using-product shots for non-wearables (model drinking the cold brew etc.) —
+  named future work in the phase doc.
+- LLM prompt-writer layer for vendor-supplied detail — deferred to Phase 15 as a
+  registry extension seam.
+- Variation **presets** (`get_variation_presets`) remain fashion-demo-oriented.
+- Legacy strings marked accepted-legacy (old single-stage video path, `analyze_image`'s
+  "fashion image" prompt, `video_properties.py` garment fields) — inert on the active
+  pipeline.
+- Same-day filename-collision quirk (see the Setup caveat) — pre-existing; recommended
+  for a future bug-fix slot.

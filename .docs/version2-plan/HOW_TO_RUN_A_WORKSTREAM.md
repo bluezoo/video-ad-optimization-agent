@@ -73,6 +73,8 @@ STATUS → `verify in progress`. Beyond green tests, Claude dispatches the `demo
 
 For Phase 7 this means: the new chart tool actually gets invoked by the Analytics Agent for a "compare RPI across creatives" query, and the chart artifact renders. A failing scenario blocks finishing — fix and re-verify.
 
+This step also refreshes **your** guide: `.docs/version2-plan/demo_guide.md` is the living manual-testing guide (copy-paste prompts + expected results for every journey the system currently supports, plus a running "fixed / deliberately not done" ledger). Any workstream that changes agent-visible behavior updates it before the PR, so when you want to test by hand, that one file is always current — you never have to reconstruct what changed from phase docs or PR diffs.
+
 If the phase touches a vertical with no scenario doc yet, writing one (adapted from `DEMO_GUIDE.md`, plus expected-tool-call assertions) is part of this step. `DEMO_GUIDE.md` itself is never run directly and never edited.
 
 ### Step 5 — Review (`requesting-code-review`)

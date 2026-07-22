@@ -572,3 +572,15 @@ payload unit test, eval-case product_id=23 seed-order fragility (noted for Q19),
 filename collision promoted to recommendation. Suite after polish: 243 passed/2 skipped
 (unit+e2e), touched files ruff-clean. Reviewer verdict: Ready to merge — wearable path
 golden-proven, cans-dress failure mode demonstrably dead, deviations documented.
+
+## 2026-07-22 — PR #10 held open for owner manual testing; living demo guide created
+
+Owner chose to test PR #10 manually before merge (STATUS stays `PR open`). Created
+`.docs/version2-plan/demo_guide.md` — the living owner manual-testing guide (ws09
+journeys A1-A5, ws01-08 regression journeys B1-B6, fixed/not-done ledger incl. the two
+owner-reported 2026-07-19 issues: cans-dress FIXED here, GCS/local-first storage
+deliberately deferred to Phase 15). New standing rule recorded in CLAUDE.md ("Workstream
+process"), `verifying-with-demo-scenarios` (new Step 4 + checklist item), and
+`HOW_TO_RUN_A_WORKSTREAM.md`: every workstream that changes agent-visible behavior must
+refresh demo_guide.md before its PR. Supersedes ws08's one-off USER_JOURNEY_TEST_GUIDE.md
+snapshot.

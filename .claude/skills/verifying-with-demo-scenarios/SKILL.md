@@ -43,6 +43,10 @@ Dispatch to the `demo-scenario-verifier` subagent (keeps chrome-devtools' verbos
 
 Append the verification result to the workstream's `WORK_LOG.md` (via `tracking-workstream-progress`): pass/fail, which scenario(s), path to the verifier's evidence. A failing scenario blocks `finishing-a-development-branch` — fix and re-verify, don't proceed with a known-failing demo path.
 
+## Step 4: Refresh the Owner Demo Guide
+
+If this workstream changed agent-visible behavior (tools, prompts, routing, instructions, artifacts), update `.docs/version2-plan/demo_guide.md` — the owner's living manual-testing guide — before `finishing-a-development-branch`: add/adjust copy-paste journeys for the new behavior, prune journeys the change invalidated, and refresh its "fixed / deliberately not done" section. The verified scenarios from Step 2 are the source material (a journey is a scenario's Query + expected results, written for a human). A purely internal refactor may skip this — say so in `WORK_LOG.md`.
+
 ## Common Rationalizations
 
 | Excuse | Reality |
@@ -65,6 +69,7 @@ Append the verification result to the workstream's `WORK_LOG.md` (via `tracking-
 - [ ] Multiple scenarios were run sequentially, not in parallel
 - [ ] Trace/response-event evidence collected per scene, not just a final chat response
 - [ ] Result (pass/fail + evidence path) appended to `WORK_LOG.md`
+- [ ] `.docs/version2-plan/demo_guide.md` refreshed for any agent-visible behavior change (or the skip noted in `WORK_LOG.md`)
 
 ## See Also
 
