@@ -92,3 +92,7 @@ ws10-final-reviewer over 759d0c8..ee62ef0 (full diff package + suites re-run: 24
 ## 2026-07-22 — fix round verified; final verdict: READY TO MERGE
 
 Fix commit 0667002 (dedup plays by (video_id, screen_id, start) in derive_rows_from_windows before aggregation; reactivation + overlapping-window tests, both confirmed RED pre-fix; db.py init docstring). Re-review by the same final reviewer: both findings RESOLVED, dedup keyed and placed correctly (covers all window sources, no-op on non-overlapping paths), no new findings, no scope creep. Residual informational note: pause/reactivate cycles accumulate benign closed history rows (join dedups them; documented as intended). Suites: 243 unit + 25 e2e green. Verdict: Ready to merge — YES, zero Critical.
+
+## 2026-07-22 — checkpoint 6 (partial): PR open
+
+PR #11 into version_2: https://github.com/bluezoo/video-ad-optimization-agent/pull/11 — awaiting owner confirmation to self-merge. demo_guide.md ws10 refresh synced to the main checkout on version_2. Remaining after merge: STATUS → merged, WORK_LOG finish line, worktree/branch cleanup.
