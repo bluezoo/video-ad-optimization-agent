@@ -23,8 +23,9 @@ Tests the video-related tools:
 - generate_video_with_variation (marked slow - uses Veo)
 """
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
 
 
 class TestListProducts:
@@ -218,6 +219,23 @@ class TestCreativeVariation:
         assert variation.model_ethnicity == "asian"
         assert variation.setting == "beach"
         assert variation.mood == "romantic"
+
+    def test_presentation_mode_defaults_to_none(self):
+        from app.models.variation import CreativeVariation
+        v = CreativeVariation(name="t")
+        assert v.presentation_mode is None
+
+    def test_presentation_mode_accepts_product_only(self):
+        from app.models.variation import CreativeVariation
+        v = CreativeVariation.model_validate({"name": "t", "presentation_mode": "product_only"})
+        assert v.presentation_mode == "product_only"
+
+    def test_human_fields_accept_none(self):
+        from app.models.variation import CreativeVariation
+        v = CreativeVariation.model_validate(
+            {"name": "t", "model_ethnicity": None, "activity": None, "model_description": None})
+        assert v.model_ethnicity is None
+        assert v.get_summary()  # must not raise
 
 
 class TestVideoGenerationParameters:
