@@ -42,3 +42,10 @@ Ultracode workflow `ws11a-implement`: 12 agents (6 implementer + 6 reviewer), ze
 - Task 5: 50fd288..40c0aba — golden pin (pre-refactor capture) then join routed through the seam; golden PASS post-refactor, test-unit 264/264, test-e2e 25/25, existing tests unmodified.
 - Task 6: 40c0aba..a406c15 — seed.py/constants.py docstrings + demo_guide "Part 0b" (APP_MODE journeys incl. connected-mode terminal check).
 Reviewer cannotVerify items adjudicated by controller: each covered by a later task's tests or the pre-existing pinned suites — none escalated.
+
+## 2026-07-22 — checkpoint 5: demo-scenario verification PASS
+- F3 (fashion.md, campaign metrics/RPI): 2/2 scenes PASS — 30→+3→33 metric days, per-creative RPIs 0.0605/0.0595/0.0589 identical to ws10's run (byte-identical invariant observed end-to-end). Session 45e86eba…; evidence /tmp/ws11a-evidence/f31_*, f32_*.
+- F4 (creatives comparison chart): 1/1 PASS — generate_creative_comparison_chart(campaign_id=4), artifact rendered, chart_data byte-consistent with comparison payload, cent-rounding arithmetic verified. Evidence /tmp/ws11a-evidence/f4_*.
+- Connected-mode fail-closed smoke: APP_MODE=connected factory call raises the specific RuntimeError (names connected/Phase 11b/APP_MODE=demo). Evidence /tmp/ws11a-evidence/connected_fail_closed.txt; also pinned by tests/unit/test_audience_factory.py.
+- Controller sanity pass: make test-unit 264 passed / 1 skipped on the finished branch.
+Both verifier scenes ran against this worktree's own make dev on :8501 (fresh reset-db), sequentially. Two non-blocking LLM-prose nits noted by verifiers (a stray text fragment in one answer; one wrong video-id digit in a prose table) — tool payloads clean in both, not defects of this change.
