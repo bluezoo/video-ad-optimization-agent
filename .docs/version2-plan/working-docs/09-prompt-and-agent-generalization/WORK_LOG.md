@@ -55,3 +55,10 @@ be consciously rewritten; generate_video_from_product's silent validation fallba
 would silently turn a malformed product_only request into a with_model fashion shot — make loud;
 agent.py product counts inconsistent (:186/:261 say 22, :193/:524 say 28); F5 has no
 video-generation scene — verification needs a new F5.2.
+
+## 2026-07-21 — checkpoint 2: working doc approved
+Owner approved the six-dimension restatement and chose **Option B: vertical-archetype
+template registry** (wearable = preserved fashion path; consumable-hero; staged-product;
+generic product-hero fallback for unknown categories; presentation_mode as override knob;
+LLM prompt-writer deferred to Phase 15 as a registry extension seam). Proceeding to
+writing-plans.
