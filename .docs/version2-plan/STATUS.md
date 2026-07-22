@@ -19,7 +19,7 @@ Update rows in place as a workstream progresses; don't append new rows for the s
 | 7 | `07` | rpi-across-creatives-chart | merged | version_2_rpi-chart | [#8](https://github.com/bluezoo/video-ad-optimization-agent/pull/8) | 2026-07-19 | squash-merged as 60ac50f; F3 (updated criteria) + new F4 PASS; final review clean; incl. numpy-AE deploy fix |
 | 8 | `08` | product-schema-generalization | merged | version_2_product-schema | [#9](https://github.com/bluezoo/video-ad-optimization-agent/pull/9) | 2026-07-21 | squash-merged as 5d3e1f8; F1.1/F2.1 regression + new F5 PASS; final review clean; owner manual test (user-journey guide) passed — 2 findings routed to Phases 9/15 via DISCOVERY amendments |
 | 9 | `09` | prompt-and-agent-generalization | merged | version_2_prompt-generalization | [#10](https://github.com/bluezoo/video-ad-optimization-agent/pull/10) | 2026-07-22 | merged 20d7347 (squash); archetype registry + ad style policy; demo verify PASS (F1 2/2, F5 2/2); spawned Phase 16 (Q19 resolved), amended Phase 15 |
-| 10 | `10` | playout-attribution | not started | - | - | 2026-07-13 | depends on Phases 4, 5, 8 |
+| 10 | `10` | playout-attribution | kickoff in progress | version_2_playout-attribution | - | 2026-07-22 | worktree created off 759d0c8; deps 4/5/8 merged |
 | 11a | `11` | audience-provider-seam (port) | not started | - | - | 2026-07-16 | depends on Phases 5, 6, 10; not blocked on any open question |
 | 11b | `11` | live-bluezoo-adapter (conformer) | not started | - | - | 2026-07-16 | depends on 11a; blocked on open questions 1, 2 (mimic already validated against published docs — see Q2/Q18) |
 | 12 | `12` | live-pos-adapter | not started | - | - | 2026-07-13 | depends on Phases 4, 6, 11; blocked on open questions 3, 4 |
