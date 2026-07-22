@@ -162,8 +162,20 @@ def derive_rows_from_windows(
         ad_campaign_id, [w for w in windows if w["video_id"] in wanted], date_from, date_to
     )
 
+    # A reactivated video keeps its closed history window alongside a fresh
+    # open one (see review_tools._open_attribution_windows), so two windows
+    # can cover the same (video, screen) on overlapping days. The play
+    # schedule is deterministic per (campaign, video, screen, day), so the
+    # windows' overlap produces IDENTICAL AdPlayRecords for the covered
+    # slots — dedup by (video_id, screen_id, start) before aggregating so
+    # the join never double-counts a slot two windows agree on.
+    seen: set = set()
     agg: dict = {}
     for p in plays:
+        key = (p.video_id, p.screen_id, p.start)
+        if key in seen:
+            continue
+        seen.add(key)
         v = visits_ix.get((p.screen_id, p.start))
         if v is None:
             continue

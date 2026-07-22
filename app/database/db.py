@@ -57,6 +57,8 @@ def init_database() -> None:
     - campaign_ads: Generated video ads (legacy alias)
     - video_metrics: Daily performance metrics (only for activated videos)
     - campaign_metrics: Daily performance metrics (legacy alias)
+    - video_attribution: Playout attribution windows (Phase 10, open = active_to IS NULL)
+    - demo_meta: Key-value store for demo-mode state (anchor date)
     """
     conn = get_connection()
     cursor = conn.cursor()

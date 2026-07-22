@@ -661,3 +661,69 @@ class TestAttributionBridge:
         ]
         assert stored == expected
         assert len(stored) == DEMO_WINDOW_DAYS
+
+    def test_reactivation_does_not_change_metrics(self, fresh_test_db):
+        """Pausing then reactivating a video leaves a closed window and a
+        freshly-opened one whose date coverage overlaps. INSERT OR IGNORE
+        already protects the stored video_metrics rows from that overlap,
+        but the join itself must also dedup it (Finding 1, final review):
+        the stored rows must be unchanged, and re-deriving through both
+        windows must reproduce them exactly rather than double-count."""
+        from datetime import date, timedelta
+
+        from app.database.db import get_db_cursor, get_demo_anchor_date
+        from app.demo_data.constants import DEMO_WINDOW_DAYS
+        from app.demo_data.derive import derive_video_metrics_rows
+        from app.tools.review_tools import (
+            _load_attribution_windows,
+            activate_video,
+            pause_video,
+        )
+
+        video_id, ad_campaign_id = self._make_generated_video_named(
+            "bridge-test-reactivate.mp4"
+        )
+        assert activate_video(video_id=video_id)["status"] == "success"
+
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT metric_date, impressions, dwell_time_seconds, circulation, revenue "
+                "FROM video_metrics WHERE video_id = ? ORDER BY metric_date",
+                (video_id,),
+            )
+            snapshot = [tuple(r) for r in cursor.fetchall()]
+
+        assert pause_video(video_id=video_id)["status"] == "success"
+        assert activate_video(video_id=video_id)["status"] == "success"
+
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT metric_date, impressions, dwell_time_seconds, circulation, revenue "
+                "FROM video_metrics WHERE video_id = ? ORDER BY metric_date",
+                (video_id,),
+            )
+            after = [tuple(r) for r in cursor.fetchall()]
+        assert after == snapshot
+
+        windows = self._windows(video_id)
+        assert any(w["active_to"] is not None for w in windows), "closed history row remains"
+        assert any(w["active_to"] is None for w in windows), "reactivation opened a fresh window"
+
+        with get_db_cursor() as cursor:
+            anchor = date.fromisoformat(get_demo_anchor_date(cursor))
+            window_start = anchor - timedelta(days=DEMO_WINDOW_DAYS - 1)
+            loaded_windows = _load_attribution_windows(cursor, [video_id])
+        derived = derive_video_metrics_rows(
+            ad_campaign_id, [video_id], window_start, anchor, windows=loaded_windows
+        )
+        derived_tuples = [
+            (
+                r["metric_date"],
+                r["impressions"],
+                r["dwell_time_seconds"],
+                r["circulation"],
+                r["revenue"],
+            )
+            for r in derived
+        ]
+        assert derived_tuples == snapshot

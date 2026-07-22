@@ -217,3 +217,25 @@ class TestJoinDerivation:
         for r in rows:
             assert 200 <= r["impressions"] <= 8000
             assert r["circulation"] > 0
+
+    def test_overlapping_windows_do_not_double_count(self):
+        """Reactivation after pause opens a fresh window per screen without
+        deleting the closed one it replaces, so a video can have a closed
+        window and an open window whose date coverage overlaps. The join
+        must dedup that overlap by (video_id, screen_id, start) rather than
+        summing both windows' plays for the same slot."""
+        screens = screens_for_campaign(CID)
+        open_windows = _open_windows([101], screens)
+        closed_windows = [
+            {
+                "video_id": 101,
+                "screen_id": sid,
+                "active_from": datetime.combine(D_FROM, datetime.min.time()),
+                "active_to": datetime.combine(D_FROM + timedelta(days=2), datetime.min.time()),
+            }
+            for sid in screens
+        ]
+        overlapping = closed_windows + open_windows
+        rows_overlap = derive_rows_from_windows(CID, [101], overlapping, D_FROM, D_TO)
+        rows_single = derive_rows_from_windows(CID, [101], open_windows, D_FROM, D_TO)
+        assert rows_overlap == rows_single

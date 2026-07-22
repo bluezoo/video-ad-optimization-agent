@@ -138,7 +138,12 @@ def _load_attribution_windows(cursor, video_ids) -> list[dict]:
 
 
 def _open_attribution_windows(cursor, video_id, ad_campaign_id, active_from) -> int:
-    """Open one window per campaign screen (skip screens already open)."""
+    """Open one window per campaign screen (skip screens already open).
+
+    Reactivation after a pause intentionally opens fresh windows alongside
+    the closed history row left by the pause, even though their date
+    coverage can overlap — the join (attribution.derive_rows_from_windows)
+    is responsible for deduping that overlap, not this bridge."""
     opened = 0
     for screen_id in screens_for_campaign(ad_campaign_id):
         cursor.execute(
