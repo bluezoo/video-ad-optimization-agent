@@ -43,3 +43,12 @@ Owner approved the 8-task implementation plan ("Yes — approved, execute"). Pla
 - CONTROLLER ADJUDICATION: (a) authorized extending mock_storage_module with product_image_exists/get_product_image_public_url mocks (the fixture's entire job is mocking the storage module); (b) e2e test_list_products_shows_catalog's `assert "image_url" in product` verifiably pins the DELETED default-bucket behavior (bisect: passes @28768bd pre-Task-1, fails @f0faa8b Task-1 head — the Task-2 report's "pre-existing failure" claim was baseline-confused and is hereby corrected) — authorized updating that single assertion to the new image_status contract. Both edits ride with Task 3's commit, called out explicitly; full unit+e2e suites must be green from Task 3 onward.
 ## 2026-07-22 — task-3 adjudication extended (third authorized test edit)
 Task-3 implementer flagged (rather than slipped in) a third necessary existing-test edit: tests/unit/test_maps_tools.py::test_map_data_rpi_is_thin_wrapper never requested the mock_storage_module fixture its sibling tests use, so it makes a real GCS call once map data routes through the existence-checked product-image helper. APPROVED adding the fixture param (zero assertion changes) — same root cause as the two edits adjudicated earlier. Task 3 committed: 054aa66 (three authorized test edits named in commit body + task-3-report.md).
+## 2026-07-22 — checkpoint 4: implement complete (8/8 tasks, review-gated, 0 fix rounds)
+Ultracode workflow wf_8e072b36-454 (16 agents, ~2.3M tokens total across both runs):
+- Task 3 complete: URL policy across 4 tools + video-write dedupe (b86c69f..054aa66), incl. the 3 controller-adjudicated test edits; suites fully green from here on.
+- Task 4 complete: onboarding tools + Campaign agent wiring (030721c..cf74bcf), test_onboarding_tools 12/12.
+- Task 5 complete: analytics-attach test (cf74bcf..a7c1964) — passed first run, proving existing plumbing.
+- Task 6 complete: CLI wrapper + dispatch-parity tests (a7c1964..06044b5).
+- Task 7 complete: demo-asset bundle build/verify/install (06044b5..55cff93), test_demo_assets 6/6; noted ambiguity: gdown line placed after google-cloud-storage per Step 3's literal text (brief header said "after the google-* block") — accepted, cosmetic.
+- Task 8 complete: SETUP_INSTRUCTIONS local-first section + docs/demo-scenarios/from-scratch-onboarding.md (55cff93..a378d72).
+Zero Critical/Important/Minor findings across all 8 task reviews. Unit suite grew 264→306 (+1 pre-existing skip); e2e 25 passed/1 skipped.
