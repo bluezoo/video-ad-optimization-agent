@@ -68,3 +68,37 @@ Owner approved the 8-task plan (plan.md in this folder). Execution: ultracode wo
 sequential implementer->reviewer per task (Task 1 golden re-baseline first, from
 unmodified code), then loop-until-green stabilize (full make test + integration), then
 demo verification F1 / F5.1 / new F5.2.
+
+## 2026-07-21 — Task 1 implemented
+**Re-baseline golden prompts on explicit asian ethnicity (code untouched)**
+
+All steps completed per plan.md:
+- Step 1: Captured new goldens from UNMODIFIED code via Python script with `CreativeVariation(name="golden-baseline-asian", model_ethnicity="asian")` — generated `golden_scene_prompt_product1_asian.txt` and `golden_creative_prompt_product1_asian.txt`
+- Step 2: Verified both golden files contain "a graceful Asian woman with sleek dark hair" and do NOT contain "a beautiful woman" ✓
+- Step 3: Rewrote `tests/unit/test_product_adapter.py::TestGoldenPrompts` (lines 50-60) to use `CreativeVariation(name="golden-baseline-asian", model_ethnicity="asian")` and point to `*_asian.txt` files; left `test_null_style_falls_back_to_category` untouched for Task 3
+- Step 4: All tests pass — `pytest tests/unit/test_product_adapter.py -v` (11/11 pass), `make test-unit` (191 passed, 1 skipped)
+- Step 5: Committed `test: re-baseline golden prompts on explicit asian ethnicity (ws09 Task 1)` (commit e84ff2d)
+
+**Test output summary:** make test-unit = 191 passed, 1 skipped (pre-existing e2e skip). Golden prompts are now the wearable regression bar, pinned to explicit-ethnicity output per Global Constraints.
+
+Commit range: 8021123..e84ff2d
+
+## 2026-07-21 — Task 2 implemented
+**presentation_mode + Optional human-model fields on CreativeVariation**
+
+All steps completed per plan.md:
+- Step 1: Modified `app/models/variation.py`:
+  - Added `presentation_mode: str | None` field with description (None/"auto"/"with_model"/"product_only")
+  - Changed `model_ethnicity`, `model_description`, `activity` to `str | None` (types become Optional, defaults RETAINED)
+  - Updated `get_summary()` with guard: `(self.model_ethnicity or "diverse") != "diverse"`
+  - Modernized type hints: `list[str]` and `dict[str, Any]` syntax
+- Step 2: Added three test methods to `tests/unit/test_video_tools.py::TestCreativeVariation`:
+  - `test_presentation_mode_defaults_to_none` ✓
+  - `test_presentation_mode_accepts_product_only` ✓
+  - `test_human_fields_accept_none` ✓
+- Step 3: All tests pass — `pytest tests/unit/test_video_tools.py tests/unit/test_product_adapter.py -v` (all pass), `make test-unit` (194 passed, 1 skipped)
+- Step 4: Committed `feat: add presentation_mode + Optional human-model fields to CreativeVariation (ws09 Task 2)` (commit f881f5b)
+
+**Test output summary:** make test-unit = 194 passed, 1 skipped. Golden prompts remain byte-identical (Task 1 regression bar verified). New Optional fields default to sensible values, preserving wearable output compatibility while enabling product-centric builders downstream.
+
+Commit range: e84ff2d..f881f5b
