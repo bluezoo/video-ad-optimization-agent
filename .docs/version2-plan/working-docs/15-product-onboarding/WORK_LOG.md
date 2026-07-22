@@ -34,3 +34,5 @@ Actual: review_tools.get_video_review_table, review_tools.get_video_details, and
 Blast radius: doc 15 step 1 scope. Amended with provenance.
 ## 2026-07-22 — checkpoint 2: working doc approved
 Owner approved the six-dimension restatement ("Yes — approved, write the plan"). Drive-bundle logistics question resolved: hypothesis confirmed — this workstream ships download/verify/install code + a builder script verified against a locally built bundle; owner uploads the zip to their own Drive later and sets DEMO_ASSETS_DRIVE_ID; graceful "bundle not configured" skip until then. Working doc: working-doc.md (commit 436b8af).
+## 2026-07-22 — checkpoint 3: plan approved
+Owner approved the 8-task implementation plan ("Yes — approved, execute"). Plan: plan.md (commit 268b519). Execution via subagent-driven-development (ultracode per-task implementer→reviewer loop, ws11a pattern).
