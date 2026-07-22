@@ -519,3 +519,40 @@ vacuity guard + rewriting all five eval sets' expected trajectories against the 
 LLM) exceeds ws09's approved Task 7 scope and changes `make test`'s cost profile —
 presented to the owner as fix-now vs defer (Q19); ws09 proceeds to demo verification
 either way.
+
+## 2026-07-22 — checkpoint 5: demo scenario verification PASS (F1 2/2, F5 2/2)
+
+**F1 (fashion regression, release gate): PASS both scenes.** `list_campaigns` routed and
+returned the 4 seeded campaigns; `generate_video_with_variation(product_id=21,
+campaign_id=4, setting=studio, mood=elegant)` ran the full two-stage pipeline (Veo 80s,
+total 165s), filename `sage-satin-camisole-072226-diverse-studio-elegant.mp4`,
+`reference_image_used: true`. The Stage-1 prompt is still the with-model fashion prompt
+("Cinematic fashion photography of a confident, radiant woman … wearing a stunning soft
+sage green silky satin drapey camisole") — the wearable path survived the archetype
+refactor, with the new non-reductive "diverse" wording in place.
+
+**F5 (non-fashion, incl. the owner's reproduced cans-dress bug): PASS both scenes on the
+clean rerun.** F5.1: `list_products(category="beverage")` clean on null style/color/
+fabric; `create_campaign` → category `always-on`, description names the product, no
+"fashion item"/"classic". F5.2 (`generate_video_with_variation(campaign_id=5,
+product_id=23, setting=studio)`): archetype resolved to `consumable-hero`; the exact
+prompts stored in the DB row scanned clean for fashion/garment/wearing/"model wearing"/
+"she is"; `reference_image_used: false` with warning "No product image found for
+aurora-cold-brew-330ml — scene generated from text description only"; video registered
+(`status: generated`), filename `aurora-cold-brew-330ml-072226-beverage-studio-elegant.mp4`
+(product-centric, no ethnicity prefix). **The cans-dress failure mode is dead.**
+
+First F5.2 attempt FAILED on `UNIQUE constraint failed: campaign_videos.video_filename` —
+stale-DB contamination from an interrupted earlier run that had registered the identical
+filename, not a code bug (clean rerun after `make reset-db` passed). Two notes from it:
+(1) pre-existing quirk: `generate_video_filename` embeds only MMDDYY, so regenerating the
+same product+variation same-day collides on the UNIQUE filename *after* paid generation —
+worth a future graceful-handling fix, not a ws09 regression; (2) that run's verifier
+deleted the stale row directly from the local demo `campaigns.db` (out of scope for a
+verifier; DB was subsequently reset, net effect nil — disclosed to owner). Cosmetic: the
+entry debug line logs the pre-normalization `diverse-studio-elegant` name before the
+product-centric rename.
+
+Reports: `verification/F1-report.md`, `verification/F5-report.md` (first run, FAIL as-run),
+`verification/F5-rerun-report.md` (clean PASS). Reports + prompt-text evidence committed;
+PNG/server-log evidence kept local-only in the same directory (ws08 precedent).

@@ -1,0 +1,65 @@
+=== SCENE PROMPT ===
+Cinematic fashion photography of a confident, radiant woman with a warm, engaging presence wearing a stunning soft sage green silky satin drapey camisole.
+
+She is mid-stride in an elegant walking pose...
+
+=== VIDEO PROMPT ===
+The model walks gracefully forward, the garment flowing with each step. Camera slowly orbits around the model, showcasing the garment's movement, drape, and fabric flow.
+
+The scene has subtle ambient ...
+
+(Above: prompt excerpts as returned in the tool response / server debug log — truncated at 200 chars by the tool itself.)
+
+Below: full prompts rebuilt deterministically via app.tools.prompt_builders with the exact
+runtime inputs (product_id=21 sage-satin-camisole, CreativeVariation(name='diverse-studio-elegant',
+setting='studio', mood='elegant')). First 200 chars match the runtime trace excerpt exactly.
+
+=== FULL SCENE PROMPT (rebuilt deterministically) ===
+Cinematic fashion photography of a confident, radiant woman with a warm, engaging presence wearing a stunning soft sage green silky satin drapey camisole.
+
+She is mid-stride in an elegant walking pose in a minimalist professional photography studio in bright natural daylight.
+
+Natural, soft lighting. The garment is clearly visible with all its details: cowl neckline, adjustable straps, relaxed fit.
+
+CRITICAL - PRODUCT PRESERVATION:
+- The garment must match the reference product EXACTLY - same design, color, fabric, and construction details
+- Do NOT alter, modify, or reinterpret the garment design in any way
+- Preserve all product details: stitching, patterns, textures, embellishments, neckline, sleeves, hemline
+
+QUALITY REQUIREMENTS:
+- Full body or 3/4 shot showing the complete garment
+- Model facing camera or slight angle
+- Sharp focus on the garment and model
+- Professional fashion advertisement quality
+- Vertical 9:16 aspect ratio composition
+- The scene should look like the perfect first frame of a fashion video ad
+
+HUMAN FIGURE QUALITY:
+- Realistic human proportions and anatomy
+- Natural, beautiful facial features - no distortion or artifacts
+- Properly proportioned hands and fingers
+- Natural skin texture and tone
+- Elegant, natural body posture
+
+Style: Luxury fashion campaign, magazine-quality, aspirational.
+
+=== FULL VIDEO PROMPT (rebuilt deterministically) ===
+The model walks gracefully forward, the garment flowing with each step. Camera slowly orbits around the model, showcasing the garment's movement, drape, and fabric flow.
+
+The scene has subtle ambient movement. The movement is smooth, elegant movement.
+
+CRITICAL - PRODUCT & QUALITY PRESERVATION:
+- Maintain the garment's exact appearance from the first frame throughout the video
+- The fabric's natural flow and drape as the model moves
+- Lighting playing across the garment's surface
+- Smooth, professional camera work
+- High-end fashion advertisement aesthetic
+
+HUMAN FIGURE QUALITY:
+- Maintain realistic human proportions throughout the animation
+- Natural, beautiful facial expressions - no distortion or morphing artifacts
+- Properly proportioned hands and fingers during movement
+- Fluid, natural body movement without anatomical errors
+- Consistent model appearance from start to end
+
+8 seconds. Vertical 9:16. Cinematic quality. Professional fashion video ad.
