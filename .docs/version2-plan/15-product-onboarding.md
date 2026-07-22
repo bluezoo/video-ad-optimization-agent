@@ -21,6 +21,18 @@ A brand-new vertical can be onboarded end-to-end **by talking to the agent**: im
 > every product row ends up with a real image (uploaded or generated) before
 > it's presented as browse-ready.
 
+> **Amended (workstream 15, 2026-07-22):** the "surfaced, not silent" half of (b) was
+> fixed by ws09 (commit 20d7347): `generate_video_from_product` now returns a
+> `warning` key when `reference_image_used` is False (video_tools.py:730-736). Still
+> live for this phase: routing both call sites through the storage seam, and (a)'s
+> unchecked URL emission — which research found is a **four-tool surface, not one**:
+> `list_products` (video_tools.py:1771), `get_video_review_table` and
+> `get_video_details` (review_tools.py:686-692, 858-868), and maps_tools' location
+> detail (maps_tools.py:482/515/520/529) all emit `get_public_url`/`get_video_public_url`
+> output; all four go through the seam. (Cited line numbers refreshed: the
+> `generate_video_from_product` def is now video_tools.py:436; config's personal-bucket
+> default is config.py:72-73.)
+
 ## Current state (what blocks from-scratch today)
 
 - **No write path for product images:** `app/storage.py` is read-only for `product-images/` — there is no `save_product_image()` anywhere; the personal GCS bucket default (`app/config.py:52-53`, `kaggle-on-gcp-ad-campaign-assets`) is a silent hard dependency, and `storage.py:189/208/224` raise without a real bucket/client.
@@ -59,6 +71,14 @@ A brand-new vertical can be onboarded end-to-end **by talking to the agent**: im
 > storage instead of a bucket); after that one-time download, everything is
 > local. Tool responses must emit local/served URLs, never
 > `storage.googleapis.com` links.
+> **Amended (workstream 15, 2026-07-22):** gating `populate_mock_data()` alone cannot
+> produce an empty catalog — `init_database()` itself (app/database/db.py:259-261)
+> unconditionally calls `populate_products()` (22 fashion) and
+> `populate_retail_test_products()` (6 retail core) on every run, and `app/agent.py`
+> invokes it first (the unconditional block is agent.py:112-113: `init_database();
+> populate_mock_data()`). Step 2's gate must also cover those two calls (gate or
+> relocate them into the same `DEMO_DATASET`-keyed seeding step).
+
 2. **Gate seeding.** Replace `app/agent.py:111`'s unconditional `populate_mock_data()` with explicit, idempotent, gated seeding: runs only in demo mode **and** when the DB is empty **and** a demo dataset is selected (the 22-product fashion catalog becomes one selectable dataset, e.g. `DEMO_DATASET=fashion|none`, default preserving today's behavior for existing demos). `DEMO_DATASET=none` yields an empty catalog — the from-scratch start.
 3. **Onboarding agent tools** (primary interface, per owner decision): `create_product` (name, category, description, attributes dict → Phase 8's typed `Product`), `import_products_from_folder` (local folder of images; filename/subfolder conventions → products + stored images through the step-1 seam), and `generate_product_image` (no image on hand: generate via the configured image model — nano banana per Phase 14a — and store it as the product's primary image). Wire into the Campaign agent's toolset with instruction text; follow existing tool conventions in `app/tools/`.
 4. **Thin CLI wrapper** (secondary, per owner decision): `scripts/onboard_products.py` calling the *same functions* as the tools (no duplicated logic) for scripted/bulk/CI setup.
