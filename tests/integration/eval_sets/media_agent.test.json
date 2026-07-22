@@ -94,6 +94,29 @@
         }
       ],
       "session_input": null
+    },
+    {
+      "eval_id": "list-products-beverage",
+      "conversation": [
+        {
+          "invocation_id": "test-m05",
+          "user_content": {
+            "parts": [{"text": "List the beverage products"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "Here are the beverage products, including Aurora Cold Brew."}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {"name": "list_products", "args": {"category": "beverage"}}
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": null
     }
   ],
   "creation_timestamp": 1735000000.0

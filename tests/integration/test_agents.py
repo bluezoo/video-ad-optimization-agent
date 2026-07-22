@@ -58,6 +58,20 @@ if not eval_sets_exist():
     pytestmark = [pytest.mark.integration, pytest.mark.skip(reason="No eval_sets found")]
 
 
+_INFRA_MARKERS = (
+    "credential", "permission denied", "quota", "resource_exhausted", "429",
+    "unavailable", "503", "deadline", "connection", "getaddrinfo",
+)
+
+
+def _xfail_if_infrastructure(e: Exception):
+    """xfail ONLY on infrastructure errors; real eval failures must fail the test."""
+    msg = str(e).lower()
+    if isinstance(e, (ConnectionError, TimeoutError)) or any(m in msg for m in _INFRA_MARKERS):
+        pytest.xfail(f"Integration infrastructure unavailable: {e}")
+    raise e
+
+
 class TestCoordinatorAgentRouting:
     """Test that the coordinator routes queries to correct sub-agents."""
 
@@ -70,9 +84,10 @@ class TestCoordinatorAgentRouting:
                 eval_dataset_file_path_or_dir=get_eval_set_path("coordinator.test.json"),
                 num_runs=1,  # Single run for faster tests
             )
+        except AssertionError:
+            raise
         except Exception as e:
-            # Log the error but don't fail - integration tests may have config issues
-            pytest.xfail(f"Integration test failed (may need config): {e}")
+            _xfail_if_infrastructure(e)
 
 
 class TestCampaignAgent:
@@ -87,8 +102,10 @@ class TestCampaignAgent:
                 eval_dataset_file_path_or_dir=get_eval_set_path("campaign_agent.test.json"),
                 num_runs=1,
             )
+        except AssertionError:
+            raise
         except Exception as e:
-            pytest.xfail(f"Integration test failed (may need config): {e}")
+            _xfail_if_infrastructure(e)
 
 
 class TestMediaAgent:
@@ -103,8 +120,10 @@ class TestMediaAgent:
                 eval_dataset_file_path_or_dir=get_eval_set_path("media_agent.test.json"),
                 num_runs=1,
             )
+        except AssertionError:
+            raise
         except Exception as e:
-            pytest.xfail(f"Integration test failed (may need config): {e}")
+            _xfail_if_infrastructure(e)
 
 
 class TestReviewAgent:
@@ -119,8 +138,10 @@ class TestReviewAgent:
                 eval_dataset_file_path_or_dir=get_eval_set_path("review_agent.test.json"),
                 num_runs=1,
             )
+        except AssertionError:
+            raise
         except Exception as e:
-            pytest.xfail(f"Integration test failed (may need config): {e}")
+            _xfail_if_infrastructure(e)
 
 
 class TestAnalyticsAgent:
@@ -135,8 +156,10 @@ class TestAnalyticsAgent:
                 eval_dataset_file_path_or_dir=get_eval_set_path("analytics_agent.test.json"),
                 num_runs=1,
             )
+        except AssertionError:
+            raise
         except Exception as e:
-            pytest.xfail(f"Integration test failed (may need config): {e}")
+            _xfail_if_infrastructure(e)
 
 
 class TestAllEvalSets:
@@ -154,5 +177,7 @@ class TestAllEvalSets:
                     eval_dataset_file_path_or_dir=str(eval_file),
                     num_runs=2,  # Multiple runs for variance
                 )
+        except AssertionError:
+            raise
         except Exception as e:
-            pytest.xfail(f"Integration test failed (may need config): {e}")
+            _xfail_if_infrastructure(e)
