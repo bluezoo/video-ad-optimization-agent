@@ -66,3 +66,7 @@ Implementation via ultracode workflow wf_c4a0486e-109 (14 agents, 7 implement+re
 - Housekeeping: .superpowers/ scratch untracked + gitignored (ws09 had accidentally committed its reports).
 
 Carried minors for final whole-branch review: db.py init docstring table list omits video_attribution; _load_attribution_windows IN() invalid on empty list (no current call site); reactivation opens a fresh window overlapping the video's closed history; mock_data duplicates the 4-line window load (plan-mandated).
+
+## 2026-07-22 — demo scenario verification: F3 PASS (2/2)
+
+verifier-f3 against this worktree's make dev (:8501). F3.1: get_video_details → 30 days tracked; generate_additional_metrics(days=3) → success; re-check → 33 days (exact 30→+3→33, deterministic). F3.2: compare_creatives_within_campaign → three creatives with DISTINCT RPIs (0.0605/0.0595/0.0589), all in [0.03,0.07], each revenue/impressions rounding exactly to its reported RPI; winner = max-RPI creative. Evidence: scratch/verify-f3/ (session events JSON, tool-call extract, server log). Screenshot writes blocked by chrome-devtools sandbox roots (pinned to another worktree) — claims verified against raw session JSON instead. Side effect: demo anchor advanced +3 days (33-day state is the expected baseline for F4/F6 runs).
