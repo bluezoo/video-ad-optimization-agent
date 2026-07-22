@@ -46,3 +46,7 @@ Other load-bearing findings for the working doc: two derive call sites (`review_
 ## 2026-07-22 — checkpoint 2: working doc approved
 
 Owner approved the six-dimension restatement as-is ("Yes — approved, write the plan"): attribution windows table + deterministic ad-play join, derive.py rewritten in place as signature-stable facade, screens as in-code deterministic roster (no DB table), ad-plays computed not stored, per-creative RPI keying preserved, dwell/circulation stay synthetic. Next: writing-plans.
+
+## 2026-07-22 — checkpoint 3: plan approved
+
+Owner approved the 8-task implementation plan (plan.md, commit 3eaf5e4): DTOs → video_attribution table → screens/schedule → join+facade → HITL bridge → bulk seed windows → docs/F6/demo_guide → gates. Execution via subagent-driven-development.
