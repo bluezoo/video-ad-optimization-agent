@@ -96,3 +96,13 @@ Fix commit 0667002 (dedup plays by (video_id, screen_id, start) in derive_rows_f
 ## 2026-07-22 — checkpoint 6 (partial): PR open
 
 PR #11 into version_2: https://github.com/bluezoo/video-ad-optimization-agent/pull/11 — awaiting owner confirmation to self-merge. demo_guide.md ws10 refresh synced to the main checkout on version_2. Remaining after merge: STATUS → merged, WORK_LOG finish line, worktree/branch cleanup.
+
+## 2026-07-22 — owner manual test round: ALL PASS; merge approved
+
+Owner ran demo_guide.md Part 0 (journeys 0.1-0.4) plus regression journeys locally against this worktree's server and confirmed "tested all the things". Journey 0.1 (fresh activation via owner-run pending fixture → windows opened per screen + 30-day metrics) closes the F6.1 verification item the automated verifier could not complete (fixture insert required a human). Owner directive: merge the PR, carry the open items into the next workstream.
+
+Carried open items (deferred minors from the final review, for the next workstream's kickoff):
+1. `_load_attribution_windows` builds `IN ()` (invalid SQL) if ever called with an empty video_ids list — no reachable call site today; add a guard when touching review_tools next.
+2. mock_data.py duplicates review_tools' 4-line window-load SQL (plan-mandated layering: app.database must not import app.tools) — add a cross-reference comment or extract to a shared demo_data helper.
+3. Pause/reactivate cycles accumulate benign closed video_attribution history rows (join dedups them; documented as intended) — revisit only if growth ever matters (option: reopen latest closed window instead of inserting).
+4. Repo-wide `make lint` is red with ~40 pre-existing errors (predates ws10; ws10 added zero and removed one) — needs a dedicated cleanup slot so lint can become a real gate.
