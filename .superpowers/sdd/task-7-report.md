@@ -155,3 +155,68 @@ sandbox, or after a future fix to the import ordering).
 - `make test-integration`: 5 passed, 1 deselected (slow), ~9.2s.
 - `make test-unit`: 218 passed, 1 skipped, ~10.8s.
 - `make lint`: 43 pre-existing errors (confirmed present at BASE via `git stash`), none in the 3 files this task touches; `ruff check tests/integration/test_agents.py` alone: "All checks passed!".
+
+## Review-fix pass (commit 84408f7)
+
+### Finding fixed
+
+`tests/integration/eval_sets/campaign_agent.test.json`'s `create-campaign-beverage`
+case expected `{"name": "create_campaign", "args": {}}`. `create_campaign`
+(`app/tools/campaign_tools.py:32-40`) has four required, no-default params
+(`product_id`, `store_name`, `city`, `state`). ADK's default eval config uses
+`TrajectoryEvaluator` with `MatchType.EXACT`, whose `_are_tool_calls_exact_match`
+requires `actual.args == expected.args` by dict equality — a correct real
+invocation can never produce `args == {}`, so this case could never score 1.0
+even when the agent behaves correctly. This was masked only by the separately
+logged pre-existing "vacuous pass" import-timing bug (out of Task 7's scope);
+the eval-set JSON itself was wrong and in scope.
+
+### Fix
+
+Looked up the real `product_id` for the seeded `aurora-cold-brew-330ml`
+product (`app/database/retail_products_data.py`) against this worktree's
+local `campaigns.db`: 22 fashion products in `PRODUCTS` populate first, then
+`populate_retail_test_products()` inserts the beverage vertical additively via
+`INSERT OR IGNORE`, so `aurora-cold-brew-330ml` (first entry in
+`RETAIL_TEST_PRODUCTS`) always lands at id 23. Verified with:
+
+```
+.venv/bin/python -c "
+from app.database.db import init_database, get_connection
+init_database()
+conn = get_connection()
+cur = conn.cursor()
+cur.execute(\"SELECT id, name FROM products WHERE name='aurora-cold-brew-330ml'\")
+print(dict(cur.fetchone()))
+conn.close()
+"
+# -> {'id': 23, 'name': 'aurora-cold-brew-330ml'}
+```
+
+Updated the expected tool call to:
+
+```json
+{"name": "create_campaign", "args": {"product_id": 23, "store_name": "Target Downtown", "city": "Austin", "state": "Texas"}}
+```
+
+`store_name`/`city`/`state` mirror the user turn's literal wording ("Target
+Downtown", "Austin", "Texas") — `create_campaign`'s own docstring accepts
+either the full state name or the two-letter code, and the user turn said
+"Texas", so this is the value a correct, non-normalizing agent invocation
+would supply. This mirrors the pre-existing `get-campaign-details` case's use
+of concrete `{"campaign_id": 2}` rather than `{}`.
+
+Only `tests/integration/eval_sets/campaign_agent.test.json` was touched; no
+`app/**/*.py` files were changed, so the PostToolUse `make test-unit` hook
+constraint doesn't add new obligations beyond the full-suite run below.
+
+### Test summary
+
+- `.venv/bin/python -c "import json; json.load(open('tests/integration/eval_sets/campaign_agent.test.json'))"`: OK (valid JSON).
+- `.venv/bin/pytest tests/integration/test_agents.py -v`: 6 passed, 60 warnings (~21s) — includes `TestCampaignAgent::test_campaign_agent_tools`, the case covering this fix. (Per the workstream's pre-existing, out-of-scope "vacuous pass" DISCOVERY, these integration tests do not exercise the real LLM path in this sandbox; the JSON-level correctness of the fix was independently verified by direct DB lookup above, not by this run alone.)
+- `make test-unit`: 218 passed, 1 skipped (~11s).
+- `make lint`: 43 pre-existing errors, same count/file-set as confirmed via `git stash` on the unmodified tree before this fix — none in `tests/integration/eval_sets/campaign_agent.test.json` (not a lint target) or introduced by this diff.
+
+### Commits
+
+- `84408f7` — review-fix: populate create-campaign-beverage eval args (ws09 Task 7)

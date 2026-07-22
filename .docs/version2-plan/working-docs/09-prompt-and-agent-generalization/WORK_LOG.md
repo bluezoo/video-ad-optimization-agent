@@ -420,3 +420,25 @@ confirmed present at BASE via `git stash` (none in this task's three files;
 `ruff check tests/integration/test_agents.py` alone = clean).
 
 Commit range: ceff65d..144ff59
+
+### Task 7 review-fix (84408f7)
+
+Fixed reviewer finding: `create-campaign-beverage`'s expected tool call was
+`{"name": "create_campaign", "args": {}}`, but `create_campaign` has four
+required, no-default params (`product_id`, `store_name`, `city`, `state`).
+Under ADK's default `tool_trajectory_avg_score: 1.0` (`TrajectoryEvaluator`,
+`MatchType.EXACT`, dict-equality on `args`), a correct real invocation can
+never produce `args == {}}`, so the case could never pass even when the agent
+behaves correctly — the opposite of the intended "validate correct non-fashion
+behavior" coverage. Looked up the real `product_id` (23, for
+`aurora-cold-brew-330ml`, verified by direct DB query against this worktree's
+`campaigns.db`) and populated `store_name`/`city`/`state` from the user turn's
+literal wording, mirroring the pre-existing `get-campaign-details` case's
+concrete `{"campaign_id": 2}` pattern. Only the eval-set JSON was touched.
+
+**Test output summary:** `.venv/bin/pytest tests/integration/test_agents.py -v`
+= 6 passed, 60 warnings (~21s); `make test-unit` = 218 passed, 1 skipped;
+`make lint` = 43 pre-existing errors (confirmed unchanged from BASE via
+`git stash`), none in the touched JSON file or newly introduced.
+
+Commit range: 144ff59..84408f7
