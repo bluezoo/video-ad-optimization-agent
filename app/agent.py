@@ -46,7 +46,7 @@ from google.adk.agents import LlmAgent
 # For chart generation, consider a separate visualization agent without tools
 from .config import APP_DESCRIPTION, APP_NAME, DB_PATH, MODEL
 from .database.db import init_database
-from .database.mock_data import populate_mock_data
+from .database.mock_data import seed_demo_data
 
 # Import all tools
 from .tools.campaign_tools import (
@@ -110,7 +110,7 @@ from .tools.video_tools import (
 
 try:
     init_database()
-    populate_mock_data()
+    seed_demo_data()
 except Exception as e:
     print(f"[Agent Init] Database initialization error: {e}", file=sys.stderr)
     print(f"[Agent Init] DB_PATH attempted: {DB_PATH}", file=sys.stderr)

@@ -21,7 +21,9 @@ from enum import StrEnum
 # App mode (Phase 6): demo|connected, default demo. Nothing consumes this yet —
 # Phase 11a resolves it internally to a data-provider selection (demo → the
 # synthetic provider, connected → the live one). APP_MODE stays the ONLY
-# user-facing mode knob; do not add a second mode env var.
+# user-facing mode knob; do not add a second mode env var. (DEMO_DATASET
+# below is NOT a mode — it's a demo-scoped dataset selector: which demo
+# catalog gets seeded at startup.)
 class AppMode(StrEnum):
     DEMO = "demo"
     CONNECTED = "connected"
@@ -34,6 +36,24 @@ except ValueError:
     raise ValueError(
         f"Invalid APP_MODE={_raw_app_mode!r}. Allowed values: "
         f"{', '.join(m.value for m in AppMode)}; unset defaults to 'demo'."
+    ) from None
+
+# Demo dataset selector (Phase 15): which demo catalog to seed at startup.
+# fashion (default) = today's full demo: 22 fashion products, the retail core
+# test set, and 4 demo campaigns with metrics. none = schema only — an empty
+# catalog for from-scratch product onboarding.
+class DemoDataset(StrEnum):
+    FASHION = "fashion"
+    NONE = "none"
+
+
+_raw_demo_dataset = (os.environ.get("DEMO_DATASET") or "").strip().lower()
+try:
+    DEMO_DATASET = DemoDataset(_raw_demo_dataset) if _raw_demo_dataset else DemoDataset.FASHION
+except ValueError:
+    raise ValueError(
+        f"Invalid DEMO_DATASET={_raw_demo_dataset!r}. Allowed values: "
+        f"{', '.join(d.value for d in DemoDataset)}; unset defaults to 'fashion'."
     ) from None
 
 # Model configuration
