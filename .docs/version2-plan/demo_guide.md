@@ -7,11 +7,13 @@ reflect the latest merged + in-review changes. It supersedes the ws08 snapshot a
 `working-docs/08-product-schema-generalization/USER_JOURNEY_TEST_GUIDE.md` (kept as a
 historical record).
 
-**Last updated:** 2026-07-22, workstream 10 (playout attribution) — metrics now
-derive through the ad-play join described below; see "What changed in Phase 10"
-ahead of Journey B4. Previous update: workstream 09 (prompt & agent
-generalization, PR #10) — incl. the ad-style policy added after the owner's
-first manual test round.
+**Last updated:** 2026-07-22, workstream 11a (live BlueZoo adapter, seam-only) —
+demo-mode behavior is byte-identical; see Part 0b for what actually changed
+(APP_MODE now gates a real seam). Previous update: workstream 10 (playout
+attribution) — metrics now derive through the ad-play join described below; see
+"What changed in Phase 10" ahead of Journey B4. Previous update: workstream 09
+(prompt & agent generalization, PR #10) — incl. the ad-style policy added after
+the owner's first manual test round.
 
 ---
 
@@ -109,6 +111,54 @@ Run Journeys **B4 and B5** below — their invariants (RPI band [0.03, 0.07],
 `revenue ≈ impressions × RPI` per creative, distinct RPIs across creatives, winner =
 max RPI) are the real Phase 10 acceptance check, and the example numbers there were
 re-captured from the new join.
+
+---
+
+## Part 0b — What workstream 11a changed (APP_MODE now does something)
+
+Phase 11a put demo-data generation behind a real seam: an `AudienceDataSource`
+interface with `SyntheticAudienceDataSource` (today's demo generator, wrapped
+as-is) as the only registered implementation, resolved by `APP_MODE` through a
+fail-closed factory. This is a refactor, not a behavior change — demo mode's
+output is byte-identical by design (golden-pinned against the pre-refactor
+join), so every ws10 journey above still applies verbatim; nothing to
+re-verify there beyond re-running them once.
+
+### Journey 0b.1 — demo mode unchanged
+
+```bash
+make dev
+```
+
+Re-run Journey 0.2 (or any ws10 journey) — expect **identical numbers** to
+before this workstream. If anything differs, the seam refactor broke
+byte-identity and that's a regression, not an intentional change.
+
+### Journey 0b.2 — connected mode fails closed (terminal check, no browser needed)
+
+```bash
+cd <worktree> && APP_MODE=connected .venv/bin/python -c \
+  "from app.audience import get_audience_datasource; get_audience_datasource()"
+```
+
+**Expect:** a `RuntimeError` whose message names `APP_MODE='connected'`, Phase
+11b (the live BlueZoo adapter that isn't implemented yet), and the way back
+(`APP_MODE=demo`, the default). This is where it surfaces in the app: any flow
+that derives metrics (video activation, demo-data seeding) raises this same
+error in connected mode instead of silently falling back to demo data — the
+fail-closed principle from Phase 6, now real rather than deferred.
+
+### Journey 0b.3 — invalid APP_MODE still rejected at startup
+
+```bash
+APP_MODE=banana make dev
+```
+
+**Expect:** the Phase 6 `ValueError` at config load (unchanged behavior — this
+predates ws11a). Listed here so it's clear these are two different layers: an
+invalid `APP_MODE` value fails at **config load** (`ValueError`), while a
+valid-but-unimplemented value (`connected`) fails at **datasource resolution**
+(`RuntimeError`) the first time something actually needs audience data.
 
 ---
 
@@ -369,6 +419,18 @@ product-hero shot rather than erroring.
 3. **Tests must hit the live API** — new **Phase 16** (`16-live-api-testing.md`,
    resolves Q19): fast + live tiers both green, `gemini-3.6-flash` default, live
    Veo/image-gen tests, Gemini-judge review script for generated media.
+
+### Workstream 11a — fixed vs. deliberately not done
+
+- **Fixed:** ws10's carried items 1+2 — the `_load_attribution_windows`
+  empty-list `IN ()` guard, and the mock_data/review_tools window-load SQL
+  duplication, now live once in `app/demo_data/windows.py` and are shared by
+  both call sites.
+- **Deliberately not done:** the live/cached BlueZoo conformer for
+  `APP_MODE=connected` — that's Phase 11b, tracked as the `RuntimeError` in
+  Journey 0b.2 above. Also deliberately deferred: ws10's carried items 3
+  (closed-attribution-window history growth) and 4 (repo-wide lint red) —
+  owner directed only items 1+2 into this workstream at kickoff.
 
 ### Known-not-done (tracked, out of ws09 scope)
 
