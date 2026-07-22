@@ -152,7 +152,7 @@ def derive_rows_from_windows(
     windows: list[dict],
     date_from: date,
     date_to: date,
-    source=None,
+    source=None,  # AudienceDataSource | None — unannotated to avoid the app.audience import edge
 ) -> list[dict]:
     """The ad-play join: windows -> plays -> visits/revenue -> daily rows.
 
