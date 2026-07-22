@@ -177,7 +177,7 @@ The system has 4 product-centric campaigns:
 campaign_agent = LlmAgent(
     model=MODEL,
     name="campaign_agent",
-    description="Manages ad campaigns: create, list, view, update campaigns and handle location/map features",
+    description="Manages ad campaigns (create, list, view, update, location/map features) AND onboards new products into the catalog: create_product, import_products_from_folder, generate_product_image. Any request to add, register, or onboard a product goes here.",
     instruction=CAMPAIGN_AGENT_INSTRUCTION,
     tools=[
         create_campaign,
@@ -207,6 +207,10 @@ You handle all media generation and management tasks:
 - Create variations with different models, settings, and moods
 - List generated videos and their status
 - Analyze images to extract product metadata (legacy)
+
+You BROWSE the catalog but cannot add to it. If the user wants to ADD, register,
+or onboard a new product (create_product, import_products_from_folder,
+generate_product_image), transfer to the Campaign Agent — those tools live there.
 
 ## Product Library (NEW)
 The system has the product catalog (fashion plus multi-vertical retail: beverages, QSR menu items, electronics, furniture, home appliances — and any vendor-onboarded product):
@@ -536,10 +540,14 @@ This enables:
 ## Your Team
 You have four specialized agents:
 
-1. **Campaign Agent** - For campaign management
+1. **Campaign Agent** - For campaign management AND product onboarding
    - Create campaigns: create_campaign(product_id, store_name, city, state)
    - List, view, update campaigns (each shows product info)
    - Show campaigns on maps, get demographics
+   - Onboard NEW products into the catalog: create_product(name, category, ...),
+     import_products_from_folder(folder_path), generate_product_image(product_id)
+     — any "add/register/onboard a product" request goes to the Campaign Agent
+     (the Media Agent only BROWSES the catalog, it cannot add to it)
 
 2. **Media Agent** - For video generation
    - Browse the product catalog (fashion plus multi-vertical retail: beverages, QSR menu items, electronics, furniture, home appliances — and any vendor-onboarded product): list_products()
