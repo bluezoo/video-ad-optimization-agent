@@ -17,7 +17,7 @@ Update rows in place as a workstream progresses; don't append new rows for the s
 | 5 | `05` | deterministic-demo-data | merged | version_2_deterministic-demo-data | #6 | 2026-07-18 | squash-merged as a5a0f17; F2+F3 demo scenarios PASS; final review clean |
 | 6 | `06` | app-mode-config-skeleton | merged | version_2_app-mode-config | [#7](https://github.com/bluezoo/video-ad-optimization-agent/pull/7) | 2026-07-19 | squash-merged as 2e05f9d; smoke-matrix verification (demo scenario skipped by design — no agent-facing change); final review zero findings |
 | 7 | `07` | rpi-across-creatives-chart | merged | version_2_rpi-chart | [#8](https://github.com/bluezoo/video-ad-optimization-agent/pull/8) | 2026-07-19 | squash-merged as 60ac50f; F3 (updated criteria) + new F4 PASS; final review clean; incl. numpy-AE deploy fix |
-| 8 | `08` | product-schema-generalization | verify in progress | version_2_product-schema | - | 2026-07-20 | all 5 tasks implemented + reviewed, stabilize loop green (02fc504, full make test); running F1.1/F2.1 regression + new F5 |
+| 8 | `08` | product-schema-generalization | merged | version_2_product-schema | [#9](https://github.com/bluezoo/video-ad-optimization-agent/pull/9) | 2026-07-21 | squash-merged as 5d3e1f8; F1.1/F2.1 regression + new F5 PASS; final review clean; owner manual test (user-journey guide) passed — 2 findings routed to Phases 9/15 via DISCOVERY amendments |
 | 9 | `09` | prompt-and-agent-generalization | not started | - | - | 2026-07-13 | depends on Phase 8 |
 | 10 | `10` | playout-attribution | not started | - | - | 2026-07-13 | depends on Phases 4, 5, 8 |
 | 11a | `11` | audience-provider-seam (port) | not started | - | - | 2026-07-16 | depends on Phases 5, 6, 10; not blocked on any open question |

@@ -35,3 +35,13 @@ Owner ran the pre-merge user-journey guide and hit two issues generating a video
    - `list_products` (video_tools.py:1767) builds public URLs via `get_public_url()` which never checks blob existence → the 6 retail SKUs (reference-only images, deliberate ws08 scope) render as clickable links that 404 with NoSuchKey.
    - `generate_video_from_product` (video_tools.py:527) silently proceeds WITHOUT the reference image when `product_image_exists()` is False — no warning to user or log; combined with (1), this produced the cans-dress video purely from the fashion-template text.
 Blast radius: 09 (prompt approach options at kickoff), 15 (onboarding must guarantee an image exists or is generated; storage seam must handle vendor uploads/local), 14a (retail SKU image generation candidate). Amendments added to 09 and 15 in this branch.
+
+## 2026-07-21 — checkpoint 6: finished (merged)
+PR #9 squash-merged into version_2 as 5d3e1f8 (owner-confirmed after their manual
+user-journey test — guide at USER_JOURNEY_TEST_GUIDE.md in this folder; server log
+clean throughout; the two owner-reported findings were root-caused and routed forward:
+fashion-prompt-on-beverage → Phase 9 amendment (templating options A-D recorded),
+GCS-only product images / missing existence checks → Phase 15 amendment). Quick fixes
+(retail SKU image generation, image_url existence check, no-reference-image warning)
+deliberately deferred to Phases 9/15 per owner decision. STATUS row set to merged;
+worktree + branch cleanup follows this entry.
