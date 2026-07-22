@@ -49,3 +49,40 @@ folded into this workstream (Task 7).
 ## Test Execution
 
 Running the exact commands from the task:
+
+```bash
+$ make test-unit
+======================= 218 passed, 1 skipped in 11.48s ========================
+
+$ make test-e2e
+======================== 25 passed, 1 skipped in 7.54s =========================
+```
+
+Both test suites pass. The linting errors shown are pre-existing and not related to 
+the markdown files modified in this task (only `docs/demo-scenarios/fashion.md` and 
+`.docs/version2-plan/09-prompt-and-agent-generalization.md` were changed).
+
+## Self-Review
+
+**Changes made against plan requirements:**
+
+1. ✓ Scene F5.2 appended to `docs/demo-scenarios/fashion.md` with exact text from plan section "Task 8, Step 1"
+2. ✓ Provenance note added to 09 phase doc marking DISCOVERY 3 (xfail narrowing) as complete
+3. ✓ Tests pass (make test-unit, make test-e2e)
+4. ✓ Commit message follows pattern: "docs: add Scene F5.2 (non-fashion video generation) + 09 provenance (ws09 Task 8)"
+
+**Task scope verification:**
+
+- Only files modified: `docs/demo-scenarios/fashion.md`, `.docs/version2-plan/09-prompt-and-agent-generalization.md`, `.superpowers/sdd/progress.md`, `.superpowers/sdd/task-8-report.md`
+- No Python files touched (no linting issues introduced)
+- Markdown content matches plan specification exactly
+- All test suites pass
+
+## Final Status
+
+Task 8 is complete and ready for merge. The workstream 09 implementation is fully done with:
+- Task 1-8 all implemented (Tasks 1-7 from previous implementer, Task 8 just completed)
+- All unit and e2e tests passing
+- All demo scenarios documented (F1, F2, F3, F4, F5.1, F5.2)
+- Phase doc provenance updated
+- Progress tracking files updated

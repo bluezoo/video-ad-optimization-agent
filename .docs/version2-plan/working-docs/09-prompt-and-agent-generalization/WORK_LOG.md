@@ -442,3 +442,24 @@ concrete `{"campaign_id": 2}` pattern. Only the eval-set JSON was touched.
 `git stash`), none in the touched JSON file or newly introduced.
 
 Commit range: 144ff59..84408f7
+
+## 2026-07-22 — Task 8 implemented
+
+**Demo scenario F5.2 + phase-doc bookkeeping**
+
+All steps completed per plan.md:
+- Step 1: Appended Scene F5.2 to `docs/demo-scenarios/fashion.md` — exactly as specified in the plan:
+  * Query: "Generate a video for the Aurora cold brew using a studio setting"
+  * Expected tool calls: `generate_video_from_product` or `generate_video_with_variation` for aurora-cold-brew-330ml
+  * Pass criteria: prompt must be free of fashion/garment/wearing/model wearing/she is (case-insensitive);
+    must show `reference_image_used: false` warning; filename must derive from product-centric variation name
+    (e.g. `beverage-studio-elegant`), not ethnicity-prefixed
+  * FAIL criteria: human model in prompt, any exception, or old fashion preamble
+- Step 2: Added provenance note to 09 phase doc at line 114 marking DISCOVERY 3 (xfail narrowing from
+  Phase 2 that was folded into this workstream's Task 7) as complete with date/source annotation
+- Step 3: `make test-unit` → 218 passed, 1 skipped; `make test-e2e` → 25 passed, 1 skipped
+
+**Test output summary:** `make test-unit` = 218 passed, 1 skipped; `make test-e2e` = 25 passed,
+1 skipped. All demo-scenario documentation in place; xfail narrowing completion marked in phase doc.
+
+Commit range: 1bee8f1..fba4ed8
