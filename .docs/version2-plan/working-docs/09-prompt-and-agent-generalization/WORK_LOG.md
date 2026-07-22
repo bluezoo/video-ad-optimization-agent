@@ -604,3 +604,12 @@ Owner ran the demo guide: "it worked as expected", then three directives:
    16-live-api-testing.md, 00-overview row 16, Q19 marked RESOLVED.
 Per owner ("if the fixes are already part of workstream, update those workstreams, and
 we can do them in that"): 2 and 3 execute in their own workstreams, not in ws09.
+
+## 2026-07-22 — checkpoint 6: finished — PR #10 merged into version_2
+
+Squash-merged as 20d7347 after owner manual testing (round 1 PASS + three directives:
+ad style policy fixed in-branch, storage → Phase 15 amendment, live-API tests → new
+Phase 16 resolving Q19). Post-merge: fast suite green on version_2 (246 passed /
+2 skipped), remote branch deleted, worktree + local branch cleaned up, STATUS → merged.
+Next per sequencing: Phase 16 (live-api-testing) or Phase 15 (product-onboarding /
+all-local storage), owner's pick — both now branch from version_2 @ 20d7347.
