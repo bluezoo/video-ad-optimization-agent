@@ -62,6 +62,11 @@ Fix the live bugs and stale facts already sitting in the codebase, before buildi
 
 **Fix:** align `CAMPAIGN_CATEGORIES` and the CHECK constraint now, while the mismatch is easy to see and fix, so it doesn't silently resurface during Phase 8. But do not treat "make the two lists match" as solving the deeper problem Phase 8 will hit: `create_campaign()`'s silent fallback-to-`"essentials"` for unrecognized categories means a non-fashion product's category will currently be silently miscategorized rather than erroring — Phase 8 needs to decide whether campaign category should become a free-form/generic taxonomy or a real controlled list with proper validation and an explicit error path, not just a longer hardcoded fashion mapping. Flagged as an open question there, not solved here.
 
+> **Amended (workstream 08, 2026-07-20):** the deferred fallback decision
+> resolved as Option A — themed campaign taxonomy with an `always-on` default
+> bucket and a validated explicit `category` parameter; the silent
+> `essentials` fallback is gone (app/tools/campaign_tools.py).
+
 **Test:** assert `set(CAMPAIGN_CATEGORIES) == set(<values extracted from the CHECK constraint>)`. Also add a test asserting what `create_campaign()` currently does with an unrecognized category (documents the silent-fallback behavior explicitly, so Phase 8 has a clear "before" baseline to change deliberately rather than accidentally).
 
 ### 6. Stale/incorrect factual references (not vertical-specific — that's Phase 9)

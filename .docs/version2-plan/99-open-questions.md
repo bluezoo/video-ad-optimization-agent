@@ -42,6 +42,15 @@ Does BlueZoo's `group_uv_*` (unique visitor) concept need to be surfaced as a di
 
 Which non-fashion vertical should the generalization work's proof-of-concept fixture catalog use? BlueZoo's own marketed verticals are out-of-home advertising, retail, hospitality, and smart cities — picking one that matches an actual upcoming conversation/demo would make Phase 8's fixture data doubly useful.
 
+> **Answered (workstream 08, 2026-07-20):** broader than any single vertical —
+> the owner wants the schema to serve *any retail vertical sellable on BlueZoo
+> in-store screens*. The proof fixture is a multi-vertical **retail core test
+> set** (`app/database/retail_products_data.py`: beverage, QSR menu item,
+> consumer electronics, furniture, home appliance), attributes-first. Product
+> images are referenced but not generated here — users will either upload
+> photos or generate them via nano banana (Phase 14a model, Phase 15 tools),
+> growing this core set into the standard test imagery.
+
 ## 8. Product CRUD scope (Phase 8) — ANSWERED 2026-07-16
 
 ~~Is a full product-CRUD tool actually needed now, or is seeded-fixture-only sufficient for near-term demos?~~ **Answered by the owner: yes, it's needed.** From-scratch onboarding (fresh product images → products → campaigns → analytics, no preseeded catalog) is a stated goal; product CRUD (agent tools + CLI wrapper) is now Phase 15, `15-product-onboarding.md`. No client input required.
@@ -97,4 +106,4 @@ Small confirmations the published docs can't settle, best asked as one batch alo
 
 ---
 
-None of these block starting the plan — Phase 1 through Phase 10, Phase 11a, and Phase 15 can all proceed without any of them being answered. Question 17 is now a "which fallback?" ask for BlueZoo (the docs confirmed no endpoint serves sub-15-minute visit windows) and does not block Phase 10's demo join, which uses the deterministic generator. Questions 1 and 2 block **Phase 11b only** (the live conformer — 11a, the seam port, is unblocked; Q2's mimic-validation half is already satisfied against the published docs, leaving the transport decision and an authenticated drift-check); question 18 is a batch of small 11b checklist confirmations; question 3 blocks Phase 12; question 4 is now a narrower capability check against the PoS system chosen in question 3. Questions 8 and 16 are answered/resolved (owner decisions, 2026-07-16). Question 11 (screen-to-sensor mapping) and question 12 (sandbox access) inform Phase 11b but don't block starting it. The rest are refinements that improve later phases but don't block starting them.
+None of these block starting the plan — Phase 1 through Phase 10, Phase 11a, and Phase 15 can all proceed without any of them being answered. Question 17 is now a "which fallback?" ask for BlueZoo (the docs confirmed no endpoint serves sub-15-minute visit windows) and does not block Phase 10's demo join, which uses the deterministic generator. Questions 1 and 2 block **Phase 11b only** (the live conformer — 11a, the seam port, is unblocked; Q2's mimic-validation half is already satisfied against the published docs, leaving the transport decision and an authenticated drift-check); question 18 is a batch of small 11b checklist confirmations; question 3 blocks Phase 12; question 4 is now a narrower capability check against the PoS system chosen in question 3. Questions 7, 8 and 16 are answered/resolved (owner decisions, 2026-07-16 and 2026-07-20). Question 11 (screen-to-sensor mapping) and question 12 (sandbox access) inform Phase 11b but don't block starting it. The rest are refinements that improve later phases but don't block starting them.

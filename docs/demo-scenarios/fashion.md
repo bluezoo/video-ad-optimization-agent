@@ -171,3 +171,33 @@ winning? Show me a comparison chart."
   rounding), RPIs lie in [0.03, 0.07], and are not all identical.
 - `chart.chart_data.labels`/`rpi_values` in the tool response match the
   `comparison.creatives` payload exactly (same order, same numbers).
+
+## Scenario F5: Non-fashion product campaign (workstream 08)
+
+Covers Phase 8: the typed vertical-agnostic Product model and the deliberate
+campaign-category behavior, exercised through the multi-vertical retail core
+test set (seeded at startup alongside the fashion catalog).
+
+### Scene F5.1 — browse and create a campaign for a beverage product
+
+**Query 1:** "List the beverage products"
+
+**Query 2 (follow-up turn):** "Create a campaign for the Aurora cold brew at
+Target Downtown in Austin, Texas"
+
+**Expected tool calls:**
+- Query 1: `list_products(category="beverage")` → includes
+  `aurora-cold-brew-330ml` (and `citrus-grove-sparkling-water-500ml`); no
+  crash on the non-fashion rows (style/color/fabric are null for them).
+- Query 2: `create_campaign(product_id=<resolved id>, store_name="Target
+  Downtown", city="Austin", state="Texas"|"TX")` (explicit `category` may be
+  present only if it is a valid theme value).
+
+**Pass criteria (check the values, not prose):**
+- Campaign created with `status: "success"`, `category: "always-on"` (the
+  deliberate non-fashion default — FAIL if it is "essentials", which would
+  mean the old silent fallback survived).
+- The campaign description mentions the product (e.g. "Aurora Cold Brew")
+  and does NOT contain "fashion item" or "classic".
+- No traceback anywhere; product fields in responses are populated from the
+  typed model (name/category present; no literal "None" strings).

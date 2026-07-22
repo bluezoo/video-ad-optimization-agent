@@ -18,12 +18,12 @@ Stage 1: Scene Image Prompt - Creates first frame with model wearing product
 Stage 2: Video Animation Prompt - Animates the scene image
 """
 
-from typing import Dict, Any, List
+from ..models.product import Product
 from ..models.variation import CreativeVariation
 
 
 def build_scene_image_prompt(
-    product: Dict[str, Any],
+    product: Product,
     variation: CreativeVariation
 ) -> str:
     """Build a prompt for generating a scene-ready first frame image.
@@ -32,17 +32,18 @@ def build_scene_image_prompt(
     which will be used as the first frame for video generation.
 
     Args:
-        product: Product dictionary with metadata
+        product: Typed Product
         variation: Creative variation parameters
 
     Returns:
         Optimized image generation prompt
     """
-    # Extract product details
-    garment_description = product.get("details", "")
-    garment_type = product.get("style", product.get("category", "elegant fashion piece"))
-    color = product.get("color", "")
-    fabric = product.get("fabric", "")
+    # Extract product details (style -> category -> literal fallback preserved
+    # from the pre-Product dict era; golden test pins the output)
+    garment_description = product.description
+    garment_type = product.attributes.get("style") or product.category or "elegant fashion piece"
+    color = product.attributes.get("color") or ""
+    fabric = product.attributes.get("fabric") or ""
 
     if garment_description:
         garment_desc = f"{color} {fabric} {garment_type}".strip()
@@ -141,7 +142,7 @@ def build_scene_image_prompt(
     style_desc = style_map.get(variation.visual_style, "Professional fashion photography")
 
     # Key features from product
-    key_features = product.get("details", "fabric texture and construction")
+    key_features = product.description or "fabric texture and construction"
 
     # Construct the scene image prompt
     prompt = f"""{style_desc} of {model_desc} wearing a stunning {garment_desc}.
@@ -176,7 +177,7 @@ Style: Luxury fashion campaign, magazine-quality, aspirational."""
 
 
 def build_video_animation_prompt(
-    product: Dict[str, Any],
+    product: Product,
     variation: CreativeVariation
 ) -> str:
     """Build a prompt focused on animating an existing scene image.
@@ -184,7 +185,7 @@ def build_video_animation_prompt(
     Since Stage 1 creates the scene, this prompt focuses on movement and animation.
 
     Args:
-        product: Product dictionary with metadata
+        product: Typed Product
         variation: Creative variation parameters
 
     Returns:
@@ -265,7 +266,7 @@ HUMAN FIGURE QUALITY:
 
 
 def build_creative_prompt(
-    product: Dict[str, Any],
+    product: Product,
     variation: CreativeVariation
 ) -> str:
     """Build a single-stage video prompt (fallback when not using two-stage).
@@ -273,16 +274,16 @@ def build_creative_prompt(
     This combines scene and animation into one prompt for direct video generation.
 
     Args:
-        product: Product dictionary with metadata
+        product: Typed Product
         variation: Creative variation parameters
 
     Returns:
         Full video generation prompt
     """
     # Extract product details
-    garment_type = product.get("style", product.get("category", "elegant fashion piece"))
-    color = product.get("color", "")
-    fabric = product.get("fabric", "")
+    garment_type = product.attributes.get("style") or product.category or "elegant fashion piece"
+    color = product.attributes.get("color") or ""
+    fabric = product.attributes.get("fabric") or ""
     garment_desc = f"{color} {fabric} {garment_type}".strip() or "elegant fashion piece"
 
     # Build model description

@@ -48,5 +48,18 @@ Phase 2 (corrected `CAMPAIGN_CATEGORIES`).
 ## Open questions
 
 1. **Which non-fashion vertical should the proof-of-genericity fixture use?** This should match whatever BlueZoo customer/vertical is most relevant to show next (BlueZoo's own marketed verticals are out-of-home advertising, retail, hospitality, and smart cities — none of which are fashion-specific) — worth a quick confirmation with the client rather than picking arbitrarily.
+
+> **Resolved (workstream 08, 2026-07-20):** see 99-open-questions Q7 — not one
+> vertical but a multi-vertical retail core test set (beverage/QSR/electronics/
+> furniture/home-appliance), attributes-first, images deferred to Phase 14a/15.
+
 2. **Is campaign category a controlled taxonomy independent of product category, or should it become free-form?** This determines whether step 5's fix is "add a small campaign-theme enum separate from product category" or "loosen the DB CHECK constraint" — a real design decision, not a mechanical mapping fix.
+
+> **Resolved (workstream 08, 2026-07-20):** Option A — campaign category stays
+> a small controlled THEME taxonomy (CHECK + config.CAMPAIGN_CATEGORIES, now
+> including `always-on`), decoupled from the open product category.
+> create_campaign gained an explicit validated `category` param; unmapped
+> product categories default to `always-on` (deliberate), never a silent
+> `essentials`. Existing DBs need `make reset-db` (SQLite CHECK rebuild).
+
 3. ~~Product CRUD is intentionally out of scope for this phase (see step 6) — flag only as backlog if a future demo genuinely needs to create products live rather than via seed fixtures.~~ **Answered (owner, 2026-07-16): yes, it's needed** — from-scratch onboarding is a stated goal; CRUD tools are Phase 15 (`15-product-onboarding.md`). Still out of scope for *this* phase.

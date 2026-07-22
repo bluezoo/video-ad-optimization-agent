@@ -19,6 +19,7 @@ from contextlib import contextmanager
 from datetime import UTC, datetime
 
 from .. import config
+from ..models.product import Product
 
 
 def get_connection() -> sqlite3.Connection:
@@ -70,7 +71,7 @@ def init_database() -> None:
             store_name TEXT,
             city TEXT NOT NULL,
             state TEXT NOT NULL,
-            category TEXT CHECK(category IN ('summer', 'formal', 'professional', 'essentials', 'holiday')),
+            category TEXT CHECK(category IN ('summer', 'formal', 'professional', 'essentials', 'holiday', 'always-on')),
             status TEXT DEFAULT 'draft' CHECK(status IN ('draft', 'active', 'paused', 'completed')),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -237,6 +238,7 @@ def init_database() -> None:
 
     # Populate products table
     populate_products()
+    populate_retail_test_products()
 
 
 def create_migration_indexes() -> None:
@@ -386,14 +388,75 @@ def populate_products() -> None:
     print(f"[DB] Populated {len(PRODUCTS)} products")
 
 
-def get_product(product_id: int) -> dict:
-    """Get a product by ID.
+def insert_product(product: Product) -> Product:
+    """Insert a new product through the typed write path (Phase 8).
+
+    The db-layer substrate for self-service onboarding ("run MY product
+    through it"): Phase 15's agent tools (create_product / import /
+    generate_product_image) wrap this. The referenced image file does NOT
+    need to exist yet — image_filename is a reference resolved later by
+    vendor upload or image generation.
+
+    Returns:
+        The stored Product, re-read via get_product() so the caller sees
+        exactly what any later retrieval will see (id populated).
+
+    Raises:
+        sqlite3.IntegrityError: if a product with this name already exists.
+    """
+    row = product.to_row()
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            INSERT INTO products
+            (name, category, style, color, fabric, occasion, details,
+             image_filename, gcs_path, local_path, metadata)
+            VALUES (:name, :category, :style, :color, :fabric, :occasion,
+                    :details, :image_filename, :gcs_path, :local_path, :metadata)
+        ''', row)
+        product_id = cursor.lastrowid
+        conn.commit()
+    finally:
+        conn.close()
+    return get_product(product_id)
+
+
+def populate_retail_test_products() -> None:
+    """Seed the multi-vertical retail core test set (Phase 8).
+
+    Attributes-first products across five verticals proving the schema is
+    vertical-agnostic. Additive and idempotent (INSERT OR IGNORE on the
+    UNIQUE name); the fashion demo catalog is untouched. Writes go through
+    Product.to_row() — the same write path Phase 15's create_product uses.
+    """
+    from .retail_products_data import RETAIL_TEST_PRODUCTS
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        for entry in RETAIL_TEST_PRODUCTS:
+            row = Product(**entry).to_row()
+            cursor.execute('''
+                INSERT OR IGNORE INTO products
+                (name, category, style, color, fabric, occasion, details,
+                 image_filename, gcs_path, local_path, metadata)
+                VALUES (:name, :category, :style, :color, :fabric, :occasion,
+                        :details, :image_filename, :gcs_path, :local_path, :metadata)
+            ''', row)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_product(product_id: int) -> Product | None:
+    """Get a product by ID as a typed Product (metadata parsed into attributes).
 
     Args:
         product_id: The product ID
 
     Returns:
-        Product dictionary or None if not found
+        Product or None if not found
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -402,18 +465,18 @@ def get_product(product_id: int) -> dict:
     conn.close()
 
     if row:
-        return dict(row)
+        return Product.from_row(dict(row))
     return None
 
 
-def get_product_by_name(name: str) -> dict:
-    """Get a product by name.
+def get_product_by_name(name: str) -> Product | None:
+    """Get a product by name as a typed Product (metadata parsed into attributes).
 
     Args:
         name: The product name (e.g., 'emerald-satin-slip-dress')
 
     Returns:
-        Product dictionary or None if not found
+        Product or None if not found
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -422,18 +485,18 @@ def get_product_by_name(name: str) -> dict:
     conn.close()
 
     if row:
-        return dict(row)
+        return Product.from_row(dict(row))
     return None
 
 
-def list_products(category: str = None) -> list:
+def list_products(category: str = None) -> list[Product]:
     """List all products, optionally filtered by category.
 
     Args:
         category: Optional category filter
 
     Returns:
-        List of product dictionaries
+        List of typed Products
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -446,7 +509,7 @@ def list_products(category: str = None) -> list:
     rows = cursor.fetchall()
     conn.close()
 
-    return [dict(row) for row in rows]
+    return [Product.from_row(dict(row)) for row in rows]
 
 
 DEMO_ANCHOR_KEY = "demo_anchor_date"

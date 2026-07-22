@@ -6,6 +6,21 @@
 
 A brand-new vertical can be onboarded end-to-end **by talking to the agent**: import a folder of product images (or generate product images from descriptions via the image model), get real `Product` rows, create campaigns, generate videos, and see deterministic BlueZoo-shaped analytics — with zero preseeded data and zero cloud-storage account.
 
+> **Amended (workstream 08, 2026-07-19):** the owner's pre-merge manual test
+> produced live evidence for this phase's step 1 and the image-generation
+> tools: (a) `list_products` (video_tools.py:1767) emits public GCS URLs via
+> `get_public_url()` with **no existence check**, so the ws08 retail SKUs
+> (reference-only images by design) render as clickable links that 404 with
+> NoSuchKey; (b) `generate_video_from_product` (video_tools.py:527)
+> **silently proceeds without the reference image** when
+> `product_image_exists()` is False — no warning to user or log. When this
+> phase builds the storage seam and `generate_product_image`, both call
+> sites must go through the seam, image URLs must be existence-checked (or
+> carry an explicit "image pending" status), and generation without a
+> reference image must be surfaced, not silent. Onboarding should guarantee
+> every product row ends up with a real image (uploaded or generated) before
+> it's presented as browse-ready.
+
 ## Current state (what blocks from-scratch today)
 
 - **No write path for product images:** `app/storage.py` is read-only for `product-images/` — there is no `save_product_image()` anywhere; the personal GCS bucket default (`app/config.py:52-53`, `kaggle-on-gcp-ad-campaign-assets`) is a silent hard dependency, and `storage.py:189/208/224` raise without a real bucket/client.
@@ -16,6 +31,20 @@ A brand-new vertical can be onboarded end-to-end **by talking to the agent**: im
 ## Steps
 
 1. **Local-first storage backend.** Introduce a minimal storage seam in `app/storage.py`: a local-filesystem backend (default — images/videos under a configurable app data dir) and the existing GCS backend as explicit opt-in (`GCS_BUCKET` set → GCS; unset → local; never a personal-bucket fallback — delete the default at `app/config.py:52-53`, and make video-generation paths (`app/tools/video_tools.py:520` consumption) work through the seam. This resolves open question 16: demo mode requires GCP credentials **only for model calls**, no storage account.
+
+> **Amended (workstream 08, 2026-07-20):** the typed model landed as
+> `app/models/product.py` `Product` with exactly the expected constructor
+> surface (name, category, description, attributes dict + image_filename);
+> write through `Product.to_row()` (see `db.populate_retail_test_products()`
+> for the reference write path). The multi-vertical retail core test set
+> (`retail_products_data.py`) is the seed this phase's image tools
+> (upload / nano-banana generation) grow into real imagery — consider a
+> `DEMO_DATASET` value for it alongside `fashion|none`. The self-service
+> vendor flow ("run MY product") has its db substrate ready:
+> `db.insert_product(Product)` accepts on-the-fly products whose image files
+> don't exist yet — this phase's tools are thin wrappers over it (vendor
+> upload fills local_path/gcs_path; nano-banana generation writes the file
+> image_filename already references).
 2. **Gate seeding.** Replace `app/agent.py:111`'s unconditional `populate_mock_data()` with explicit, idempotent, gated seeding: runs only in demo mode **and** when the DB is empty **and** a demo dataset is selected (the 22-product fashion catalog becomes one selectable dataset, e.g. `DEMO_DATASET=fashion|none`, default preserving today's behavior for existing demos). `DEMO_DATASET=none` yields an empty catalog — the from-scratch start.
 3. **Onboarding agent tools** (primary interface, per owner decision): `create_product` (name, category, description, attributes dict → Phase 8's typed `Product`), `import_products_from_folder` (local folder of images; filename/subfolder conventions → products + stored images through the step-1 seam), and `generate_product_image` (no image on hand: generate via the configured image model — nano banana per Phase 14a — and store it as the product's primary image). Wire into the Campaign agent's toolset with instruction text; follow existing tool conventions in `app/tools/`.
 4. **Thin CLI wrapper** (secondary, per owner decision): `scripts/onboard_products.py` calling the *same functions* as the tools (no duplicated logic) for scripted/bulk/CI setup.

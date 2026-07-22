@@ -46,6 +46,32 @@ The full pipeline (including map tools and campaign descriptions, not just promp
 
 Phase 8 (`Product` model and non-fashion fixture data must exist first).
 
+> **Amended (workstream 08, 2026-07-20):** the "Phase 8 non-fashion fixture
+> catalog" is the multi-vertical retail core test set in
+> `app/database/retail_products_data.py` (five verticals — use the beverage
+> and QSR SKUs as primary e2e inputs). Note also: (a) create_campaign now
+> takes an explicit validated `category` theme param this phase's instruction
+> rewrite should surface to the agent; (b) create_campaign's auto-description
+> was minimally generalized in ws08 (name-based fallback when style/color are
+> absent) — this phase's step 5 still owns making that text vertical-aware.
+
+> **Amended (workstream 08, 2026-07-19):** the owner's pre-merge manual test
+> produced concrete evidence for this phase: generating a video for
+> `aurora-cold-brew-330ml` yielded a fashion model wearing a *dress made of
+> cold-brew cans* — the `style → category` fallback made `garment_desc` =
+> "beverage" inside the fashion template ("wearing a stunning beverage…").
+> The owner explicitly asked this phase to evaluate a **per-vertical
+> templating system** (and possibly an LLM prompt-writer fallback for unknown
+> categories, to serve the self-service vendor scenario), not only the
+> `presentation_mode` branch planned in steps 1-3. Treat the prompt-
+> construction approach as a real Step-3 design choice at this phase's
+> kickoff — candidate options recorded in workstream 08's WORK_LOG
+> (2026-07-19 DISCOVERY entry): (A) `presentation_mode` branch as planned;
+> (B) vertical-archetype template registry (wearable / consumable-hero /
+> lifestyle-usage / staged-environment) keyed off product category with a
+> generic fallback; (C) LLM prompt-writer from the typed `Product`;
+> (D) hybrid B+C — registry for known verticals, LLM fallback for unknown.
+
 ## Open questions
 
-None new beyond Phase 8's — this phase is the mechanical follow-through on the schema decisions made there.
+None new beyond Phase 8's — this phase is the mechanical follow-through on the schema decisions made there. (But see the 2026-07-19 amendment above: the prompt-construction approach — presentation-mode branch vs vertical template registry vs LLM prompt-writer vs hybrid — is now an explicit design choice for this phase's kickoff working doc.)

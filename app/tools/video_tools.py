@@ -208,7 +208,7 @@ async def generate_scene_image(
     Returns:
         Tuple of (scene_image_bytes, scene_prompt)
     """
-    print(f"[DEBUG generate_scene_image] Starting scene generation for product: {product.get('name')}")
+    print(f"[DEBUG generate_scene_image] Starting scene generation for product: {product.name}")
     print(f"[DEBUG generate_scene_image] Variation: {variation.name}")
 
     # Build scene prompt from product and variation
@@ -278,7 +278,7 @@ async def animate_scene_with_veo(
     Returns:
         Tuple of (video_bytes, video_prompt)
     """
-    print(f"[DEBUG animate_scene_with_veo] Starting animation for: {product.get('name')}")
+    print(f"[DEBUG animate_scene_with_veo] Starting animation for: {product.name}")
     print(f"[DEBUG animate_scene_with_veo] Duration: {duration_seconds}s")
 
     # Veo 3.1 only accepts duration of 4, 6, or 8 seconds
@@ -394,7 +394,7 @@ def save_video_metadata(
     """
     metadata_filename = video_filename.replace(".mp4", ".txt")
 
-    metadata_content = f"""Product: {product.get('name', 'unknown')}
+    metadata_content = f"""Product: {product.name if product is not None else "unknown"}
 Variation: {variation.name}
 Pipeline: {pipeline_type.title()} {'(Scene + Animation)' if pipeline_type == 'two-stage' else ''}
 Generated: {datetime.now().isoformat()}
@@ -480,7 +480,7 @@ async def generate_video_from_product(
     if not product:
         return {"status": "error", "message": f"Product {product_id} not found"}
 
-    print(f"[DEBUG generate_video_from_product] Product: {product['name']}")
+    print(f"[DEBUG generate_video_from_product] Product: {product.name}")
     print(f"[DEBUG generate_video_from_product] Campaign: {campaign['name']}")
 
     # Convert dict to CreativeVariation or use default
@@ -520,7 +520,7 @@ async def generate_video_from_product(
             print("[DEBUG generate_video_from_product] Linked product to campaign")
 
     # Get product image bytes using storage abstraction
-    product_image_filename = product.get('image_filename')
+    product_image_filename = product.image_filename
     product_image_bytes = None
     if product_image_filename:
         try:
@@ -534,7 +534,7 @@ async def generate_video_from_product(
             print(f"[DEBUG generate_video_from_product] Could not load product image: {e}")
 
     # Generate video filename
-    video_filename = generate_video_filename(product['name'], variation_obj.name)
+    video_filename = generate_video_filename(product.name, variation_obj.name)
     thumbnail_filename = video_filename.replace('.mp4', '-thumbnail.png')
 
     try:
@@ -683,7 +683,7 @@ async def generate_video_from_product(
                 "campaign_id": campaign_id,
                 "campaign_name": campaign["name"],
                 "product_id": product_id,
-                "product_name": product["name"],
+                "product_name": product.name,
                 "video_filename": video_filename,
                 "video_path": video_path,
                 "thumbnail_path": thumbnail_path,
@@ -708,7 +708,7 @@ async def generate_video_from_product(
         return {
             "status": "error",
             "message": f"Video generation failed: {str(e)}",
-            "product": product["name"],
+            "product": product.name,
             "variation": variation_obj.name if variation_obj else "default"
         }
 
@@ -1736,11 +1736,11 @@ async def get_video_properties(ad_id: int) -> dict:
 def list_products(category: str = None, include_urls: bool = True) -> dict:
     """List all available products for video generation.
 
-    Products are pre-loaded from the products table (22 products).
+    Products are pre-loaded from the products table (22-item fashion catalog plus the multi-vertical retail core test set).
     Includes public GCS URLs for product images when available.
 
     Args:
-        category: Optional category filter (dress, top, pants, outerwear, skirt)
+        category: Optional category filter (e.g. dress, top, pants, beverage, electronics)
         include_urls: Whether to include public image URLs (default: True)
 
     Returns:
@@ -1753,18 +1753,18 @@ def list_products(category: str = None, include_urls: bool = True) -> dict:
     product_list = []
     for p in products:
         product_data = {
-            "id": p["id"],
-            "name": p["name"],
-            "category": p["category"],
-            "style": p["style"],
-            "color": p["color"],
-            "fabric": p["fabric"],
-            "image_filename": p["image_filename"]
+            "id": p.id,
+            "name": p.name,
+            "category": p.category,
+            "style": p.attributes.get("style"),
+            "color": p.attributes.get("color"),
+            "fabric": p.attributes.get("fabric"),
+            "image_filename": p.image_filename
         }
 
         # Add public URL for product image
-        if include_urls and p["image_filename"]:
-            image_url = storage.get_public_url(f"product-images/{p['image_filename']}")
+        if include_urls and p.image_filename:
+            image_url = storage.get_public_url(f"product-images/{p.image_filename}")
             if image_url:
                 product_data["image_url"] = image_url
 
