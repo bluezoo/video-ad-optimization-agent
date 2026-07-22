@@ -512,3 +512,152 @@ class TestGenerateAdditionalMetricsDeterministic:
                     (vid,),
                 )
                 assert cursor.fetchone()["hi"] == new_anchor.isoformat()
+
+
+class TestAttributionBridge:
+    """Phase 10 dual-write bridge: activation opens video_attribution
+    windows, pause/archive close them, and metrics derive through them."""
+
+    def _make_generated_video(self):
+        from app.database.db import get_db_cursor
+
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT c.id AS campaign_id, p.id AS product_id "
+                "FROM campaigns c, products p LIMIT 1"
+            )
+            row = cursor.fetchone()
+            cursor.execute(
+                """
+                INSERT INTO campaign_videos
+                (campaign_id, product_id, video_filename, status)
+                VALUES (?, ?, ?, 'generated')
+                """,
+                (row["campaign_id"], row["product_id"], "bridge-test-video.mp4"),
+            )
+            return cursor.lastrowid, row["campaign_id"]
+
+    def _windows(self, video_id):
+        from app.database.db import get_db_cursor
+
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT screen_id, active_from, active_to FROM video_attribution "
+                "WHERE video_id = ? ORDER BY screen_id",
+                (video_id,),
+            )
+            return [dict(r) for r in cursor.fetchall()]
+
+    def test_activate_opens_one_window_per_screen(self, fresh_test_db):
+        from datetime import date, timedelta
+
+        from app.database.db import get_db_cursor, get_demo_anchor_date
+        from app.demo_data.attribution import screens_for_campaign
+        from app.demo_data.constants import DEMO_WINDOW_DAYS
+        from app.tools.review_tools import activate_video
+
+        video_id, ad_campaign_id = self._make_generated_video()
+        assert activate_video(video_id=video_id)["status"] == "success"
+
+        windows = self._windows(video_id)
+        assert [w["screen_id"] for w in windows] == sorted(screens_for_campaign(ad_campaign_id))
+        assert all(w["active_to"] is None for w in windows)
+        with get_db_cursor() as cursor:
+            anchor = date.fromisoformat(get_demo_anchor_date(cursor))
+        expected_from = (anchor - timedelta(days=DEMO_WINDOW_DAYS - 1)).isoformat()
+        assert all(w["active_from"].startswith(expected_from) for w in windows)
+
+    def test_pause_and_archive_close_windows(self, fresh_test_db):
+        from app.tools.review_tools import activate_video, archive_video, pause_video
+
+        video_id, _ = self._make_generated_video()
+        activate_video(video_id=video_id)
+        pause_video(video_id=video_id)
+        assert all(w["active_to"] is not None for w in self._windows(video_id))
+
+        video_id2, _ = self._make_generated_video_named("bridge-test-video-2.mp4")
+        activate_video(video_id=video_id2)
+        archive_video(video_id=video_id2)
+        assert all(w["active_to"] is not None for w in self._windows(video_id2))
+
+    def _make_generated_video_named(self, filename):
+        from app.database.db import get_db_cursor
+
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT c.id AS campaign_id, p.id AS product_id "
+                "FROM campaigns c, products p LIMIT 1"
+            )
+            row = cursor.fetchone()
+            cursor.execute(
+                """
+                INSERT INTO campaign_videos
+                (campaign_id, product_id, video_filename, status)
+                VALUES (?, ?, ?, 'generated')
+                """,
+                (row["campaign_id"], row["product_id"], filename),
+            )
+            return cursor.lastrowid, row["campaign_id"]
+
+    def test_close_on_miss_warns_but_does_not_fail(self, fresh_test_db, caplog):
+        """An activated video whose windows were externally closed: pausing
+        must still succeed, with a warning — never the donor's silent no-op,
+        never an exception."""
+        import logging
+
+        from app.database.db import get_db_cursor
+        from app.tools.review_tools import activate_video, pause_video
+
+        video_id, _ = self._make_generated_video()
+        activate_video(video_id=video_id)
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "UPDATE video_attribution SET active_to = active_from WHERE video_id = ?",
+                (video_id,),
+            )
+        with caplog.at_level(logging.WARNING):
+            assert pause_video(video_id=video_id)["status"] == "success"
+        assert any("no open attribution window" in r.message for r in caplog.records)
+
+    def test_activation_metrics_derive_through_db_windows(self, fresh_test_db):
+        """The rows written at activation equal the join over the windows the
+        bridge just opened — the windows are load-bearing, not decorative."""
+        from datetime import date, timedelta
+
+        from app.database.db import get_db_cursor, get_demo_anchor_date
+        from app.demo_data.constants import DEMO_WINDOW_DAYS
+        from app.demo_data.derive import derive_video_metrics_rows
+        from app.tools.review_tools import _load_attribution_windows, activate_video
+
+        video_id, ad_campaign_id = self._make_generated_video()
+        activate_video(video_id=video_id)
+
+        with get_db_cursor() as cursor:
+            anchor = date.fromisoformat(get_demo_anchor_date(cursor))
+            windows = _load_attribution_windows(cursor, [video_id])
+            cursor.execute(
+                "SELECT metric_date, impressions, dwell_time_seconds, circulation, revenue "
+                "FROM video_metrics WHERE video_id = ? ORDER BY metric_date",
+                (video_id,),
+            )
+            stored = [tuple(r) for r in cursor.fetchall()]
+
+        derived = derive_video_metrics_rows(
+            ad_campaign_id,
+            [video_id],
+            anchor - timedelta(days=DEMO_WINDOW_DAYS - 1),
+            anchor,
+            windows=windows,
+        )
+        expected = [
+            (
+                r["metric_date"],
+                r["impressions"],
+                r["dwell_time_seconds"],
+                r["circulation"],
+                r["revenue"],
+            )
+            for r in derived
+        ]
+        assert stored == expected
+        assert len(stored) == DEMO_WINDOW_DAYS
