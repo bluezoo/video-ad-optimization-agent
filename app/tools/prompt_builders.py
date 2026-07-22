@@ -456,6 +456,26 @@ _PRODUCT_SETTING_MAP = {
 }
 
 
+_TITLE_ACRONYMS = {"anc", "led", "usb", "uhd", "qsr", "tv"}
+
+
+def _product_title(product: Product) -> str:
+    """Display title from a slug-style name; keeps unit tokens like "330ml" verbatim."""
+    words = []
+    for word in product.name.replace("_", " ").replace("-", " ").split():
+        if word.lower() in _TITLE_ACRONYMS:
+            words.append(word.upper())
+        elif any(c.isdigit() for c in word):
+            words.append(word)
+        else:
+            words.append(word.capitalize())
+    return " ".join(words)
+
+
+def _with_article(phrase: str) -> str:
+    return f"an {phrase}" if phrase[:1].lower() in "aeiou" else f"a {phrase}"
+
+
 def _render_attributes(product: Product) -> str:
     if not product.attributes:
         return ""
@@ -464,9 +484,9 @@ def _render_attributes(product: Product) -> str:
 
 
 def _build_product_scene_prompt(product: Product, variation: CreativeVariation, archetype: str) -> str:
-    product_title = product.name.replace("-", " ").title()
+    product_title = _product_title(product)
     setting_desc = _PRODUCT_SETTING_MAP.get(
-        variation.setting, f"in a {variation.setting} setting")
+        variation.setting, f"in {_with_article(variation.setting)} setting")
     time_map = {
         "golden-hour": "during golden hour with warm, soft light",
         "sunrise": "at sunrise with soft pink and orange morning light",
@@ -510,7 +530,7 @@ CRITICAL - PRODUCT PRESERVATION:
 
 QUALITY REQUIREMENTS:
 - The product is the clear hero of the frame, sharply in focus
-- Professional advertisement quality with a {variation.mood} mood
+- Professional advertisement quality with {_with_article(variation.mood)} mood
 - Vertical 9:16 aspect ratio composition
 - The scene should look like the perfect first frame of a premium video ad
 
@@ -542,7 +562,7 @@ def _build_product_animation_prompt(product: Product, variation: CreativeVariati
         "high-energy": "vibrant, dynamic, fast-paced movement",
     }
     energy_desc = energy_map.get(variation.energy, "smooth, elegant movement")
-    product_title = product.name.replace("-", " ").title()
+    product_title = _product_title(product)
 
     return f"""{camera_desc}, showcasing {product_title} from its most appealing angles.
 
