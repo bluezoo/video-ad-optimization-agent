@@ -84,3 +84,54 @@ class AudienceDataSourceContract:
             screen_ids=[999_999_99], date_from=D_FROM, date_to=D_TO
         )
         assert intervals == []
+
+
+class TestSyntheticConformance(AudienceDataSourceContract):
+    SCREEN_IDS_CAMPAIGN = 101
+
+    @property
+    def SCREEN_IDS(self):
+        from app.demo_data.attribution import screens_for_campaign
+
+        return screens_for_campaign(self.SCREEN_IDS_CAMPAIGN)
+
+    def make_source(self):
+        from app.audience.synthetic import SyntheticAudienceDataSource
+
+        return SyntheticAudienceDataSource()
+
+
+class TestSyntheticEquivalence:
+    """The synthetic source is seed.py behind the seam — same rows exactly."""
+
+    def test_intervals_equal_screen_visits_frame(self):
+        from app.audience.synthetic import SyntheticAudienceDataSource
+        from app.demo_data.attribution import campaign_seed_config, screens_for_campaign
+        from app.demo_data.seed import generate_frames
+
+        cid = 101
+        screens = screens_for_campaign(cid)
+        frames = generate_frames(campaign_seed_config(cid, D_FROM, D_TO))
+        expected = sorted(
+            (BlueZooVisitInterval(**row) for row in frames["screen_visits"]),
+            key=lambda iv: (iv.screen_id, iv.timestamp),
+        )
+        got = SyntheticAudienceDataSource().get_visit_intervals(
+            screen_ids=screens, date_from=D_FROM, date_to=D_TO
+        )
+        assert got == expected
+
+    def test_subset_request_does_not_change_values(self):
+        # Frames must be generated with the FULL campaign screen set, then
+        # filtered — generating from a subset config could reseed values.
+        from app.audience.synthetic import SyntheticAudienceDataSource
+        from app.demo_data.attribution import screens_for_campaign
+
+        screens = screens_for_campaign(101)
+        full = SyntheticAudienceDataSource().get_visit_intervals(
+            screen_ids=screens, date_from=D_FROM, date_to=D_TO
+        )
+        subset = SyntheticAudienceDataSource().get_visit_intervals(
+            screen_ids=screens[:1], date_from=D_FROM, date_to=D_TO
+        )
+        assert subset == [iv for iv in full if iv.screen_id == screens[0]]

@@ -120,7 +120,7 @@ def expand_ad_plays(
     return plays
 
 
-def _campaign_seed_config(ad_campaign_id: int, date_from: date, date_to: date) -> SeedConfig:
+def campaign_seed_config(ad_campaign_id: int, date_from: date, date_to: date) -> SeedConfig:
     """One campaign across its real 2-3 screens (the ws05 1:1
     campaign-as-screen proxy is gone)."""
     return SeedConfig(
@@ -139,6 +139,11 @@ def _campaign_seed_config(ad_campaign_id: int, date_from: date, date_to: date) -
     )
 
 
+# Historical import site (tests/unit/test_demo_attribution.py) — keep the
+# underscore alias; app/audience/synthetic.py uses the public name.
+_campaign_seed_config = campaign_seed_config
+
+
 def derive_rows_from_windows(
     ad_campaign_id: int,
     video_ids: list,
@@ -155,7 +160,7 @@ def derive_rows_from_windows(
     creative's RPI stays its ws07 constant.
     Returned dicts carry exactly the video_metrics insert columns."""
     wanted = set(video_ids)
-    frames = generate_frames(_campaign_seed_config(ad_campaign_id, date_from, date_to))
+    frames = generate_frames(campaign_seed_config(ad_campaign_id, date_from, date_to))
     visits_ix = {(v["screen_id"], v["timestamp"]): v for v in frames["screen_visits"]}
 
     plays = expand_ad_plays(
