@@ -67,23 +67,29 @@ IS_AGENT_ENGINE = os.environ.get("GOOGLE_CLOUD_AGENT_ENGINE_ID") is not None
 # Combined: running in any managed cloud environment
 IS_CLOUD_ENVIRONMENT = IS_CLOUD_RUN or IS_AGENT_ENGINE
 
-# GCS configuration - Always use GCS for storage (local and cloud)
-# This ensures consistent behavior between local development and Cloud Run
-DEFAULT_GCS_BUCKET = "kaggle-on-gcp-ad-campaign-assets"
-GCS_BUCKET = os.environ.get("GCS_BUCKET", DEFAULT_GCS_BUCKET)
+# GCS configuration — explicit OPT-IN (Phase 15 local-first).
+# Unset (or empty) GCS_BUCKET means local mode: all assets (product images,
+# videos, thumbnails) live under LOCAL_ASSETS_DIR and tool responses carry
+# no public storage URLs. Cloud deploys set GCS_BUCKET explicitly.
+GCS_BUCKET = os.environ.get("GCS_BUCKET") or None
 
 # GCS paths for assets
 GCS_PRODUCT_IMAGES_PREFIX = "product-images/"  # Renamed from seed-images per feedback
 GCS_SEED_IMAGES_PREFIX = "seed-images/"  # Legacy, deprecated
 GCS_GENERATED_PREFIX = "generated/"
 
-# Paths (kept for backwards compatibility, but GCS is primary storage)
+# Paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(BASE_DIR)
 
-# Local directories (fallback only if GCS_BUCKET is explicitly set to empty string)
-SELECTED_DIR = os.path.join(PROJECT_DIR, "selected")
-GENERATED_DIR = os.path.join(PROJECT_DIR, "generated")
+# Local asset root (Phase 15): single knob for where local-mode assets live.
+# Defaults to the project root so the pre-existing selected/ and generated/
+# locations are unchanged; product images join them under product-images/.
+# Override with the LOCAL_ASSETS_DIR env var.
+LOCAL_ASSETS_DIR = os.environ.get("LOCAL_ASSETS_DIR") or PROJECT_DIR
+SELECTED_DIR = os.path.join(LOCAL_ASSETS_DIR, "selected")
+GENERATED_DIR = os.path.join(LOCAL_ASSETS_DIR, "generated")
+PRODUCT_IMAGES_DIR = os.path.join(LOCAL_ASSETS_DIR, "product-images")
 
 # Database path
 # - Local development: Use project root (persistent across runs)

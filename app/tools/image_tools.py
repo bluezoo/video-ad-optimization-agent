@@ -21,7 +21,7 @@ from typing import Optional
 from google import genai
 from google.genai import types
 
-from ..config import SELECTED_DIR
+from ..config import GCS_BUCKET, SELECTED_DIR
 from ..database.db import get_db_cursor
 from .. import storage
 
@@ -267,7 +267,7 @@ def list_available_images() -> dict:
                 image_info["size_bytes"] = None
         images.append(image_info)
 
-    storage_location = SELECTED_DIR if storage.get_storage_mode() == "local" else f"gs://{os.environ.get('GCS_BUCKET', '')}/seed-images/"
+    storage_location = SELECTED_DIR if storage.get_storage_mode() == "local" else f"gs://{GCS_BUCKET or ''}/seed-images/"
     return {
         "status": "success",
         "folder": storage_location,

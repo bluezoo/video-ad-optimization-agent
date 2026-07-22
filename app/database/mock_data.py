@@ -74,7 +74,7 @@ MOCK_CAMPAIGNS = [
 ]
 
 # =============================================================================
-# REAL Videos in GCS (gs://kaggle-on-gcp-ad-campaign-assets/generated/)
+# REAL demo videos (generated/ prefix in whatever GCS bucket is configured)
 # =============================================================================
 # These are actual Veo-generated videos that exist in the bucket.
 # Each campaign gets multiple real videos with thumbnails.
