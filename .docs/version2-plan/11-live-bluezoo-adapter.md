@@ -67,6 +67,8 @@ BlueZoo has already publicly announced and open-sourced a very similar project: 
 3. Does BlueZoo provide a sandbox/test account for development, or does adapter development require a real production AccessKey against live sensor hardware? [global #12] This also determines when `CachedBlueZooAudienceDataSource` (step 3) can actually be built with real data rather than staying synthetic-only.
 4. How should this app map its own `Screen` entities to BlueZoo's sensor/zone IDs — is there an existing mapping convention from BlueZoo's own dashboard/API, or does this app need to invent one? [global #11]
 
+> **Amended (workstream 11a, 2026-07-22):** the top amendment's phrase "interface renamed/merged with Phase 10's `AudienceDataSource` DTO contract — one interface, not two" overstates Phase 10: `AudienceDataSource` appears nowhere in `10-playout-attribution.md` — Phase 10 defined DTOs only (`AdPlayRecord`, the `BlueZooVisitInterval` shape); the interface name is coined by this doc's own step 2. Read it as: **one new interface (the donor `AudienceProvider` port, renamed `AudienceDataSource`) whose reads return Phase 10's existing DTO shape** — there was never a second interface to merge.
+
 > **Amended (workstream 10, 2026-07-22) — carried items from ws10's final review, for this workstream's kickoff:**
 > 1. `review_tools._load_attribution_windows` builds `IN ()` (invalid SQL) if ever called with an empty `video_ids` list — unreachable today; add a guard when this phase touches the attribution read path.
 > 2. `mock_data.py` duplicates review_tools' 4-line window-load SQL (deliberate layering: app.database must not import app.tools) — extract to a shared `app/demo_data` helper or add cross-reference comments when this phase reshapes the provider seam.
