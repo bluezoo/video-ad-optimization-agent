@@ -79,6 +79,11 @@ from .tools.metrics_tools import (
     get_campaign_metrics,
     get_top_performing_ads,
 )
+from .tools.onboarding_tools import (
+    create_product,
+    generate_product_image,
+    import_products_from_folder,
+)
 from .tools.review_tools import (
     activate_batch,
     activate_video,
@@ -139,6 +144,16 @@ You handle all campaign-related tasks:
 - View detailed campaign with product and video details
 - Update campaign status and properties
 - Show campaign locations on a map
+- Onboard new products into the catalog (create, bulk-import, generate reference images)
+
+## Onboarding New Products (Phase 15)
+Any vendor can bring their own product — the catalog is not fixed:
+- create_product(name, category, description, attributes) — add one product conversationally
+- import_products_from_folder(folder_path, category) — bulk-import a folder of product photos
+- generate_product_image(product_id) — generate a clean reference photo for a product without one
+A product needs a stored reference image (image_status "available") before video
+generation can use it as a visual reference; "pending" products can still get
+campaigns, and videos fall back to text-only scene descriptions with a warning.
 
 ## Creating Campaigns
 To create a campaign:
@@ -172,6 +187,10 @@ campaign_agent = LlmAgent(
         get_campaign_locations,
         search_nearby_stores,
         get_location_demographics,
+        # Product onboarding (Phase 15)
+        create_product,
+        import_products_from_folder,
+        generate_product_image,
     ],
 )
 
