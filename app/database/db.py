@@ -154,6 +154,23 @@ def init_database() -> None:
         )
     ''')
 
+    # Playout-attribution windows (Phase 10): which video was live on which
+    # screen, from when to when. Open window = active_to IS NULL. Written by
+    # the HITL dual-write bridge (activate/pause/archive) and the seed-time
+    # bulk path; read by the ad-play join. Ported from the donor repo's
+    # video_attribution with store_id->screen_id, campaign_id->ad_campaign_id.
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS video_attribution (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            video_id INTEGER NOT NULL,
+            ad_campaign_id INTEGER NOT NULL,
+            screen_id INTEGER NOT NULL,
+            active_from TIMESTAMP NOT NULL,
+            active_to TIMESTAMP,
+            FOREIGN KEY (video_id) REFERENCES campaign_videos(id) ON DELETE CASCADE
+        )
+    ''')
+
     # Key-value store for demo-mode state (e.g. the demo anchor date that
     # fixes the deterministic generation window — see app/demo_data/).
     cursor.execute('''
@@ -221,6 +238,7 @@ def init_database() -> None:
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_campaign_videos_status ON campaign_videos(status)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_video_metrics_video ON video_metrics(video_id)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_video_metrics_date ON video_metrics(metric_date)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_video_attribution_video ON video_attribution(video_id)')
     # Legacy indexes
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_campaign_images_campaign ON campaign_images(campaign_id)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_campaign_ads_campaign ON campaign_ads(campaign_id)')
@@ -327,6 +345,7 @@ def reset_database() -> None:
 
     # Drop new tables
     cursor.execute('DROP TABLE IF EXISTS demo_meta')
+    cursor.execute('DROP TABLE IF EXISTS video_attribution')
     cursor.execute('DROP TABLE IF EXISTS video_metrics')
     cursor.execute('DROP TABLE IF EXISTS campaign_videos')
     cursor.execute('DROP TABLE IF EXISTS campaign_products')
