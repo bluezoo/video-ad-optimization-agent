@@ -27,13 +27,17 @@ Video Lifecycle:
 """
 
 import json
-from datetime import datetime, date, timedelta
+import logging
+from datetime import date, datetime, timedelta
 from typing import List, Optional
 
 from ..database.db import get_db_cursor, get_demo_anchor_date, set_demo_anchor_date
+from ..demo_data.attribution import screens_for_campaign
 from ..demo_data.constants import DEMO_WINDOW_DAYS
 from ..demo_data.derive import derive_video_metrics_rows
 from .metrics_shared import compute_rpi
+
+logger = logging.getLogger(__name__)
 
 
 def list_pending_videos(
@@ -110,11 +114,79 @@ def list_pending_videos(
         }
 
 
+def _load_attribution_windows(cursor, video_ids) -> list[dict]:
+    """Read this video set's attribution windows in join-ready dict shape."""
+    placeholders = ",".join("?" for _ in video_ids)
+    cursor.execute(
+        f"SELECT video_id, screen_id, active_from, active_to FROM video_attribution "
+        f"WHERE video_id IN ({placeholders})",
+        list(video_ids),
+    )
+    windows = []
+    for row in cursor.fetchall():
+        windows.append(
+            {
+                "video_id": row["video_id"],
+                "screen_id": row["screen_id"],
+                "active_from": datetime.fromisoformat(row["active_from"]),
+                "active_to": (
+                    datetime.fromisoformat(row["active_to"]) if row["active_to"] else None
+                ),
+            }
+        )
+    return windows
+
+
+def _open_attribution_windows(cursor, video_id, ad_campaign_id, active_from) -> int:
+    """Open one window per campaign screen (skip screens already open).
+
+    Reactivation after a pause intentionally opens fresh windows alongside
+    the closed history row left by the pause, even though their date
+    coverage can overlap — the join (attribution.derive_rows_from_windows)
+    is responsible for deduping that overlap, not this bridge."""
+    opened = 0
+    for screen_id in screens_for_campaign(ad_campaign_id):
+        cursor.execute(
+            "SELECT 1 FROM video_attribution "
+            "WHERE video_id = ? AND screen_id = ? AND active_to IS NULL",
+            (video_id, screen_id),
+        )
+        if cursor.fetchone():
+            continue
+        cursor.execute(
+            "INSERT INTO video_attribution "
+            "(video_id, ad_campaign_id, screen_id, active_from, active_to) "
+            "VALUES (?, ?, ?, ?, NULL)",
+            (video_id, ad_campaign_id, screen_id, active_from.isoformat()),
+        )
+        opened += 1
+    return opened
+
+
+def _close_attribution_windows(cursor, video_id, active_to, expect_open: bool) -> int:
+    """Close all open windows. Unlike the donor bridge's silent no-op, a miss
+    where windows were expected logs a warning."""
+    cursor.execute(
+        "UPDATE video_attribution SET active_to = ? "
+        "WHERE video_id = ? AND active_to IS NULL",
+        (active_to.isoformat(), video_id),
+    )
+    closed = cursor.rowcount
+    if closed == 0 and expect_open:
+        logger.warning("no open attribution window to close for video %s", video_id)
+    return closed
+
+
 def _insert_derived_metrics(cursor, ad_campaign_id, video_ids, date_from, date_to) -> int:
-    """Insert derived deterministic rows; INSERT OR IGNORE keeps overlapping
-    regeneration idempotent (UNIQUE(video_id, metric_date))."""
+    """Insert join-derived deterministic rows; INSERT OR IGNORE keeps
+    overlapping regeneration idempotent (UNIQUE(video_id, metric_date)).
+    Videos with no stored windows (pre-bridge rows) fall back to the
+    facade's synthesized always-open windows."""
+    windows = _load_attribution_windows(cursor, video_ids)
     inserted = 0
-    for row in derive_video_metrics_rows(ad_campaign_id, video_ids, date_from, date_to):
+    for row in derive_video_metrics_rows(
+        ad_campaign_id, video_ids, date_from, date_to, windows=windows
+    ):
         cursor.execute('''
             INSERT OR IGNORE INTO video_metrics
             (video_id, metric_date, impressions, dwell_time_seconds, circulation, revenue)
@@ -186,13 +258,23 @@ def activate_video(
             WHERE id = ?
         ''', (now, activated_by, video_id))
 
-        # Deterministic metrics on the single anchor window [anchor-29, anchor]
+        # Open attribution windows across the campaign's screens for the
+        # whole demo history window (the 30-day backfill fiction), THEN
+        # derive metrics through them — the join only accrues where a
+        # window covers.
         anchor = date.fromisoformat(get_demo_anchor_date(cursor))
+        window_start = anchor - timedelta(days=DEMO_WINDOW_DAYS - 1)
+        _open_attribution_windows(
+            cursor,
+            video_id,
+            video["campaign_id"],
+            datetime.combine(window_start, datetime.min.time()),
+        )
         metrics_generated = _insert_derived_metrics(
             cursor,
             video["campaign_id"],
             [video_id],
-            anchor - timedelta(days=DEMO_WINDOW_DAYS - 1),
+            window_start,
             anchor,
         )
 
@@ -291,6 +373,8 @@ def pause_video(video_id: int) -> dict:
             WHERE id = ?
         ''', (video_id,))
 
+        _close_attribution_windows(cursor, video_id, datetime.now(), expect_open=True)
+
         return {
             "status": "success",
             "message": f"Video paused successfully",
@@ -344,6 +428,12 @@ def archive_video(
             SET status = 'archived'
             WHERE id = ?
         ''', (video_id,))
+
+        # Only an activated video is expected to have open windows; archiving
+        # a never-activated or paused video closes nothing, silently.
+        _close_attribution_windows(
+            cursor, video_id, datetime.now(), expect_open=(video["status"] == "activated")
+        )
 
         return {
             "status": "success",

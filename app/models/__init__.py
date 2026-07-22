@@ -14,6 +14,7 @@
 
 """Models package for Ad Campaign Agent."""
 
+from .attribution import AdPlayRecord, BlueZooVisitInterval
 from .video_properties import (
     VideoProperties,
     MoodType,
@@ -24,6 +25,8 @@ from .video_properties import (
 )
 
 __all__ = [
+    "AdPlayRecord",
+    "BlueZooVisitInterval",
     "VideoProperties",
     "MoodType",
     "VisualStyle",

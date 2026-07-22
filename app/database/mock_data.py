@@ -24,6 +24,7 @@ Uses NEW schema (product-centric model):
 import json
 from datetime import date, datetime, timedelta
 
+from ..demo_data.attribution import screens_for_campaign
 from ..demo_data.constants import DEMO_WINDOW_DAYS
 from ..demo_data.derive import derive_video_metrics_rows
 from .db import get_connection, get_demo_anchor_date
@@ -335,13 +336,45 @@ def populate_mock_data() -> dict:
         if not campaign_video_ids:
             continue
 
+        # Phase 10: pre-activated demo videos get attribution windows (there
+        # is no activation moment on this path — the open window from
+        # window_start IS the "has been live for 30 days" fiction).
+        active_from_iso = datetime.combine(window_start, datetime.min.time()).isoformat()
+        for video_id in campaign_video_ids:
+            for screen_id in screens_for_campaign(campaign_id):
+                cursor.execute('''
+                    SELECT 1 FROM video_attribution
+                    WHERE video_id = ? AND screen_id = ? AND active_to IS NULL
+                ''', (video_id, screen_id))
+                if cursor.fetchone():
+                    continue
+                cursor.execute('''
+                    INSERT INTO video_attribution
+                    (video_id, ad_campaign_id, screen_id, active_from, active_to)
+                    VALUES (?, ?, ?, ?, NULL)
+                ''', (video_id, campaign_id, screen_id, active_from_iso))
+
         # Delete old metrics for these videos (to allow deterministic regeneration)
         for video_id in campaign_video_ids:
             cursor.execute('DELETE FROM video_metrics WHERE video_id = ?', (video_id,))
 
-        # Generate deterministic metrics
+        # Generate deterministic metrics through the stored windows
+        # (4-line inline window load — mock_data must not import app.tools)
+        placeholders = ",".join("?" for _ in campaign_video_ids)
+        cursor.execute(
+            f"SELECT video_id, screen_id, active_from, active_to FROM video_attribution "
+            f"WHERE video_id IN ({placeholders})", campaign_video_ids)
+        windows = [
+            {
+                "video_id": r[0],
+                "screen_id": r[1],
+                "active_from": datetime.fromisoformat(r[2]),
+                "active_to": datetime.fromisoformat(r[3]) if r[3] else None,
+            }
+            for r in cursor.fetchall()
+        ]
         for row in derive_video_metrics_rows(
-            campaign_id, campaign_video_ids, window_start, anchor
+            campaign_id, campaign_video_ids, window_start, anchor, windows=windows
         ):
             cursor.execute('''
                 INSERT OR IGNORE INTO video_metrics
