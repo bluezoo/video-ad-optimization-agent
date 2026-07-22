@@ -32,3 +32,5 @@ Blast radius: doc 15's first ws08 amendment block. Amended with provenance so it
 Assumed (doc 15 step 1 + ws08 amendment): the URL-emission sites are list_products and generate_video_from_product.
 Actual: review_tools.get_video_review_table, review_tools.get_video_details, and maps_tools' location detail also emit get_public_url/get_video_public_url output (see research evidence) — all four surfaces must route through the seam per ws09's "never storage.googleapis.com links".
 Blast radius: doc 15 step 1 scope. Amended with provenance.
+## 2026-07-22 — checkpoint 2: working doc approved
+Owner approved the six-dimension restatement ("Yes — approved, write the plan"). Drive-bundle logistics question resolved: hypothesis confirmed — this workstream ships download/verify/install code + a builder script verified against a locally built bundle; owner uploads the zip to their own Drive later and sets DEMO_ASSETS_DRIVE_ID; graceful "bundle not configured" skip until then. Working doc: working-doc.md (commit 436b8af).
