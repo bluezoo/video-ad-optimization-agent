@@ -234,11 +234,24 @@ ad_campaign_id`), and pausing it closes them.
 
 ### Scene F6.1 — activation opens attribution windows
 
+**Setup (required):** the seeded demo DB ships every video already
+`activated`, so a fresh-activation path needs a pending video created first.
+Before starting the server, insert one synthetic pending video (same fixture
+shape the unit tests use — this is scenario setup, not an assertion-time
+mutation):
+
+```bash
+sqlite3 campaigns.db "INSERT INTO campaign_videos \
+  (campaign_id, product_id, video_filename, status) \
+  VALUES (1, (SELECT product_id FROM campaigns WHERE id = 1), \
+  'f6-scenario-pending.mp4', 'generated');"
+```
+
 **Query:** "Show me the pending videos for campaign 1, then activate the
 first one."
 
 **Expected tool calls:** `list_pending_videos` (or `get_video_review_table`)
-then `activate_video`.
+then `activate_video` (for the setup video's id).
 
 **Checks:**
 - The activation response reports metrics generated for a 30-day window.
