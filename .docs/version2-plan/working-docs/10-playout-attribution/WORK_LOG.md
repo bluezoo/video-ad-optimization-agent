@@ -106,3 +106,7 @@ Carried open items (deferred minors from the final review, for the next workstre
 2. mock_data.py duplicates review_tools' 4-line window-load SQL (plan-mandated layering: app.database must not import app.tools) — add a cross-reference comment or extract to a shared demo_data helper.
 3. Pause/reactivate cycles accumulate benign closed video_attribution history rows (join dedups them; documented as intended) — revisit only if growth ever matters (option: reopen latest closed window instead of inserting).
 4. Repo-wide `make lint` is red with ~40 pre-existing errors (predates ws10; ws10 added zero and removed one) — needs a dedicated cleanup slot so lint can become a real gate.
+
+## 2026-07-22 — checkpoint 6: finished (merged)
+
+PR #11 squash-merged into version_2 as debd5a4 after the owner's local manual test round (demo_guide Part 0 + regressions, all pass — including Journey 0.1, which closed the F6.1 verification item). Carried open items amended into 11-live-bluezoo-adapter.md with provenance and listed in the previous WORK_LOG entry. Worktree and branch cleaned up. Workstream 10 complete.
