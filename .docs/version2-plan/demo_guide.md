@@ -7,11 +7,13 @@ reflect the latest merged + in-review changes. It supersedes the ws08 snapshot a
 `working-docs/08-product-schema-generalization/USER_JOURNEY_TEST_GUIDE.md` (kept as a
 historical record).
 
-**Last updated:** 2026-07-22, workstream 10 (playout attribution) — metrics now
-derive through the ad-play join described below; see "What changed in Phase 10"
-ahead of Journey B4. Previous update: workstream 09 (prompt & agent
-generalization, PR #10) — incl. the ad-style policy added after the owner's
-first manual test round.
+**Last updated:** 2026-07-22, workstream 11a (live BlueZoo adapter, seam-only) —
+demo-mode behavior is byte-identical; see Part 0b for what actually changed
+(APP_MODE now gates a real seam). Previous update: workstream 10 (playout
+attribution) — metrics now derive through the ad-play join described below; see
+"What changed in Phase 10" ahead of Journey B4. Previous update: workstream 09
+(prompt & agent generalization, PR #10) — incl. the ad-style policy added after
+the owner's first manual test round.
 
 ---
 
@@ -109,6 +111,15 @@ Run Journeys **B4 and B5** below — their invariants (RPI band [0.03, 0.07],
 `revenue ≈ impressions × RPI` per creative, distinct RPIs across creatives, winner =
 max RPI) are the real Phase 10 acceptance check, and the example numbers there were
 re-captured from the new join.
+
+---
+
+## Part 0b — What workstream 11a changed (APP_MODE now does something)
+
+**Moved (owner rule change, 2026-07-22):** workstream testing journeys now live in the
+root `DEMO_GUIDE.md`, section "Workstream Testing Journeys" → "Workstream 11a"
+(journeys 11a.1-11a.3: demo unchanged, connected fails closed, invalid APP_MODE
+rejected). From ws11a on, new journeys are added there, not in this file.
 
 ---
 
@@ -369,6 +380,18 @@ product-hero shot rather than erroring.
 3. **Tests must hit the live API** — new **Phase 16** (`16-live-api-testing.md`,
    resolves Q19): fast + live tiers both green, `gemini-3.6-flash` default, live
    Veo/image-gen tests, Gemini-judge review script for generated media.
+
+### Workstream 11a — fixed vs. deliberately not done
+
+- **Fixed:** ws10's carried items 1+2 — the `_load_attribution_windows`
+  empty-list `IN ()` guard, and the mock_data/review_tools window-load SQL
+  duplication, now live once in `app/demo_data/windows.py` and are shared by
+  both call sites.
+- **Deliberately not done:** the live/cached BlueZoo conformer for
+  `APP_MODE=connected` — that's Phase 11b, tracked as the `RuntimeError` in
+  Journey 0b.2 above. Also deliberately deferred: ws10's carried items 3
+  (closed-attribution-window history growth) and 4 (repo-wide lint red) —
+  owner directed only items 1+2 into this workstream at kickoff.
 
 ### Known-not-done (tracked, out of ws09 scope)
 

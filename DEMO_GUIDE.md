@@ -448,3 +448,53 @@ Get video properties for video 5
 | `GOOGLE_CLOUD_PROJECT` | GCP project | Yes |
 | `GCS_BUCKET` | Cloud Storage bucket | Yes |
 | `GOOGLE_MAPS_API_KEY` | Static Maps API | Optional |
+
+---
+
+## Workstream Testing Journeys
+
+Owner manual-testing journeys for changes landed by version-2 workstreams (rule as of 2026-07-22: every workstream that changes agent-visible behavior adds its journeys here, in the root demo guide). Copy-paste prompts/commands + expected results.
+
+### Workstream 11a — APP_MODE and the audience-data seam
+
+Phase 11a put demo-data generation behind a real seam: an `AudienceDataSource`
+interface with `SyntheticAudienceDataSource` (the demo generator, wrapped as-is)
+as the only registered implementation, resolved by `APP_MODE` through a
+fail-closed factory. This is a refactor, not a behavior change — demo mode's
+output is byte-identical by design (golden-pinned against the pre-refactor join).
+
+#### Journey 11a.1 — demo mode unchanged
+
+```bash
+make dev
+```
+
+Re-run any metrics journey (e.g. Act 4 Scene 4.1) — expect **identical numbers**
+to before this workstream. If anything differs, the seam refactor broke
+byte-identity and that's a regression, not an intentional change.
+
+#### Journey 11a.2 — connected mode fails closed (terminal check, no browser needed)
+
+```bash
+APP_MODE=connected .venv/bin/python -c \
+  "from app.audience import get_audience_datasource; get_audience_datasource()"
+```
+
+**Expect:** a `RuntimeError` whose message names `APP_MODE='connected'`, Phase
+11b (the live BlueZoo adapter that isn't implemented yet), and the way back
+(`APP_MODE=demo`, the default). In the app, any flow that derives metrics
+(video activation, demo-data seeding) raises this same error in connected mode
+instead of silently falling back to demo data — the fail-closed principle from
+Phase 6, now real rather than deferred.
+
+#### Journey 11a.3 — invalid APP_MODE still rejected at startup
+
+```bash
+APP_MODE=banana make dev
+```
+
+**Expect:** a `ValueError` at config load (unchanged behavior — predates ws11a).
+These are two different layers: an invalid `APP_MODE` value fails at **config
+load** (`ValueError`), while a valid-but-unimplemented value (`connected`) fails
+at **datasource resolution** (`RuntimeError`) the first time something actually
+needs audience data.

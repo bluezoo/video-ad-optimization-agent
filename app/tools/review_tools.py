@@ -35,6 +35,10 @@ from ..database.db import get_db_cursor, get_demo_anchor_date, set_demo_anchor_d
 from ..demo_data.attribution import screens_for_campaign
 from ..demo_data.constants import DEMO_WINDOW_DAYS
 from ..demo_data.derive import derive_video_metrics_rows
+
+# Shared with mock_data (ws10 carried item 2); the underscore alias keeps
+# the historical import site (tests import it from here) working.
+from ..demo_data.windows import load_attribution_windows as _load_attribution_windows
 from .metrics_shared import compute_rpi
 
 logger = logging.getLogger(__name__)
@@ -112,29 +116,6 @@ def list_pending_videos(
                 f" for campaign {campaign_id}" if campaign_id else ""
             )
         }
-
-
-def _load_attribution_windows(cursor, video_ids) -> list[dict]:
-    """Read this video set's attribution windows in join-ready dict shape."""
-    placeholders = ",".join("?" for _ in video_ids)
-    cursor.execute(
-        f"SELECT video_id, screen_id, active_from, active_to FROM video_attribution "
-        f"WHERE video_id IN ({placeholders})",
-        list(video_ids),
-    )
-    windows = []
-    for row in cursor.fetchall():
-        windows.append(
-            {
-                "video_id": row["video_id"],
-                "screen_id": row["screen_id"],
-                "active_from": datetime.fromisoformat(row["active_from"]),
-                "active_to": (
-                    datetime.fromisoformat(row["active_to"]) if row["active_to"] else None
-                ),
-            }
-        )
-    return windows
 
 
 def _open_attribution_windows(cursor, video_id, ad_campaign_id, active_from) -> int:

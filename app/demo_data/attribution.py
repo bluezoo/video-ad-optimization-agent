@@ -20,6 +20,8 @@ Determinism rules (all sha256-seeded via seed._seeded_rng):
 - video_rpi survives from ws07 unchanged: per-(campaign, video), band
   [0.03, 0.07], day- and screen-independent, so each creative's
   revenue/impressions stays one checkable constant.
+- Data now arrives via app/audience's AudienceDataSource (demo: seed.py
+  behind the seam) — same values, same seeds.
 
 dwell_time_seconds stays a synthetic scalar and circulation stays an
 outgoing_outer-derived convention (now summed over played slots) — real
@@ -30,7 +32,7 @@ from datetime import date, timedelta
 
 from ..models.attribution import AdPlayRecord
 from .constants import DEMO_RPI
-from .seed import SeedConfig, _seeded_rng, _slot_starts, generate_frames
+from .seed import SeedConfig, _seeded_rng, _slot_starts
 
 SLOTS_PER_DAY = 48  # seed.py's grain: 15-min slots, 09:00-21:00
 SLOT_MINUTES = 15
@@ -120,7 +122,7 @@ def expand_ad_plays(
     return plays
 
 
-def _campaign_seed_config(ad_campaign_id: int, date_from: date, date_to: date) -> SeedConfig:
+def campaign_seed_config(ad_campaign_id: int, date_from: date, date_to: date) -> SeedConfig:
     """One campaign across its real 2-3 screens (the ws05 1:1
     campaign-as-screen proxy is gone)."""
     return SeedConfig(
@@ -139,12 +141,18 @@ def _campaign_seed_config(ad_campaign_id: int, date_from: date, date_to: date) -
     )
 
 
+# Historical import site (tests/unit/test_demo_attribution.py) — keep the
+# underscore alias; app/audience/synthetic.py uses the public name.
+_campaign_seed_config = campaign_seed_config
+
+
 def derive_rows_from_windows(
     ad_campaign_id: int,
     video_ids: list,
     windows: list[dict],
     date_from: date,
     date_to: date,
+    source=None,  # AudienceDataSource | None — unannotated to avoid the app.audience import edge
 ) -> list[dict]:
     """The ad-play join: windows -> plays -> visits/revenue -> daily rows.
 
@@ -155,8 +163,19 @@ def derive_rows_from_windows(
     creative's RPI stays its ws07 constant.
     Returned dicts carry exactly the video_metrics insert columns."""
     wanted = set(video_ids)
-    frames = generate_frames(_campaign_seed_config(ad_campaign_id, date_from, date_to))
-    visits_ix = {(v["screen_id"], v["timestamp"]): v for v in frames["screen_visits"]}
+    if source is None:
+        # Function-level import: app/audience imports app/demo_data (the
+        # synthetic source wraps seed.py), so the reverse edge must not
+        # exist at module import time.
+        from ..audience import get_audience_datasource
+
+        source = get_audience_datasource()
+    intervals = source.get_visit_intervals(
+        screen_ids=screens_for_campaign(ad_campaign_id),
+        date_from=date_from,
+        date_to=date_to,
+    )
+    visits_ix = {(iv.screen_id, iv.timestamp): iv for iv in intervals}
 
     plays = expand_ad_plays(
         ad_campaign_id, [w for w in windows if w["video_id"] in wanted], date_from, date_to
@@ -180,8 +199,8 @@ def derive_rows_from_windows(
         if v is None:
             continue
         a = agg.setdefault((p.video_id, p.start.date()), {"inner": 0.0, "outer_out": 0.0})
-        a["inner"] += v["incoming_inner_count"]
-        a["outer_out"] += v["outgoing_outer_count"]
+        a["inner"] += v.incoming_inner_count
+        a["outer_out"] += v.outgoing_outer_count
 
     order = {vid: i for i, vid in enumerate(video_ids)}
     rows = []

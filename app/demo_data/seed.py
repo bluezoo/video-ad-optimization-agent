@@ -17,7 +17,8 @@ Dates and timestamps are UTC day buckets by convention (Q18 tracks BlueZoo's
 own daily-bucket timezone).
 
 Deliberately import-light: stdlib + numpy only, no app modules, no DB —
-Phase 11a moves this file behind the AudienceProvider seam as-is.
+Phase 11a moved this file behind the AudienceDataSource seam as-is
+(app/audience/synthetic.py wraps it; nothing here changed).
 """
 
 import hashlib
