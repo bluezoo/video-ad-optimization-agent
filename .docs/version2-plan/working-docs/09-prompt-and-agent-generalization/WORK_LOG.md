@@ -102,3 +102,166 @@ All steps completed per plan.md:
 **Test output summary:** make test-unit = 194 passed, 1 skipped. Golden prompts remain byte-identical (Task 1 regression bar verified). New Optional fields default to sensible values, preserving wearable output compatibility while enabling product-centric builders downstream.
 
 Commit range: e84ff2d..f881f5b
+
+## 2026-07-21 — Task 3 implemented
+**Archetype registry + product-centric prompt builders + non-reductive diverse wording**
+
+All steps completed per plan.md:
+- Step 1: Wrote failing tests first — `tests/unit/test_prompt_archetypes.py` (new); confirmed
+  FAIL (module missing) before implementation.
+- Step 2: Created `app/tools/prompt_archetypes.py` verbatim from the plan:
+  `ARCHETYPE_BY_CATEGORY` (fashion categories -> wearable; beverage/qsr-menu-item ->
+  consumable-hero; electronics/furniture/home-appliance -> staged-product; unknown ->
+  product-hero fallback), `resolve_archetype(product, variation) -> str` honoring
+  `presentation_mode` overrides (`product_only` forces non-wearable path; `with_model`
+  raises `ValueError` for non-wearable categories).
+- Step 3: Refactored `app/tools/prompt_builders.py`:
+  - Renamed the three original function bodies to `_build_wearable_scene_prompt`,
+    `_build_wearable_animation_prompt`, `_build_wearable_creative_prompt` (unchanged logic
+    plus the fixes below).
+  - Public `build_scene_image_prompt` / `build_video_animation_prompt` / `build_creative_prompt`
+    became dispatchers calling `resolve_archetype` and routing to the wearable or new
+    product-centric builders.
+  - Both wearable ethnicity maps' `"diverse"` entry and `.get()` miss-fallback changed to the
+    exact new string `"a confident, radiant woman with a warm, engaging presence"`; added
+    `or "diverse"` / `or "walking"` None-guards on `model_ethnicity`/`activity` lookups across
+    all three wearable builders so explicit-value golden inputs stay byte-identical.
+    Collapsed the dead identical if/else in the scene builder into one assignment
+    (output-identical).
+  - Added module-private product-centric builders (`_build_product_scene_prompt`,
+    `_build_product_animation_prompt`, `_build_product_creative_prompt`) driven only by
+    generic variation fields plus `_ARCHETYPE_SCENE_FLAVOR`/`_PRODUCT_SETTING_MAP`/
+    `_render_attributes` helpers — verbatim from the plan.
+  - Rewrote `test_null_style_falls_back_to_category` in `tests/unit/test_product_adapter.py`
+    to `test_null_style_beverage_routes_to_product_prompt` (beverage now routes to the
+    product-centric builder, asserting no "wearing" and no literal "None").
+- Step 4: `pytest tests/unit/test_prompt_archetypes.py tests/unit/test_product_adapter.py -v`
+  → 27/27 pass (goldens byte-identical, proving wearable preservation). `make test-unit` →
+  210 passed, 1 skipped. `make lint` on the four task files → clean (repo-wide `make lint`
+  still reports 44 pre-existing errors in files outside this task's scope — unchanged in
+  count minus the one import-order fix in the new test file — verified identical count on
+  BASE via `git stash`).
+- Step 5: Committed `feat: archetype registry + product-centric prompt builders + non-reductive diverse wording (ws09 Task 3)` (commit be1ad14).
+
+**Test output summary:** `pytest tests/unit/test_prompt_archetypes.py tests/unit/test_product_adapter.py -v` = 27 passed; `make test-unit` = 210 passed, 1 skipped. Golden prompts remain byte-identical (Task 1's regression bar). New-archetype prompts verified free of `fashion`/`garment`/`wearing`/`she is`/`model wearing` (case-insensitive) across beverage/electronics/unknown-category products and all three builder functions.
+
+Commit range: c569b74..be1ad14
+
+## 2026-07-21 — Task 4 implemented
+**video_tools.py active-path generalization**
+
+All steps completed per plan.md:
+- Step 1: `generate_scene_image` gained an `archetype: str = "wearable"` keyword param;
+  the hardcoded "model wearing this exact garment" reference-image preamble now branches
+  on archetype (wearable keeps the original garment wording; every other archetype gets a
+  product-centric "exact visual reference for the product — same shape, colors, branding,
+  and label design" instruction). `generate_video_from_product` computes
+  `archetype = resolve_archetype(product, variation_obj)` once right after variation
+  resolution, passes it into the Stage 1 call, and wraps the resolution in
+  `try/except ValueError` → `{"status": "error", "error": str(e)}` (covers invalid
+  `presentation_mode` and `with_model` on a non-wearable category).
+- Step 2: Replaced the silent variation-validation salvage with loud structured errors —
+  the dict branch merges `{"name": "custom", **variation}` before `model_validate` (so an
+  LLM omitting `name` still works) and returns `{"status": "error", "error": "Invalid
+  variation parameters: ...", "hint": "Valid fields: ..."}` on failure instead of silently
+  falling back to defaults; the final `else` (invalid variation type) now also returns a
+  structured error instead of `get_default_variation()`.
+- Step 3: Added `reference_image_used = product_image_bytes is not None` and surfaced it at
+  the top level of the success payload, plus a `"warning"` key
+  (`f"No product image found for {product.name} — scene generated from text description
+  only"`) when False — generation still proceeds unchanged.
+- Step 4: `generate_video_with_variation` gained `presentation_mode: str = None` (same
+  `str = None` convention as the neighboring `variation_name` param), threaded into the
+  `CreativeVariation(...)` construction. Added the product-centric renaming block in
+  `generate_video_from_product`: for non-wearable archetypes whose variation name still
+  carries an ethnicity prefix (i.e. the caller didn't already give it a category-based
+  name), the name is rewritten to `{category}-{setting}-{mood}`.
+- Step 5: Stale-text cleanups — module docstring's Stage 1 "Output" bullet now covers both
+  archetypes; `analyze_video`'s prompt header changed "fashion video advertisement" →
+  "retail video advertisement" and item 13 "Garment visibility" → "Product visibility";
+  `generate_scene_image`/`animate_scene_with_veo` signatures changed the stale
+  `product: dict[str, Any]` type hint (a leftover from before the generic `Product` model —
+  callers always pass a real `Product` object) to `product: Product`, importing `Product`
+  from `..models.product`, and reworded their Args docstrings from "Product dictionary" to
+  "Product object" for consistency. Left `generate_video_prompt` (:63-90) and other
+  non-anchored legacy strings untouched per the plan.
+- Step 6: Added `TestVariationValidationLoud` to `tests/unit/test_video_tools.py` — both
+  tests transcribed verbatim from the plan, using the `test_db` fixture (confirmed it
+  already seeds the ws08 retail core test set via `populate_retail_test_products()`, so
+  `aurora-cold-brew-330ml` is resolvable without a separate `retail_db` fixture); both
+  error paths return before any model call.
+- Step 7: `pytest tests/unit/test_video_tools.py -v` → 22/22 pass; `make test-unit` → 212
+  passed, 1 skipped; `pytest tests/unit/test_product_adapter.py -v` → 11/11 pass (golden
+  regression bar still byte-identical); `make test-e2e` → 25 passed, 1 skipped.
+  `make lint` on the two touched files → clean; repo-wide `make lint` still reports the
+  same 44 pre-existing errors documented in Task 3's entry (confirmed via `git stash`
+  against BASE be1ad14 — count unchanged, none in the files this task touched).
+- Step 8: Committed `feat: archetype-aware video pipeline, loud variation errors,
+  reference-image surfacing (ws09 Task 4)` (commit 944a699).
+
+**Decisions / judgment calls (both non-test-covered docstring wording, no behavior change):**
+module docstring line 20's "Output" bullet was reworded to acknowledge both archetypes
+rather than literally using the plan's quoted target text (which duplicated the existing
+Stage 1 header almost verbatim and didn't fit grammatically as an "Output:" bullet).
+
+**Test output summary:** `pytest tests/unit/test_video_tools.py -v` = 22 passed;
+`make test-unit` = 212 passed, 1 skipped; `pytest tests/unit/test_product_adapter.py -v` =
+11 passed (goldens byte-identical); `make test-e2e` = 25 passed, 1 skipped.
+
+Commit range: be1ad14..944a699
+
+## 2026-07-21 — Task 5 implemented
+**Agent instructions, descriptions, APP_DESCRIPTION, campaign description text**
+
+All steps completed per plan.md:
+- Step 1: Replaced all five instruction openers verbatim — `CAMPAIGN_AGENT_INSTRUCTION`,
+  `MEDIA_AGENT_INSTRUCTION`, `ANALYTICS_AGENT_INSTRUCTION`, `REVIEW_AGENT_INSTRUCTION`,
+  `COORDINATOR_INSTRUCTION` — from "for a fashion retail company" framing to "for an
+  in-store retail media network" framing (Campaign Agent's opener additionally keeps the
+  plan's extra "that runs video ad campaigns on store screens" clause).
+- Step 2: Body edits per the research inventory:
+  - Media Agent: replaced the two numeric product counts ("22 pre-loaded products" /
+    "28 pre-loaded products...") with the plan's exact multi-vertical catalog phrase;
+    "fashion metadata (legacy)" → "product metadata (legacy)"; kept the
+    `list_products(category="dress")` example and added a
+    `list_products(category="beverage")` example beside it; "scene-ready first frame with
+    model wearing product" → the archetype-aware phrasing distinguishing wearables from
+    other categories; added a `presentation_mode` bullet (auto/product_only/with_model) to
+    the Creative Variations list and suffixed the `model_ethnicity` bullet with "(applies
+    to wearable products only)"; media_agent's `description=` reworded to the plan's
+    multi-vertical/product-centric phrasing (no more "22 pre-loaded products" or "model
+    ethnicity" in the description).
+  - Analytics Agent (same string, mirrored in maps_tools.py by Task 6): "Fashion styles
+    performance by geography" → "Product category performance by geography".
+  - Coordinator: replaced the numeric "Browse 28 pre-loaded products" bullet with the same
+    multi-vertical catalog phrase; added a beverage example query ("Create a campaign for
+    the Aurora cold brew at Target Downtown in Austin") after the existing fashion Workflow
+    Example, since that section is the only literal natural-language user query in the
+    agent module — the plan's other cited anchors (:128/:147/:151-154/:508/:551-552) are the
+    four pre-loaded campaign names, kept unchanged as factual seeded data per the plan's own
+    instruction.
+  - `app/config.py`'s `APP_DESCRIPTION` → `"Retail ad campaign management agent with video
+    generation for in-store media networks"`.
+- Step 3: Closed the color-without-style hole in `campaign_tools.py::create_campaign` — the
+  auto-generated description branch now checks `style` alone (not `style or color`), so a
+  product with only a `color` attribute no longer falls into the "fashion item" placeholder
+  and instead uses the product-title fallback. Added
+  `test_color_without_style_uses_product_name_not_fashion_item` to
+  `tests/unit/test_campaign_tools.py::TestCreateCampaign` (verbatim from the plan).
+- Step 4: Created `tests/unit/test_agent_instructions.py` verbatim from the plan — the
+  anti-drift net asserting no "fashion retail company" framing anywhere in `app/agent.py`'s
+  source, `APP_DESCRIPTION` not fashion-specific, `MEDIA_AGENT_INSTRUCTION` teaches
+  `presentation_mode`, and neither stale product-count string survives.
+- Step 5: `pytest tests/unit/test_agent_instructions.py tests/unit/test_campaign_tools.py -v`
+  → 26 passed, 1 skipped; `make test-unit` → 217 passed, 1 skipped; `make lint` on the five
+  touched files → clean (repo-wide `make lint` still reports the same 44 pre-existing errors
+  in untouched files, confirmed identical via `git stash` against BASE 944a699); `pytest
+  tests/e2e -v` → 25 passed, 1 skipped.
+- Step 6: Committed `feat: generalize agent instructions, descriptions, APP_DESCRIPTION,
+  campaign copy (ws09 Task 5)` (commit 4a4c4d3).
+
+**Test output summary:** `pytest tests/unit/test_agent_instructions.py
+tests/unit/test_campaign_tools.py -v` = 26 passed, 1 skipped; `make test-unit` = 217 passed,
+1 skipped; `pytest tests/e2e -v` = 25 passed, 1 skipped; `make lint` clean on touched files.
+
+Commit range: 944a699..4a4c4d3
