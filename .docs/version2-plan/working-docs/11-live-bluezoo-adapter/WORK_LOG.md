@@ -29,3 +29,6 @@ Related minor: `app/demo_data/constants.py` docstring says the donor duplicated 
 
 ## 2026-07-22 — checkpoint 2: working doc approved
 Owner approved the six-dimension restatement verbatim ("Yes — approved, write the plan"): lean visit-interval seam (AudienceDataSource ABC + SyntheticAudienceDataSource + APP_MODE-keyed factory with fail-closed connected mode), carried items 1+2 via shared app/demo_data/windows.py helper, refactor invariant = byte-identical video_metrics + existing tests unmodified, demo verify = F3 + F4 + connected-mode fail-closed smoke. Working doc: working-doc.md @ 533eb25.
+
+## 2026-07-22 — checkpoint 3: plan approved
+Owner approved ("Yes — approved, execute"). Plan: plan.md @ f089a73 — 7 tasks (1 shared window loader/carried items, 2 ABC+battery, 3 synthetic source, 4 APP_MODE factory+fail-closed, 5 golden-pinned join refactor, 6 docs/demo_guide, 7 demo verify). Execution: subagent-driven-development via ultracode workflow (owner's kickoff directive), Tasks 1-6; Task 7 is the verify phase.
