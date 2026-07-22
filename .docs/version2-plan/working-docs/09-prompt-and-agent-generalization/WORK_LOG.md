@@ -345,3 +345,78 @@ Verification: `pytest tests/unit/test_maps_tools.py -v` = 14 passed; `make test-
 the Task 6 commit now shows exactly the two authorized files.
 
 Commit range: 4a4c4d3..d3bdeb9 (Task 6, corrected), d3bdeb9..94ef96a (Task 3-5 backfill)
+
+## 2026-07-21 — Task 7 implemented
+
+**Integration evals — narrow the xfail, add non-fashion eval cases**
+
+Found the worktree already carrying uncommitted work matching this task (evidently
+a prior interrupted attempt), including a deliberate corruption
+(`list_products` → `list_productsX` in `media_agent.test.json`) left in place from
+an in-progress Step 3 check, and a stray untracked debug script
+(`tests/integration/test_zzdebug.py`, removed — not a plan deliverable). Verified
+the pre-existing edits against the plan and completed the work from there:
+
+- Step 1: `_INFRA_MARKERS` tuple + `_xfail_if_infrastructure(e)` helper added to
+  `tests/integration/test_agents.py`; all six `except Exception as e:
+  pytest.xfail(...)` blocks replaced with `except AssertionError: raise` /
+  `except Exception as e: _xfail_if_infrastructure(e)`, verbatim per plan.
+- Step 2: added `create-campaign-beverage` to `campaign_agent.test.json` and
+  `list-products-beverage` to `media_agent.test.json`, matching the plan's exact
+  query/tool/reference-response spec and copying the neighboring cases' JSON
+  schema. Moved `list-products-beverage` to the end of `media_agent.test.json`'s
+  `eval_cases` array (it had been inserted mid-array with an out-of-sequence
+  `invocation_id` relative to the case now following it) so file order and
+  invocation_id order agree — a minor cleanup, not a plan requirement, done for
+  consistency with `campaign_agent.test.json`'s append-at-end pattern.
+- Step 3 (deliberate-break verification): reverted the corruption, then
+  independently corrupted `list_products` → `list_productsX` again and ran
+  `pytest tests/integration/test_agents.py -k media -v` (app/.env sourced) —
+  **it passed**, contrary to the plan's expectation. Investigated rather than
+  accepting this.
+
+  **DISCOVERY:** `app/__init__.py` does `from . import agent`, so any import that
+  touches the `app` package — including `tests/conftest.py`'s module-level
+  `from app.config import DB_PATH` — eagerly imports `app.agent` (and constructs
+  the whole agent graph + LLM client) at **pytest collection time**, before any
+  asyncio event loop exists and before any fixture runs (confirmed:
+  `"app.agent" in sys.modules` is `True` before a fresh test's own `import
+  app.agent` line executes). When that collection-time-constructed agent is
+  later invoked from inside a pytest-asyncio per-test event loop
+  (`asyncio_default_test_loop_scope = function` in `pytest.ini`), the
+  underlying async client produces no usable inference results rather than
+  raising, so `AgentEvaluator.evaluate()`'s failure-collection loop has nothing
+  to iterate and `assert not failures` trivially passes — regardless of eval
+  content. Confirmed this is **pre-existing and universal**, not specific to
+  Task 7's new cases: the untouched `TestCoordinatorAgentRouting` test shows the
+  identical signature (passes in ~5.2s with zero network-level log output even
+  under `logging.basicConfig(level=DEBUG)`, versus 3+ minutes and real,
+  content-bearing output/failures for the same eval file run via a bare
+  `asyncio.run()` script outside pytest). This is very plausibly *why* the
+  original broad xfail went unnoticed for so long (kickoff DISCOVERY 3) — the
+  old catch-all was never actually exercised by a real failure either. Fixing
+  the eager-import/event-loop-timing issue would require changing
+  `app/__init__.py` and/or `tests/conftest.py`, neither of which is in Task 7's
+  declared file scope (`tests/integration/test_agents.py` +
+  `eval_sets/{media,campaign}_agent.test.json` only) or the 8-task plan
+  generally — not attempted here. Recommend the owner re-run Step 3's
+  deliberate-break check outside this sandbox (or after a future fix to the
+  import ordering) to get a live confirmation this sandbox could not produce.
+  Full investigation trail in `.superpowers/sdd/task-7-report.md`.
+
+  Reverted the corruption before committing. `pytest
+  tests/integration/test_agents.py -k media -v` passes (~5.6s); `make
+  test-integration` passes (5 passed, 1 deselected [slow], ~9.2s) — both
+  consistent with (not independent proof against) the vacuous-pass finding
+  above, and at minimum confirm no import errors or hard crashes from this
+  diff.
+- Step 4: committed `test: narrow integration xfail to infrastructure errors +
+  non-fashion eval cases (ws09 Task 7)` (144ff59).
+
+**Test output summary:** `pytest tests/integration/test_agents.py -k media -v`
+(app/.env sourced) = 1 passed; `make test-integration` = 5 passed, 1 deselected;
+`make test-unit` = 218 passed, 1 skipped; `make lint` = 43 pre-existing errors,
+confirmed present at BASE via `git stash` (none in this task's three files;
+`ruff check tests/integration/test_agents.py` alone = clean).
+
+Commit range: ceff65d..144ff59
