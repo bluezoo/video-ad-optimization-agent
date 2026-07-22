@@ -32,3 +32,13 @@ Owner approved the six-dimension restatement verbatim ("Yes — approved, write 
 
 ## 2026-07-22 — checkpoint 3: plan approved
 Owner approved ("Yes — approved, execute"). Plan: plan.md @ f089a73 — 7 tasks (1 shared window loader/carried items, 2 ABC+battery, 3 synthetic source, 4 APP_MODE factory+fail-closed, 5 golden-pinned join refactor, 6 docs/demo_guide, 7 demo verify). Execution: subagent-driven-development via ultracode workflow (owner's kickoff directive), Tasks 1-6; Task 7 is the verify phase.
+
+## 2026-07-22 — checkpoint 4: Tasks 1-6 complete (mirrors .superpowers/sdd/progress.md)
+Ultracode workflow `ws11a-implement`: 12 agents (6 implementer + 6 reviewer), zero fix rounds, zero Minor findings.
+- Task 1: 3d68935..49697e7 — app/demo_data/windows.py shared loader (carried items 1+2); review_tools alias + mock_data rewire. 4/4 new tests, test-unit 247 green.
+- Task 2: 49697e7..24c88d5 — AudienceDataSource ABC + AudienceDataSourceContract battery.
+- Task 3: 24c88d5..3554d6b — SyntheticAudienceDataSource + public campaign_seed_config (alias kept); battery 10/10 incl. equivalence + subset-determinism.
+- Task 4: 3554d6b..50fd288 — APP_MODE-keyed factory, fail-closed connected RuntimeError, test seam; factory 6/6.
+- Task 5: 50fd288..40c0aba — golden pin (pre-refactor capture) then join routed through the seam; golden PASS post-refactor, test-unit 264/264, test-e2e 25/25, existing tests unmodified.
+- Task 6: 40c0aba..a406c15 — seed.py/constants.py docstrings + demo_guide "Part 0b" (APP_MODE journeys incl. connected-mode terminal check).
+Reviewer cannotVerify items adjudicated by controller: each covered by a later task's tests or the pre-existing pinned suites — none escalated.
