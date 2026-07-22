@@ -116,49 +116,10 @@ re-captured from the new join.
 
 ## Part 0b — What workstream 11a changed (APP_MODE now does something)
 
-Phase 11a put demo-data generation behind a real seam: an `AudienceDataSource`
-interface with `SyntheticAudienceDataSource` (today's demo generator, wrapped
-as-is) as the only registered implementation, resolved by `APP_MODE` through a
-fail-closed factory. This is a refactor, not a behavior change — demo mode's
-output is byte-identical by design (golden-pinned against the pre-refactor
-join), so every ws10 journey above still applies verbatim; nothing to
-re-verify there beyond re-running them once.
-
-### Journey 0b.1 — demo mode unchanged
-
-```bash
-make dev
-```
-
-Re-run Journey 0.2 (or any ws10 journey) — expect **identical numbers** to
-before this workstream. If anything differs, the seam refactor broke
-byte-identity and that's a regression, not an intentional change.
-
-### Journey 0b.2 — connected mode fails closed (terminal check, no browser needed)
-
-```bash
-cd <worktree> && APP_MODE=connected .venv/bin/python -c \
-  "from app.audience import get_audience_datasource; get_audience_datasource()"
-```
-
-**Expect:** a `RuntimeError` whose message names `APP_MODE='connected'`, Phase
-11b (the live BlueZoo adapter that isn't implemented yet), and the way back
-(`APP_MODE=demo`, the default). This is where it surfaces in the app: any flow
-that derives metrics (video activation, demo-data seeding) raises this same
-error in connected mode instead of silently falling back to demo data — the
-fail-closed principle from Phase 6, now real rather than deferred.
-
-### Journey 0b.3 — invalid APP_MODE still rejected at startup
-
-```bash
-APP_MODE=banana make dev
-```
-
-**Expect:** the Phase 6 `ValueError` at config load (unchanged behavior — this
-predates ws11a). Listed here so it's clear these are two different layers: an
-invalid `APP_MODE` value fails at **config load** (`ValueError`), while a
-valid-but-unimplemented value (`connected`) fails at **datasource resolution**
-(`RuntimeError`) the first time something actually needs audience data.
+**Moved (owner rule change, 2026-07-22):** workstream testing journeys now live in the
+root `DEMO_GUIDE.md`, section "Workstream Testing Journeys" → "Workstream 11a"
+(journeys 11a.1-11a.3: demo unchanged, connected fails closed, invalid APP_MODE
+rejected). From ws11a on, new journeys are added there, not in this file.
 
 ---
 

@@ -52,3 +52,6 @@ Both verifier scenes ran against this worktree's own make dev on :8501 (fresh re
 
 ## 2026-07-22 — checkpoint 6 (partial): PR open
 Final whole-branch review (opus): "Ready to merge", zero Critical/Important; two non-blocking Minor notes (one addressed in 357a9d7, one documented behavioral note on the synthetic screen_id//100 convention). PR #12 → version_2: https://github.com/bluezoo/video-ad-optimization-agent/pull/12. Awaiting owner confirmation before self-merge per finishing-a-development-branch Path A.
+
+## 2026-07-22 — owner rule change at merge gate: testing journeys → root DEMO_GUIDE.md
+Owner directive (pre-merge): workstream testing journeys always go in the root DEMO_GUIDE.md, not workstream-side files — confirmed via question ("Root DEMO_GUIDE.md (rule change)"). Applied on this branch: ws11a journeys moved to DEMO_GUIDE.md "Workstream Testing Journeys" (11a.1-11a.3); .docs/version2-plan/demo_guide.md Part 0b replaced with a pointer (file is now historical, pre-ws11a record); CLAUDE.md amended in both places that stated the old "DEMO_GUIDE.md stays untouched" rule; rule promoted to memory.
