@@ -556,3 +556,19 @@ product-centric rename.
 Reports: `verification/F1-report.md`, `verification/F5-report.md` (first run, FAIL as-run),
 `verification/F5-rerun-report.md` (clean PASS). Reports + prompt-text evidence committed;
 PNG/server-log evidence kept local-only in the same directory (ws08 precedent).
+
+## 2026-07-22 — final whole-branch review: READY TO MERGE (+ polish)
+
+Range 170dcbc..4677fae (25 commits). Zero Critical. Important: (1) plan goal "integration
+suite becomes able to fail" unmet — pre-existing infra (the Q19 DISCOVERY), documented not
+papered over; reviewer's ask is to state the Task 7 acceptance waiver plainly in the PR
+body (done there). (2) `_INFRA_MARKERS` missed `permission_denied`/`403` — fixed. Minors
+fixed in the same polish commit: `_with_article("")` guard, unmapped-time_of_day double
+space + empty-attributes blank line, coordinator bullet wearables qualifier, image_tools
+`analyze_image` added to the 09 doc's accepted-legacy list with provenance. Deferred
+(recorded): variation-object mutation on the rename path (video_tools.py:520, no live
+caller affected), `"none" not in out.split()` tokenization nit, reference_image_used
+payload unit test, eval-case product_id=23 seed-order fragility (noted for Q19), MMDDYY
+filename collision promoted to recommendation. Suite after polish: 243 passed/2 skipped
+(unit+e2e), touched files ruff-clean. Reviewer verdict: Ready to merge — wearable path
+golden-proven, cans-dress failure mode demonstrably dead, deviations documented.
