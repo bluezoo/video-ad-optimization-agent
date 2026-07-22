@@ -70,3 +70,7 @@ Carried minors for final whole-branch review: db.py init docstring table list om
 ## 2026-07-22 — demo scenario verification: F3 PASS (2/2)
 
 verifier-f3 against this worktree's make dev (:8501). F3.1: get_video_details → 30 days tracked; generate_additional_metrics(days=3) → success; re-check → 33 days (exact 30→+3→33, deterministic). F3.2: compare_creatives_within_campaign → three creatives with DISTINCT RPIs (0.0605/0.0595/0.0589), all in [0.03,0.07], each revenue/impressions rounding exactly to its reported RPI; winner = max-RPI creative. Evidence: scratch/verify-f3/ (session events JSON, tool-call extract, server log). Screenshot writes blocked by chrome-devtools sandbox roots (pinned to another worktree) — claims verified against raw session JSON instead. Side effect: demo anchor advanced +3 days (33-day state is the expected baseline for F4/F6 runs).
+
+## 2026-07-22 — demo scenario verification: F4 PASS (1/1)
+
+verifier-f4, campaign 4 (Sage Satin Camisole). generate_creative_comparison_chart fired, artifact_saved true (real 30KB 1280x720 PNG); three distinct RPIs [0.0546, 0.0492, 0.0428] all in band, each revenue/impressions exact to 6dp, best_performer = max RPI, chart_data labels/values match comparison payload exactly. Evidence: scratch/verify-f4/ (session JSON, chart_response.json, PNG, server log). Verifier noted payload impressions < raw video_metrics sums — that is the tool's 30-day reporting window vs the 33-day post-F3 total (ratio ≈ 30/33), pre-existing windowing, not ws10 behavior.
