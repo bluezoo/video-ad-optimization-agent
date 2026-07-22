@@ -463,3 +463,5 @@ All steps completed per plan.md:
 1 skipped. All demo-scenario documentation in place; xfail narrowing completion marked in phase doc.
 
 Commit range: 1bee8f1..fba4ed8
+
+## 2026-07-21 — stabilize round 1: green
