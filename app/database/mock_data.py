@@ -27,6 +27,7 @@ from datetime import date, datetime, timedelta
 from ..demo_data.attribution import screens_for_campaign
 from ..demo_data.constants import DEMO_WINDOW_DAYS
 from ..demo_data.derive import derive_video_metrics_rows
+from ..demo_data.windows import load_attribution_windows
 from .db import get_connection, get_demo_anchor_date
 from .products_data import PRODUCTS
 
@@ -359,20 +360,8 @@ def populate_mock_data() -> dict:
             cursor.execute('DELETE FROM video_metrics WHERE video_id = ?', (video_id,))
 
         # Generate deterministic metrics through the stored windows
-        # (4-line inline window load — mock_data must not import app.tools)
-        placeholders = ",".join("?" for _ in campaign_video_ids)
-        cursor.execute(
-            f"SELECT video_id, screen_id, active_from, active_to FROM video_attribution "
-            f"WHERE video_id IN ({placeholders})", campaign_video_ids)
-        windows = [
-            {
-                "video_id": r[0],
-                "screen_id": r[1],
-                "active_from": datetime.fromisoformat(r[2]),
-                "active_to": datetime.fromisoformat(r[3]) if r[3] else None,
-            }
-            for r in cursor.fetchall()
-        ]
+        # Shared loader in app/demo_data — legal layering (no app.tools import).
+        windows = load_attribution_windows(cursor, campaign_video_ids)
         for row in derive_video_metrics_rows(
             campaign_id, campaign_video_ids, window_start, anchor, windows=windows
         ):
