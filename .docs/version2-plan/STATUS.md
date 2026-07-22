@@ -28,3 +28,4 @@ Update rows in place as a workstream progresses; don't append new rows for the s
 | 14b | `14b` | video-model-upgrade-omni-flash | not started | - | - | 2026-07-13 | depends on Phase 1, ideally after 14a |
 | 15 | `15` | product-onboarding | not started | - | - | 2026-07-16 | depends on Phases 8, 9, 11a |
 | — | `—` | replan-data-track (docs only) | merged | version_2_replan-data-track | [#5](https://github.com/bluezoo/video-ad-optimization-agent/pull/5) | 2026-07-17 | merged a4e0e76 (squash); replan + 1-based renumbering + BlueZoo mimic verification (working-docs/replan-data-track/bluezoo-mapping-verification.md); 11a/11b + Phase 15 rows added above |
+| 16 | `16` | live-api-testing | not started | - | - | 2026-07-22 | new phase (owner directive, resolves Q19); dependency: Phase 9 merged |
