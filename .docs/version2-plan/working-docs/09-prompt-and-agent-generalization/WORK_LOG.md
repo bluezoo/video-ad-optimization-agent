@@ -465,3 +465,57 @@ All steps completed per plan.md:
 Commit range: 1bee8f1..fba4ed8
 
 ## 2026-07-21 — stabilize round 1: green
+
+## 2026-07-22 — DISCOVERY: integration eval suite passes vacuously under pytest (never runs the LLM)
+
+**Assumed:** `make test-integration` "uses real LLM via AgentEvaluator eval_sets"
+(CLAUDE.md Commands), and Task 7's narrowed xfail plus new eval cases would therefore be
+genuinely exercised. The stabilize round's report of "5 integration passed … against the
+live LLM" repeated that assumption — **that claim is false** and must not be cited as
+evidence.
+
+**Actual (mechanism pinned end-to-end, 2026-07-22):**
+1. `tests/conftest.py:55` — the autouse, session-scoped `setup_test_environment` fixture
+   sets `GOOGLE_CLOUD_PROJECT=test-project` / `GOOGLE_CLOUD_LOCATION=us-central1` for
+   EVERY pytest run (correct isolation for unit tests, fatal for integration evals).
+2. Every eval inference fails fast with `403 PERMISSION_DENIED` against the fake project
+   (log evidence: `Inference failed for eval case 'list-products-by-category' …
+   projects/test-project`, emitted from `local_eval_service.py:554`).
+3. ADK's `LocalEvalService._perform_inference_single_eval_item` catches **all** inference
+   exceptions by design ("we don't [want] failures to affect other inferences") and
+   returns `InferenceStatus.FAILURE` — log-only, nothing raised.
+4. A failed inference yields `EvalCaseResult(final_eval_status=FAILED,
+   overall_eval_metric_results=[])`, and `AgentEvaluator.evaluate_eval_set` collects
+   failures **only from metric results**, never from `final_eval_status` — empty metric
+   list → `assert not failures` passes → pytest reports "passed" in ~5s.
+
+**Reproductions:** (a) corrupting `media_agent.test.json` (`list_products` →
+`list_productsX`) still yields "1 passed in 5.88s" under pytest; (b)
+`pytest … --log-cli-level=ERROR` shows the swallowed 403s per eval case; (c) running the
+same eval standalone (`asyncio.run(AgentEvaluator.evaluate(...))`, real env from
+`app/.env`) performs real inference and **raises AssertionError with 20 failures**.
+
+**Second, independent problem surfaced by (c):** when genuinely executed, the
+pre-existing eval sets FAIL as authored — expected trajectories list direct tool calls
+(`list_products` etc.) but the coordinator's actual trajectory wraps them in
+`transfer_to_agent`; `response_match_score` ≈ 0 against the pinned reference responses.
+So the integration suite has never truly passed: every historical "N integration passed"
+result in this repo (all workstreams) was vacuous.
+
+**Blast radius:**
+- CLAUDE.md's `make test-integration` description was wrong — amended (Commands line +
+  new Gotcha) in this branch.
+- ws09 Task 7's two new eval cases are syntactically valid and correctly authored per
+  plan, but equally unexercised under pytest until the infra is fixed. Real verification
+  of ws09's behavior change rests on the unit/golden suite (green) and the demo-scenario
+  pass (F1/F5.1/F5.2).
+- `99-open-questions.md` — new Q19 with the fix options and the cost trade-off (a real
+  fix makes `make test`, the default target, spend live LLM calls).
+- No downstream phase doc claims the integration suite works, so no NN-doc amendments
+  beyond 09's step-7 provenance note.
+
+**Scope decision:** repairing this (per-test real-env fixture for tests/integration +
+vacuity guard + rewriting all five eval sets' expected trajectories against the live
+LLM) exceeds ws09's approved Task 7 scope and changes `make test`'s cost profile —
+presented to the owner as fix-now vs defer (Q19); ws09 proceeds to demo verification
+either way.
