@@ -34,7 +34,85 @@ functionResponse) — tool responses carry the real values; the chat prose is se
 
 ---
 
-## Part A — What workstream 09 changed (test these first)
+## Part 0 — What workstream 10 changed (newest — test these first)
+
+Phase 10 made the metrics story causal: a video only earns metrics because it
+**played on real screens during attribution windows**. These journeys check the new
+machinery end to end. The sqlite commands below are read-only checks (except the one
+marked SETUP) — run them in a second terminal from the repo root you started
+`make dev` in.
+
+### Journey 0.1 — activation opens attribution windows (SETUP + UI + DB check)
+
+The seeded demo ships every video already activated, so first create one pending
+video to activate (SETUP — run after `make dev` has finished seeding):
+
+```bash
+sqlite3 campaigns.db "INSERT INTO campaign_videos (campaign_id, product_id, video_filename, status) VALUES (1, (SELECT product_id FROM campaigns WHERE id = 1), 'owner-test-pending.mp4', 'generated');"
+```
+
+Then in the chat:
+
+```
+Show me the pending videos for campaign 1, then activate the first one
+```
+
+**Expect:** the pending list shows the `owner-test-pending` video; activation succeeds
+and reports **30 days** of metrics generated. Then the DB check:
+
+```bash
+sqlite3 campaigns.db "SELECT va.screen_id, va.active_from, va.active_to FROM video_attribution va JOIN campaign_videos cv ON cv.id = va.video_id WHERE cv.video_filename = 'owner-test-pending.mp4';"
+```
+
+**Expect:** **2–3 rows** (campaign 1 has screens **101/102/103** — note screen ids are
+NOT the campaign id anymore: the old 1:1 campaign-as-screen proxy is gone), every
+`active_from` = 30 days back from the demo anchor, every `active_to` empty (open =
+still live).
+
+### Journey 0.2 — pausing closes the windows; reactivating reopens cleanly
+
+```
+Pause that video
+```
+
+Re-run the Journey 0.1 DB check. **Expect:** the same rows now all have `active_to`
+set (closed = plays stop accruing).
+
+```
+Activate it again
+```
+
+**Expect:** activation succeeds; the DB check now shows the closed rows **plus** 2–3
+new open rows (closed rows are kept as history), and — the important part — the
+video's metrics are **unchanged** (`metrics_generated: 0` is correct here: rows
+already existed, and overlapping windows never double-count; that guard has its own
+tests).
+
+### Journey 0.3 — deterministic extension still exact (F3's check)
+
+```
+What's the status of video 1, including how many days of metrics it has?
+```
+```
+Generate 3 more days of metrics for video 1
+```
+```
+Check video 1's status again — how many days now?
+```
+
+**Expect:** exactly **30 → 33** (every activated video extends together; nothing
+random).
+
+### Journey 0.4 — the numbers themselves
+
+Run Journeys **B4 and B5** below — their invariants (RPI band [0.03, 0.07],
+`revenue ≈ impressions × RPI` per creative, distinct RPIs across creatives, winner =
+max RPI) are the real Phase 10 acceptance check, and the example numbers there were
+re-captured from the new join.
+
+---
+
+## Part A — What workstream 09 changed
 
 ### Journey A1 — THE fix: cold-brew video is now a product ad, not a fashion shot
 
