@@ -130,3 +130,28 @@ Task 5 review: approved (a02141f..73d9f1d)
 - skills-lock.json (npx skills integrity hashes) committed alongside the
   vendored skills.
 - Next: Tasks 6-10 — record actuals for all five eval sets, then OWNER GATES.
+
+## 2026-07-23 — OWNER GATE 1 (stage 4 calibration): decisions (verbatim)
+
+Presented: calibration/OWNER_REVIEW.md (16 cases, live actuals + proposals;
+two reproducible product bugs). Owner answers:
+1. Dup-product bug (create-campaign-beverage; settles Task 11 cold-start case
+   the same way): "Fix agent now (Recommended)" — amend instructions to
+   resolve existing products before creating; pin correct 3-call trajectory
+   (list_products → create_campaign product_id=23).
+2. Maps misrouting bug (get-map-data): "Fix routing now (Recommended)" —
+   Maps-link queries must reach analytics_agent's get_campaign_map_data; pin
+   correct 2-call trajectory. Noted: answer text fabricated link-looking text.
+3. Pinning policy (other 14 cases): "Yes — minimal refs + proposed bullets
+   (Recommended)" — minimal meaningful trajectories (subsequence tolerance),
+   OWNER_REVIEW.md's proposed must-contain bullets become the references.
+4. review_agent pending-videos verbosity: "Minimal ref, leave agent as-is
+   (Recommended)" — drop legacy list_pending_videos from the reference, no
+   instruction tightening.
+
+DISCOVERY (bug 2 is new knowledge): Coordinator misroutes Maps-link queries
+to campaign_agent; answer text claims Google Maps links that no called tool
+produced. Blast radius: app/agent.py routing instructions (fixed this
+workstream per decision 2); eval set analytics_agent/get-map-data. Bug 1 was
+already flagged by ws14's WORK_LOG (candidate case) — now reproduced live and
+being fixed here, which resolves Task 11's open fix-vs-xfail question as FIX.
