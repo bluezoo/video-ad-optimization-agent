@@ -87,7 +87,6 @@ class TestReviewAgent:
 class TestAnalyticsAgent:
     """Test Analytics Agent tool execution."""
 
-    @_AUTHORED_PRE_TRANSFER
     async def test_analytics_agent_tools(self):
         """Analytics agent should correctly execute analytics tools."""
         outcomes = await run_eval_set(
