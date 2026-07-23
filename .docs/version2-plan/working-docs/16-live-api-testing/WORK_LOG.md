@@ -102,3 +102,4 @@ fix cap 2 per task), Tasks 1–5 first (no owner gates); Tasks 6+ pause at each
 OWNER GATE per the plan's execution protocol.
 Task 1 implemented (commits 9023e93..295fc3e; ruff 42 errors -> 0, make lint green, make test-unit 314 passed/1 skipped, make test-e2e 25 passed/1 skipped, golden prompt tests 4 passed)
 Task 1 review: approved (9023e93..41ac6eb)
+Task 2 implemented (commits f5c26fc..3aa9c7e; combined tests/unit + tests/e2e 341 passed/2 skipped, was 3 failed/1 skipped before fix; make lint green)
