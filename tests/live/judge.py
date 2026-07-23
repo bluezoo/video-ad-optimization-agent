@@ -52,6 +52,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import warnings
 from pathlib import Path
 from typing import Literal
 
@@ -378,10 +379,16 @@ def judge_with_hard_retry(label: str, judge_fn, *args, **kwargs) -> JudgeVerdict
     hard = hard_failed_checks(verdict)
     if not hard:
         return verdict
-    print(
+    msg = (
         f"[judge] HARD-check failure on {label} ({', '.join(hard)}) — re-judging "
         "ONCE against the same media, no regeneration [ws16 OWNER GATE 4, 2026-07-23]"
     )
+    print(msg)
+    # [N2, ws16 final review] SETUP_INSTRUCTIONS.md's flakiness watchlist
+    # promises every retry is "always visible" via print/warnings.warn — this
+    # one previously only printed (silent on a passing run under pytest
+    # capture). warn so the code matches that promise.
+    warnings.warn(msg, stacklevel=2)
     retry_verdict = judge_fn(*args, **kwargs)
     retry_hard = hard_failed_checks(retry_verdict)
     print(

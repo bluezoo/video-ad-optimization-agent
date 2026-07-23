@@ -159,6 +159,50 @@ def test_deterministic_only_failure_predicate():
     )
 
 
+def test_retry_keeps_original_when_retry_inference_itself_fails():
+    """[N1, ws16 final review] A retry whose OWN inference dies must NOT mask
+    the original deterministic-dim failure behind an infra xfail.
+
+    If ``_retry_outcome_or_keep_original`` unconditionally replaced the
+    original with a failed-inference retry, the set would report a failed
+    (possibly infra-shaped) inference instead of the genuine tools/trajectory
+    mismatch it originally caught — turning a real bug into a silent xfail.
+    The original outcome must be preserved so the set FAILS, not xfails.
+    """
+    from tests.integration.eval_harness import _retry_outcome_or_keep_original
+
+    original = _case(ok=True)
+    original.dimensions["trajectory"] = _dim(False)  # genuine deterministic-dim failure
+
+    failed_retry = _case(ok=False, err="503 UNAVAILABLE (infra hiccup on retry)")
+
+    kept = _retry_outcome_or_keep_original(original, failed_retry)
+    assert kept is original
+    assert kept.dimensions["trajectory"].passed is False
+
+    # End-to-end: assert_eval_outcomes must FAIL (not xfail) on the preserved
+    # outcome — the deterministic-dim mismatch stays visible as a real failure.
+    with pytest.raises(Failed):
+        assert_eval_outcomes([kept], expect_cases=1)
+
+
+def test_retry_replaces_original_when_retry_inference_succeeds():
+    """A retry that actually ran (inference_ok) IS authoritative and replaces
+    the original — the GATE-4 contract for a genuine retry outcome.
+    """
+    from tests.integration.eval_harness import _retry_outcome_or_keep_original
+
+    original = _case(ok=True)
+    original.dimensions["trajectory"] = _dim(False)
+
+    successful_retry = _case(ok=True)
+    successful_retry.dimensions["trajectory"] = _dim(True)
+
+    kept = _retry_outcome_or_keep_original(original, successful_retry)
+    assert kept is successful_retry
+    assert kept.dimensions["trajectory"].passed is True
+
+
 # --- GATE-4 bounded media re-judge: retry logic (pure, fake judge, no live) ---
 
 

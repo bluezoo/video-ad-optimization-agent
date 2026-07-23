@@ -87,7 +87,7 @@ def empty_live_db(isolated_live_db, monkeypatch):
 
 class TestFromScratchOnboarding:
     async def test_create_product_generate_image_attach_campaign(
-        self, empty_live_db, generated_media
+        self, empty_live_db, generated_media, persisted_media_dir
     ):
         """Non-fashion product, empty catalog: create -> generate image -> attach."""
         # Step 1: create a brand-new, non-fashion product on an empty catalog.
@@ -140,9 +140,18 @@ class TestFromScratchOnboarding:
 
         # Register for Task 14's judge — open item 3: onboarding-generated
         # media is judged like any other pipeline output, not exempted.
+        #
+        # [I1, ws16 final review] ``image_path`` lives inside ``empty_live_db``'s
+        # per-test temp sandbox, which is rmtree'd at THIS test's own fixture
+        # teardown — a path there would dangle by the time the session-scoped
+        # judge tests run later. Copy the generated image into the
+        # session-persistent ``persisted_media_dir`` first and register THAT
+        # path, so the registry entry is valid for the rest of the session.
+        persisted_image_path = persisted_media_dir / image_filename
+        shutil.copy2(image_path, persisted_image_path)
         generated_media["onboarding_product_image"] = {
             "kind": "image",
-            "path": image_path,
+            "path": str(persisted_image_path),
             "archetype": "onboarding-product-reference",
             "request_context": (
                 "Catalog reference photo generated during from-scratch "

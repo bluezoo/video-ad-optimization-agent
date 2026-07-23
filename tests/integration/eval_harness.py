@@ -152,6 +152,23 @@ def _deterministic_only_failure(dimensions: dict[str, "DimensionOutcome"]) -> bo
     )
 
 
+def _retry_outcome_or_keep_original(
+    original: CaseOutcome, retry: CaseOutcome
+) -> CaseOutcome:
+    """[N1, ws16 final review] Retry replaces the original ONLY if it actually ran.
+
+    The GATE-4 re-inference retries a case that hard-failed on a deterministic
+    dim (tools/trajectory). If the retry's OWN inference dies (e.g. an infra
+    hiccup — credentials/quota/connection), unconditionally replacing the
+    original outcome with the failed retry would hand ``assert_eval_outcomes``
+    a failed-inference case; if the error looks infra-shaped, the whole set
+    xfails — discarding the original run's genuine tools/trajectory failure
+    evidence behind an unrelated infra xfail. Keep the ORIGINAL outcome in
+    that case so the set still FAILS on the real deterministic-dim mismatch.
+    """
+    return retry if retry.inference_ok else original
+
+
 def load_dimension_metrics(
     config_path: str | Path = LIVE_EVAL_CONFIG_PATH,
 ) -> dict[str, list[EvalMetric]]:
@@ -334,7 +351,13 @@ async def _score_case(
         and dimension_metrics.get(_ANSWER_DIMENSION)
     ):
         eid = inference_result.eval_case_id
-        print(f"[eval-harness] answer-dimension retry (GATE 3) for: {eid}")
+        msg = f"[eval-harness] answer-dimension retry (GATE 3) for: {eid}"
+        print(msg)
+        # [N2, ws16 final review] SETUP_INSTRUCTIONS.md's flakiness watchlist
+        # promises every retry is "always visible" via print/warnings.warn — this
+        # one previously only printed (silent on a passing run under pytest
+        # capture). warn so the code matches that promise.
+        warnings.warn(msg, stacklevel=2)
         redo = await _eval_one_dim(
             eval_service, inference_result, dimension_metrics[_ANSWER_DIMENSION]
         )
@@ -429,15 +452,27 @@ async def run_eval_set(
             retry.dimensions = await _score_case(
                 eval_service, result, dimension_metrics
             )
-        outcomes_by_id[eid] = retry
-        still_failed = sorted(
-            n for n, d in retry.dimensions.items() if not d.passed
-        )
-        if retry.inference_ok and not still_failed:
-            print(f"[eval-harness] re-inference {eid}: PASSED on retry")
+        final = _retry_outcome_or_keep_original(outcome, retry)
+        outcomes_by_id[eid] = final
+        if final is not retry:
+            # [N1, ws16 final review] retry's own inference died — original
+            # deterministic-dim failure preserved, not infra-masked.
+            print(
+                f"[eval-harness] re-inference {eid}: retry inference itself "
+                f"failed ({retry.error_message}) — keeping ORIGINAL outcome "
+                "(not infra-masking the first-run failure)"
+            )
         else:
-            detail = ", ".join(still_failed) or (retry.error_message or "inference failed")
-            print(f"[eval-harness] re-inference {eid}: FAILED again ({detail})")
+            still_failed = sorted(
+                n for n, d in retry.dimensions.items() if not d.passed
+            )
+            if not still_failed:
+                print(f"[eval-harness] re-inference {eid}: PASSED on retry")
+            else:
+                print(
+                    f"[eval-harness] re-inference {eid}: FAILED again "
+                    f"({', '.join(still_failed)})"
+                )
 
     # Stable order: as authored in the eval set.
     outcomes = [

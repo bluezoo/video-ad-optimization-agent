@@ -27,6 +27,8 @@ generated artifact here so the Gemini judge tests (Task 14) reuse the media
 instead of regenerating it.
 """
 
+from pathlib import Path
+
 import pytest
 
 from tests.integration.conftest import (  # noqa: F401
@@ -44,3 +46,26 @@ def generated_media() -> dict[str, dict]:
     "request_context": str}`` — exactly what the Task 14 judge needs.
     """
     return {}
+
+
+@pytest.fixture(scope="session")
+def persisted_media_dir(tmp_path_factory) -> Path:
+    """Session-persistent directory for media that must outlive per-test teardown.
+
+    [I1, ws16 final review] Some live tests (e.g. from-scratch onboarding) run
+    inside a per-test temp sandbox (``empty_live_db``'s ``PRODUCT_IMAGES_DIR``
+    override) that is ``rmtree``'d at that test's own teardown. A path inside
+    that sandbox dangles the moment the generating test finishes, so it must
+    NOT be what gets registered in ``generated_media`` for the Task 14 judge
+    to consume later in the same session — the judge tests run afterward and
+    would either FileNotFoundError (ordered explicitly) or silently see
+    nothing (natural collection order).
+
+    A ``tmp_path_factory`` SESSION directory survives for the whole test
+    session (pytest's own tmp-dir rotation cleans it up eventually) and is
+    never the repo's real ``product-images/``/``generated/`` — nothing here
+    pollutes tracked or persistent local state. Generators that need their
+    output to survive their own fixture teardown should copy the artifact
+    here before registering its path in ``generated_media``.
+    """
+    return tmp_path_factory.mktemp("persisted_media")
