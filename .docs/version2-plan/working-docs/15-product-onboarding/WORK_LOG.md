@@ -61,3 +61,16 @@ Re-run against 8544fe8, fresh DB, DEMO_DATASET=none + GCS_BUCKET unset, one sess
 - fashion.md F1+F3 regression under NEW defaults (GCS_BUCKET unset, DEMO_DATASET unset->fashion): 5/5 PASS. F1.2 ran the real two-stage pipeline (gemini image + Veo 3.1, 95s) — video landed in local generated/ (2.99MB + thumbnail + metadata), rendered in UI, acceptable reference_image_used=false warning (no local product images without the bundle). F3 deterministic values MATCH the ws10/ws11a record: video 1 = 30d/47,257 imp/$2,859.03/RPI 0.0605, extension 30->33d, campaign-1 creative RPIs 0.0605/0.0595/0.0589. F3.2 satisfied via compare_creatives_within_campaign (per the doc's any-tool-with-per-ad-totals clause). Global check both scenarios: zero storage.googleapis.com across all session JSON. Evidence: /tmp/ws15-verify-fashion/, /tmp/ws15-verify-fromscratch/.
 ## 2026-07-23 — final whole-branch review: READY TO MERGE
 Opus reviewer over ed2b8ce..3eb92ea (23 commits): zero Critical, zero Important, one Minor (Optional[str] on the new get_product_image_public_url — the branch's single new lint violation; fixed as the next commit). Reviewer independently re-ran the 42 new load-bearing tests, base-vs-current ruff and greps; confirmed all three adjudicated test edits match their authorization exactly, the un-task-reviewed routing fix 8544fe8 is sound, and all binding constraints hold. Two recorded non-defect observations: per-surface image-status vocabulary (pending vs missing, both tested, intentional) and generate_product_image's constant PNG artifact mime (cosmetic, plan-verbatim).
+
+## 2026-07-22 — post-verify addition: make targets + auto-install (owner request)
+Owner asked for easy make commands for the demo-asset flow. Commit 9c0e005:
+`make demo-assets` / `demo-assets-from-file FILE=` / `demo-assets-build SRC= [OUT=]`;
+`make dev` now depends on `demo-assets` (safe: graceful skip + `.demo-assets-installed`
+marker mean it can never block startup). Gap surfaced while wiring this: nothing loaded
+`app/.env` for standalone installer runs (ADK only loads it when serving the agent), so
+the documented "set DEMO_ASSETS_DRIVE_ID in app/.env" path silently didn't work outside
+`adk web` — fixed by having scripts/demo_assets.py load app/.env itself (shell env wins);
+python-dotenv pinned in requirements. Docs updated to the make targets
+(SETUP_INSTRUCTIONS.md bundle section, DEMO_GUIDE.md Journey 15.4, Makefile help incl.
+GCS_BUCKET-is-optional guidance). Verified: graceful-skip JSON via `make demo-assets`,
+usage errors on missing FILE/SRC, ruff clean, 306 unit + 25 e2e pass. Pushed to PR #13.
