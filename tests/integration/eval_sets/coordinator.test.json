@@ -13,11 +13,12 @@
             "role": "user"
           },
           "final_response": {
-            "parts": [{"text": ""}],
+            "parts": [{"text": "We currently have 4 active ad campaigns: 1. Blue Floral Maxi Dress - Westfield Century City (Los Angeles, CA); 2. Elegant Black Cocktail Dress - Bloomingdale's 59th Street (New York, NY); 3. Black High Waist Trousers - Water Tower Place (Chicago, IL); 4. Sage Satin Camisole - The Grove (Los Angeles, CA). Each campaign is one product at one store location, and all four are Active."}],
             "role": "model"
           },
           "intermediate_data": {
             "tool_uses": [
+              {"name": "transfer_to_agent", "args": {"agent_name": "campaign_agent"}},
               {"name": "list_campaigns", "args": {}}
             ],
             "intermediate_responses": []
@@ -36,11 +37,12 @@
             "role": "user"
           },
           "final_response": {
-            "parts": [{"text": ""}],
+            "parts": [{"text": "There are 28 products in the catalog, grouped by category: Dresses, Tops, Pants, Outerwear, and Skirts (fashion), plus Beverages & Food (such as Aurora Cold Brew, Citrus Grove Sparkling Water) and Electronics & Home (such as earbuds, a lounge chair, and an air fryer)."}],
             "role": "model"
           },
           "intermediate_data": {
             "tool_uses": [
+              {"name": "transfer_to_agent", "args": {"agent_name": "media_agent"}},
               {"name": "list_products", "args": {}}
             ],
             "intermediate_responses": []
@@ -59,11 +61,12 @@
             "role": "user"
           },
           "final_response": {
-            "parts": [{"text": ""}],
+            "parts": [{"text": "Here is the video review table listing all 10 videos, each with its product, store location, variation, model/setting/mood, duration, and created timestamp. Summary: 0 pending activation, 10 live/activated, 10 total shown."}],
             "role": "model"
           },
           "intermediate_data": {
             "tool_uses": [
+              {"name": "transfer_to_agent", "args": {"agent_name": "review_agent"}},
               {"name": "get_video_review_table", "args": {}}
             ],
             "intermediate_responses": []
@@ -82,11 +85,12 @@
             "role": "user"
           },
           "final_response": {
-            "parts": [{"text": ""}],
+            "parts": [{"text": "Campaign 1 (Blue Floral Maxi Dress - Westfield Century City), last 30 days: RPI $0.0596 (about $59.60 per 1,000 impressions), total revenue $8,154.15, total impressions 136,728, average dwell time 8.1s across 3 active creatives."}],
             "role": "model"
           },
           "intermediate_data": {
             "tool_uses": [
+              {"name": "transfer_to_agent", "args": {"agent_name": "analytics_agent"}},
               {"name": "get_campaign_metrics", "args": {"campaign_id": 1}}
             ],
             "intermediate_responses": []

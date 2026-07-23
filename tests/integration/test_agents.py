@@ -48,7 +48,6 @@ _AUTHORED_PRE_TRANSFER = pytest.mark.xfail(
 class TestCoordinatorAgentRouting:
     """Test that the coordinator routes queries to correct sub-agents."""
 
-    @_AUTHORED_PRE_TRANSFER
     async def test_coordinator_routes_to_campaign_agent(self):
         """Coordinator should route queries to the right sub-agent + tool."""
         outcomes = await run_eval_set(get_eval_set_path("coordinator.test.json"))
