@@ -322,3 +322,15 @@ resolver is order-independent by design; flag for Task 14 Step 4 (controller).
 **Verify (pre-gate):** make lint green (all touched); make test-unit 319
 passed/1 skipped. NOT run: full `make test-live` (Step 4, controller);
 regeneration of existing videos/images (expensive, reused on disk).
+
+## 2026-07-23 — OWNER GATE 2 (judge calibration): decisions (verbatim)
+
+Presented: calibration/judge-calibration.md (5 media + chart, all checks pass,
+per-check evidence; media paths listed for owner viewing). Owner answers:
+1. Severity mapping: "Approve as proposed (Recommended)" — hard:
+   subject_matches_archetype, no_rendered_text, no_captions_any_frame, both
+   chart checks; warn: setting_mood_plausible. (Resolves phase-doc open
+   question 1; Task 16 amends 99-open-questions.)
+2. Judge negative controls: "Yes — add now (Recommended)" — corrupted-media
+   fixtures the judge must FAIL become part of test-live.
+3. Task 11 legacy variation-fields fix: "Ratified (Recommended)".
