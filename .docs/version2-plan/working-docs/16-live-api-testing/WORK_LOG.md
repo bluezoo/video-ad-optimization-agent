@@ -110,3 +110,23 @@ Task 4 implemented (commits 12ebc02..1381958; tests/integration/test_live_env_sm
 Task 4 review: approved (12ebc02..f3ed7d3)
 Task 5 implemented (commits a02141f..cad2c54; tests/integration 7 passed/5 xfailed in 168.54s — evals genuinely run live (was vacuous ~5s), guard+smoke 7 passed; make test 316 passed/1 skipped (unit) + 25 passed/1 skipped (e2e); make lint green; installed google-adk[eval]==2.5.0 extras into worktree .venv — resolves Task 3's carried pandas ModuleNotFoundError)
 Task 5 review: approved (a02141f..73d9f1d)
+
+## 2026-07-23 — Tasks 1–5 complete (stage 0–3), all review-approved, 0 fix rounds
+
+- Per-task ledger lines above (mirrored from .superpowers/sdd/progress.md by the
+  agents themselves). Highlights: lint 42→0 (UP042 via StrEnum, py311 target);
+  item-6 leak reproduced as 3 failures (not 1 — brief's own mechanism paragraph
+  was right), combined tests/unit+e2e now 341 passed; tier split landed; live
+  smoke proves real project + GCS_BUCKET=None reach the process; eval harness
+  live run: 7 passed + 5 xfailed in 168.5s — the five eval sets genuinely
+  execute inference + FinalResponseMatchV2 judge scoring now (old vacuous run
+  ~5s), xfail-as-authored pending stage-4 repair.
+- Carried to Task 16 (docs): worktree needed `pip install 'google-adk[eval]==2.5.0'`
+  (pandas chain) — SETUP_INSTRUCTIONS must document the eval extra for test-live;
+  eval_harness raises loud ImportError with instructions if absent.
+- Task 5 sanctioned deviations (implementer, reviewer-approved): removed
+  known-vacuous TestAllEvalSets; factored conftest env bootstrap into
+  resolve_live_env()/apply_live_env_to_process() for the recorder CLI.
+- skills-lock.json (npx skills integrity hashes) committed alongside the
+  vendored skills.
+- Next: Tasks 6-10 — record actuals for all five eval sets, then OWNER GATES.
