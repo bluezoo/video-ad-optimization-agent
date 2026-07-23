@@ -237,3 +237,5 @@ vacuity guard correctly FAILED rather than passed it — 400 INVALID_ARGUMENT is
 not in the infra-marker xfail list), and passed clean on immediate re-run (1
 passed in 53s). Not a regression from the description edit (that touched only
 campaign_agent; the error was on the media-routing turn).
+
+Stage 4 review: approved (dc289e4..f1b2ac3)
