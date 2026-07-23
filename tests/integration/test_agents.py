@@ -54,7 +54,7 @@ class TestCampaignAgent:
         outcomes = await run_eval_set(
             get_eval_set_path("campaign_agent.test.json")
         )
-        assert_eval_outcomes(outcomes, expect_cases=4)
+        assert_eval_outcomes(outcomes, expect_cases=5)
 
 
 class TestMediaAgent:

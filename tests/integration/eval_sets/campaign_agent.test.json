@@ -99,6 +99,31 @@
         }
       ],
       "session_input": null
+    },
+    {
+      "eval_id": "create-campaign-cold-start-outerwear",
+      "conversation": [
+        {
+          "invocation_id": "test-c05",
+          "user_content": {
+            "parts": [{"text": "Create a campaign for the Camel Wool Overcoat at Macy's Herald Square in Manhattan, New York"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "A new campaign for the Camel Wool Overcoat at Macy's Herald Square in New York has been created (Campaign ID 5). It reuses the existing Camel Wool Overcoat product (ID 8) already in the catalog rather than onboarding a duplicate."}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {"name": "transfer_to_agent", "args": {"agent_name": "campaign_agent"}},
+              {"name": "list_products", "args": {}},
+              {"name": "create_campaign", "args": {"product_id": 8, "store_name": "Macy's Herald Square", "city": "New York", "state": "New York"}}
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": null
     }
   ],
   "creation_timestamp": 1735000000.0

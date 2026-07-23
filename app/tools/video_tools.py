@@ -56,7 +56,7 @@ from ..database.db import get_db_cursor, get_product
 from ..models.product import Product
 from ..models.variation import PRESET_VARIATIONS, CreativeVariation, get_default_variation
 from ..models.video_properties import VideoProperties
-from .prompt_archetypes import resolve_archetype
+from .prompt_archetypes import WEARABLE, resolve_archetype
 from .prompt_builders import (
     build_creative_prompt,
     build_scene_image_prompt,
@@ -450,6 +450,23 @@ STAGE 2 - Video Generation Prompt:
     return metadata_path
 
 
+def _variation_params_for_storage(variation: CreativeVariation, archetype: str) -> dict[str, Any]:
+    """Serialize a CreativeVariation for the campaign_videos.variation_params
+    column, dropping model-only fields for archetypes with no human model in
+    the shot.
+
+    model_ethnicity and activity describe a person; consumable-hero /
+    staged-product / product-hero archetypes have no model, so persisting
+    those fields there is a legacy artifact from the fashion-only era (ws16
+    Task 11, ws14 candidate). Only the WEARABLE archetype keeps them.
+    """
+    data = variation.to_dict()
+    if archetype != WEARABLE:
+        data.pop("model_ethnicity", None)
+        data.pop("activity", None)
+    return data
+
+
 async def generate_video_from_product(
     campaign_id: int,
     product_id: int,
@@ -681,7 +698,7 @@ async def generate_video_from_product(
                 video_prompt,
                 "two-stage" if use_two_stage else "single-stage",
                 variation_obj.name,
-                json.dumps(variation_obj.to_dict()),
+                json.dumps(_variation_params_for_storage(variation_obj, archetype)),
                 duration_seconds,
                 "9:16",
                 generation_time
