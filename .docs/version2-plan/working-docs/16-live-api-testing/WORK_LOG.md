@@ -827,3 +827,7 @@ ledger contract).
 
 ## 2026-07-23 — Task 16 review: APPROVED (mirrors .superpowers/sdd/progress.md)
 Range 6579d58..8561be0. Docs task reviewed for factual accuracy against shipped code: reviewer read AgentEvaluator source in the installed google-adk 2.5.0 to confirm the rewritten gotcha's mechanism (mean-score aggregation, final_eval_status never inspected), AST-counted product data (22 fashion + 6 retail = 28), and verified every DEMO_GUIDE ws16 journey against the actual eval-set JSON. 0 Critical, 0 Important, 1 Minor (provenance misattribution of make-help lines to Task 16 — they shipped in Tasks 3/15; fixed inline by controller in the phase doc). Task 15's two minors (M5 .venv fallback, M6 typo) confirmed fixed in this task.
+
+## 2026-07-23 — OWNER GATE 5: Task 17 (demo-asset bundle publish) DEFERRED
+Presented to owner: Task 17 Step 1 needs the owner's asset source folder (`make demo-assets-build SRC=<folder>`); ws15 shipped only the build/verify/install code and left publishing as an owner follow-up — no asset folder exists in the repo (main checkout `product-images/` is empty; the worktree's 3 images are live-test output, not the demo bundle).
+Owner answer (verbatim): "Defer — keep as owner follow-up (Recommended)" — skip Task 17 in this workstream; it stays documented in SETUP_INSTRUCTIONS as the owner's publish step (build → Drive upload → DEMO_ASSETS_DRIVE_ID). The `make demo-assets` path remains covered by ws15's tests (test_demo_assets 6/6) and its graceful "bundle not configured" skip.
