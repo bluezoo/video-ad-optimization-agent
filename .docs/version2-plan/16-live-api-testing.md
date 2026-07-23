@@ -34,6 +34,19 @@ Two test tiers, both green and both honest:
    each eval run and FAIL (or xfail as infrastructure, per the narrowed
    `_INFRA_MARKERS`) when inference errors were swallowed — a "pass" with zero
    real inferences must be impossible.
+
+   > **Amended (workstream 16, 2026-07-23):** done, but not as sketched — the
+   > logger-capture approach was superseded before implementation. The actual
+   > vacuity was traced to `AgentEvaluator.evaluate_eval_set`'s pytest
+   > aggregation, which compares only mean metric scores and never inspects
+   > per-case `final_eval_status` (not a `LocalEvalService` bug — it already
+   > records `InferenceStatus.FAILURE` correctly per case). The shipped fix
+   > (`tests/integration/eval_harness.py`) asserts per-case `final_eval_status`
+   > directly (`assert_eval_outcomes`) instead of scraping a logger — a
+   > structural check, not a log-scrape, and superior to the sketch (no
+   > reliance on log message text staying stable across ADK versions). See the
+   > CLAUDE.md Gotchas rewrite for the full mechanism and `99-open-questions.md`
+   > Q19 for the resolution record.
 2. **Repair the eval sets so they can genuinely pass.** All five
    `tests/integration/eval_sets/*.test.json` expected trajectories currently
    pin direct tool calls, but the coordinator's real trajectory wraps them in
@@ -42,6 +55,15 @@ Two test tiers, both green and both honest:
    the real shape and add a `test_config.json` criteria file (tool-trajectory
    weighted; response-match relaxed or dropped — these are routing tests, not
    wording tests). Calibrate against live runs.
+
+   > **Amended (workstream 16, 2026-07-23):** done — all five eval sets
+   > (`coordinator`, `campaign_agent`, `media_agent`, `analytics_agent`,
+   > `review_agent`) repaired to the real `transfer_to_agent`-wrapped
+   > trajectories (Tasks 6–10, `.superpowers/sdd/progress.md`), calibrated
+   > against `OWNER_REVIEW.md`'s live actuals (OWNER GATE 1) rather than a
+   > relaxed/dropped response-match — `final_response_match_v2` (LLM judge)
+   > runs as the harness's third dimension per execution directive 2, not
+   > "relaxed or dropped" as originally sketched.
 3. **Default model → `gemini-3.6-flash`.** Change `MODEL` in `app/config.py`
    (stays env-overridable via `AGENT_MODEL`); verify the
    `GOOGLE_CLOUD_LOCATION=global` constraint still holds for 3.6 and update
@@ -58,6 +80,15 @@ Two test tiers, both green and both honest:
    image model ("nano banana" per Phase 14a) and Veo, asserting the tool
    contract (status success, artifact saved, `reference_image_used` honest,
    product-centric vs fashion filename per archetype).
+
+   > **Amended (workstream 16, 2026-07-23):** done — `tests/live/test_media_pipeline.py`
+   > (Task 12), one wearable (blue-floral-maxi-dress) and one non-wearable
+   > retail-core (aurora-cold-brew-330ml) case, both asserted against the real
+   > tool contract; a from-scratch onboarding image-generation case
+   > (Task 13, `tests/live/test_onboarding_from_scratch.py`) added beyond the
+   > original scope, closing "Open items" #3 below. Recorded resolution
+   > evidence for Q14/Q15 in
+   > `.docs/version2-plan/working-docs/16-live-api-testing/calibration/media-metadata.json`.
 5. **Gemini-judge review script.** A test-side judge (e.g.
    `tests/live/judge.py`) that feeds each generated image/video to
    `gemini-3.6-flash` (multimodal) with a structured rubric derived from the
@@ -69,22 +100,58 @@ Two test tiers, both green and both honest:
    the request, and for videos: no visible captions/titles (audio speech
    detection is best-effort — assert via the prompt policy plus judge review
    of frames; note limitations in the rubric rather than over-claiming).
+
+   > **Amended (workstream 16, 2026-07-23):** done — `tests/live/judge.py`
+   > (Task 14), owner-approved severities (OWNER GATE 2: hard =
+   > `subject_matches_archetype`, `no_rendered_text`, `no_captions_any_frame`,
+   > both chart checks; warn = `setting_mood_plausible` — resolves phase-doc
+   > Open question 1 below), negative controls proven to fail (rendered-text
+   > overlay, wrong-subject), subject rule for product-hero relaxed to "no
+   > *featured* human model" (OWNER GATE 3 — incidental/blurred background
+   > people allowed), and a bounded one-shot media re-judge on any hard-check
+   > failure (OWNER GATE 4, same file, no regeneration). Audio genuinely NOT
+   > verified — the rubric says so explicitly, matching phase-doc Open
+   > question 2's "prompt-policy + no audio-understanding pass" option (see
+   > below).
 6. **Make targets and defaults.** `make test` stays fast-by-default (unit +
    e2e; integration moves OUT of the default target so the everyday loop
    spends no LLM calls); `make test-live` = repaired integration evals + live
    media tests + judge; `make test-all` includes both tiers. Document the cost
    profile in CLAUDE.md (owner: cost is accepted — correctness first).
 
+   > **Amended (workstream 16, 2026-07-23):** done — `make test` = unit + e2e
+   > only (Task 3); `make test-live` = `pytest tests/integration tests/live`
+   > with an `app/.env` presence guard (Task 4); `make test-all` still covers
+   > `tests/` unchanged, which structurally includes both tiers. CLAUDE.md's
+   > Gotchas section carries the cost note verbatim ("owner: cost accepted,
+   > correctness first") and the tier map. An informational
+   > `make test-live-report` (agents-cli grading layer, Task 15) was added
+   > beyond the original step's scope — explicitly not a gate.
+
 ## Validation
 
-- [ ] Deliberate-break check finally works: corrupting an eval set's expected
+- [x] Deliberate-break check finally works: corrupting an eval set's expected
       tool name makes `make test-live` FAIL (the ws09 check that exposed the
       vacuity), and reverting it passes.
-- [ ] The vacuity guard turns "zero inferences ran" into a loud failure, never
+      > **Amended (workstream 16, 2026-07-23):** verified — Task 6's
+      > `list_campaigns` → `list_campaignsX` deliberate break made the
+      > coordinator case FAIL on tools=0.0 and trajectory=0.0; reverting
+      > passed again (`.superpowers/sdd/progress.md`, Task 6 entry).
+- [x] The vacuity guard turns "zero inferences ran" into a loud failure, never
       a pass.
-- [ ] `make test-live` passes end-to-end on `gemini-3.6-flash` + Veo + the
+      > **Amended (workstream 16, 2026-07-23):** done via `_assert_isolated_db`
+      > + per-case `final_eval_status` assertion in `assert_eval_outcomes`
+      > (see step 1's amendment) — an inference failure now fails the pytest
+      > run, it cannot pass silently.
+- [x] `make test-live` passes end-to-end on `gemini-3.6-flash` + Veo + the
       image model, including judge verdicts on freshly generated media.
-- [ ] `make test` (fast tier) still runs in seconds with zero LLM calls.
+      > **Amended (workstream 16, 2026-07-23):** verified — full `make
+      > test-live` = 26 passed / 0 failed in 673.84s (11m13s), post-GATE-4
+      > (`.superpowers/sdd/progress.md`, Task 14 completion entry).
+- [x] `make test` (fast tier) still runs in seconds with zero LLM calls.
+      > **Amended (workstream 16, 2026-07-23):** verified throughout —
+      > `make test` (unit + e2e) stayed green at every checkpoint (319–344
+      > passed depending on stage), seconds, no network calls.
 
 ## Exit criteria
 
@@ -105,9 +172,30 @@ benefits from a truthful live gate.
 1. Judge reliability: what agreement threshold before a judge verdict blocks
    (vs warns)? Default: hard-fail on rendered-text and wrong-subject checks,
    warn-only on subjective mood/setting checks, revisit after a few runs.
+
+   > **Answered (OWNER GATE 2, workstream 16, 2026-07-23):** default proposal
+   > approved as-is — hard: `subject_matches_archetype`, `no_rendered_text`,
+   > `no_captions_any_frame` (video), both chart checks
+   > (`axes_and_labels_legible`, `correct_creative_count`); warn:
+   > `setting_mood_plausible`. Revisited once, at OWNER GATE 3 (2026-07-23):
+   > the product-hero `subject_matches_archetype` rule was relaxed from "no
+   > people in background" to "no *featured* human model" after a
+   > false-positive on ambient background blur — negative controls (rendered
+   > text, wrong subject) still fail correctly under the relaxed rule. See
+   > `working-docs/16-live-api-testing/WORK_LOG.md`'s OWNER GATE 2/3 entries.
 2. Audio verification: Veo output audio can't be fully verified by a
    frame-based judge; is prompt-policy + spot manual listening acceptable, or
    is an audio-understanding pass (Gemini video+audio input) worth adding?
+
+   > **Answered (workstream 16, 2026-07-23):** shipped as prompt-policy +
+   > frame-based judge only, no audio-understanding pass — `tests/live/judge.py`
+   > judges burned-in captions per sampled/decoded frame and states in its
+   > rubric that audio itself is not verified (music-only/no-voiceover is
+   > enforced by the prompt policy, `_AUDIO_BLOCK`, not checked post-hoc). No
+   > owner ask for an audio-understanding pass surfaced during the workstream;
+   > this stays open if a future regression specifically implicates audio
+   > content rather than the burned-in-caption/text policy this tier already
+   > covers.
 
 ## Open items to address while testing
 
@@ -135,17 +223,42 @@ benefits from a truthful live gate.
    pins set there never reach module-level config values (ws15 discovery) —
    the live-tier conftest must set env before `app.config` import or reload
    the module.
+
+   > **Resolved (workstream 16, 2026-07-23):** local-first, no exceptions —
+   > `tests/integration/conftest.py` force-unsets `GCS_BUCKET`
+   > (`LIVE_ENV_UNSET = ("GCS_BUCKET",)`) for the whole live tier regardless
+   > of what a dev's `app/.env` sets, and asserts `config_module.GCS_BUCKET
+   > is None`. There is no `storage.googleapis.com` reference anywhere in the
+   > live tier's results, verified across every `make test-live` run this
+   > workstream. Both landmines were hit and fixed during Tasks 1–5 (see
+   > `.superpowers/sdd/progress.md`).
 3. **From-scratch onboarding as a live test case (ws15).** `DEMO_DATASET=none`
    → `create_product` → `generate_product_image` against the real image
    model → campaign attach — the
    `docs/demo-scenarios/from-scratch-onboarding.md` path, currently proven
    only by manual verification. Run the generated image through the step-5
    judge like any other media output.
+
+   > **Done (workstream 16, 2026-07-23, Task 13):**
+   > `tests/live/test_onboarding_from_scratch.py` — a non-fashion product
+   > (Artisan Coffee Beans) on a schema-only empty DB: `create_product`
+   > (pending) → `generate_product_image` via the real image model →
+   > `create_campaign` attach, no `storage.googleapis.com` anywhere; the
+   > generated image is registered in `generated_media` so Task 14's judge
+   > reviews it like any other media output (it does — the judge passed it).
 4. **Docs/targets cleanup once the tier lands.** Rewrite the CLAUDE.md
    "integration eval suite passes vacuously" gotcha (it becomes wrong the
    moment step 1 ships), update `make help`/`make test` descriptions for the
    new tier split, and fix the stale `reset-db` echo text ("22 fashion
    products" — dataset is now `DEMO_DATASET`-dependent).
+
+   > **Done (workstream 16, 2026-07-23, Task 16 — this cleanup pass):**
+   > CLAUDE.md's gotcha rewritten with the refined mechanism (see the
+   > "Gotchas" section) and a tier map added to "Commands"; `make help`'s
+   > `test-integration`/`test-live`/`test-live-report` lines and
+   > `reset-db`'s echo text (now "28 products (22 fashion + 6 retail core),
+   > DEMO_DATASET-dependent" — verified against `app/database/products_data.py`
+   > (22) + `retail_products_data.py` (6)) updated in the `Makefile`.
 5. **Opportunistic evidence for Q14/Q15 while paying for the calls.** Live
    media runs should record actual image resolutions (Q14, Phase 14a) and
    qualitative video-output notes (Q15, Phase 14b) into the workstream's
@@ -169,6 +282,14 @@ benefits from a truthful live gate.
    GCS_BUCKET before the restore reload), or have the session fixture pin
    `app.config.GCS_BUCKET` as a module attribute too, so reloads can't
    drift from what tests were promised.
+
+   > **Done (workstream 16, 2026-07-23, Task 2, commit `3aa9c7e`):** fixed via
+   > the first fix candidate's spirit, refined — `tests/_config_baseline.py`
+   > snapshots `app.config`'s import-time state and a `restore_config_baseline()`
+   > helper restores it exactly (no reload, no env reads) instead of a second
+   > `importlib.reload` that would re-derive under whatever env is pinned at
+   > cleanup time. Combined unit+e2e run was 3 failed/1 skipped before the
+   > fix, 341 passed/2 skipped after.
 
 ## Execution directives (owner, 2026-07-23) — binding for this workstream
 

@@ -692,3 +692,135 @@ Commits: `1384d94` (script + Makefile target + `.gitignore`), `407d24f`
 
 ## 2026-07-23 — Task 15 review: APPROVED (mirrors .superpowers/sdd/progress.md)
 Range 79c8168..8cdad4c. Spec ✅ — conversion honest (no fabricated tool returns; the one gap, no tool-response capture, documented in 3 places, never hidden); informational-only confirmed (no test chain depends on test-live-report); eval_harness.py untouched; fit verdict evidence-based and non-self-promoting. 0 Critical, 0 Important; 2 Minor (Makefile .venv fallback inconsistency, addendum typo) folded into Task 16's cleanup. Owner follow-ups noted by implementer: recorder-format change would be needed to make final_response_quality_v1 meaningful; broader all-5-set validation before any future gate-promotion decision.
+
+## 2026-07-23 — Q14/Q15 evidence block (Task 16, open item 5)
+
+Opportunistic evidence recorded during Tasks 12–13's real live pipeline runs
+(no extra API spend — the calls were already being paid for), promoted here
+per open item 5 and threaded into `99-open-questions.md` Q14/Q15 as amendments
+in this same task:
+
+- **Q14 (image resolution, Phase 14a):** both scene-image pipelines
+  (wearable `blue-floral-maxi-dress`, non-wearable `aurora-cold-brew-330ml`)
+  produced **768x1376 PNG, ~1.4MB** (`gemini-3-pro-image`, the standing
+  default) — matching Phase 14a's synthetic-benchmark finding for the same
+  model exactly (`working-docs/14-model-upgrades/image-model-comparison.md`).
+  Two independent measurements (a synthetic benchmark, now a live
+  product/demo pipeline) agree on the 1K resolution tier.
+- **Q15 (video backend, Phase 14b):** Veo 3.1 (`veo-3.1-generate-001`)
+  produced **720x1280 @ 24fps, 4.01s actual duration for a requested 4s**
+  (96 frames) on both pipelines. 6s/8s requested durations were **not**
+  exercised live this workstream — only the 4s case ran (Task 12's chosen
+  duration for the wearable/non-wearable pipeline pair) — so those remain
+  unmeasured.
+
+Full raw values: `calibration/media-metadata.json` (both pipelines, full
+scene-image + video metadata including byte sizes and recorded timestamps).
+
+## 2026-07-23 — Task 16 implemented (stage 8): docs/targets/open-question cleanup
+
+Docs-only task (no `app/` or `tests/` Python touched, per the task's binding
+constraint). Every claim below was verified against the shipped code/Makefile
+before being written, per the task's cardinal rule.
+
+**CLAUDE.md:** Commands tier map rewritten — `make test` documented as
+unit+e2e only (not "unit + integration"); `test-integration`, `test-live`,
+`test-live-report` added with accurate one-line descriptions; pytest markers
+line adds `live` and a pointer to the tier split. Gotchas' "integration eval
+suite passes vacuously" entry fully rewritten: the refined mechanism (ADK's
+`LocalEvalService` was never the bug — it correctly records per-case
+`InferenceStatus.FAILURE`/`final_eval_status`; the vacuity was
+`AgentEvaluator.evaluate_eval_set`'s pytest aggregation comparing only mean
+metric scores and never inspecting `final_eval_status`), the harness fix
+(`assert_eval_outcomes` asserts per-case status directly), and the owner cost
+note verbatim ("owner: cost accepted, correctness first") with the ~11min /
+26-passed runtime.
+
+**Makefile:** `reset-db` echo corrected to "28 products (22 fashion + 6
+retail core), DEMO_DATASET-dependent" — verified by counting `"name":` keys
+in `app/database/products_data.py` (22) and `retail_products_data.py` (6),
+and confirming `seed_demo_data()` calls both `populate_products()` and
+`populate_retail_test_products()` under the default `DemoDataset.FASHION`.
+Folded in Task 15 review's **M5**: `test-live-report`'s `record_actuals`/
+`eval_grade_report.py` invocations now have the same `if [ -d ".venv" ]`
+fallback style every other test/lint target uses (previously hardcoded
+`.venv/bin/python`). Verified with `make -n` dry-runs (tab/shell syntax
+intact) — not run for real (would spend live API calls / needs `agents-cli`).
+
+**SETUP_INSTRUCTIONS.md:** Test section's tier map rewritten to match
+CLAUDE.md; added a new "Live tier (`make test-live`) — workstream 16"
+subsection: setup (`app/.env`, `google-adk[eval]==2.5.0` extra — confirmed
+NOT in `app/requirements.txt`, install command given), local-first storage
+note (`GCS_BUCKET` force-unset by `tests/integration/conftest.py`'s
+`LIVE_ENV_UNSET`, verified in code), the cost/runtime line (26 passed/0
+failed, ~674s/11m13s, from Task 14's final `make test-live` run), and the
+4-item flakiness watchlist (transient Vertex 400; LLM-judge nondeterminism
+mitigated by the GATE-3/4 bounded retries; transient Veo generation error;
+the media re-judge p→p² tradeoff, owner-approved GATE 4). Added a Phase 16
+bullet to "Version 2 workstream setup notes" documenting the two
+owner-approved agent-behavior fixes (dup-product resolve-first,
+Maps-routing).
+
+**DEMO_GUIDE.md § "Workstream Testing Journeys":** new `### Workstream 16`
+section, 6 journeys — fast tier (`make test`), live tier (`make test-live`),
+a deliberate-break check (corrupt an eval set's expected tool name, prove
+`make test-live` catches it, revert), reading a `make test-live-report`
+grade report (explicitly flagged informational, not a gate), a Maps-link
+routing journey (verified against the live `get-map-data` eval case:
+"Show me all campaign locations with Google Maps links" → `transfer_to_agent`
++ `get_campaign_map_data`, contrasted with the plain "Show me all store
+locations" → `get_campaign_locations` split), and a dup-product-reuse journey
+(verified against the live `create-campaign-beverage` eval case: "Create a
+campaign for the Aurora cold brew..." → `list_products` then `create_campaign`
+directly, no `create_product`). **Checked the rest of the file for staleness
+from Tasks 6–14's agent-behavior changes** (dup-product fix, Maps-routing
+fix, non-wearable model-field drop): Act 5's Scene 5.1 query and the Quick
+Reference "Maps"/"Campaign Management" query lists don't assert which agent
+handles the query (routing is invisible to those sections' wording), and none
+of the pre-existing Workstream 11a/14/15 journeys reference the changed
+behavior — **nothing pruned, nothing else needed fixing.**
+
+**Phase doc (`.docs/version2-plan/16-live-api-testing.md`):** Steps 1, 2, 4,
+5, 6 and all four Validation checklist items marked done with
+`> **Amended (workstream 16, 2026-07-23):**` provenance notes, each citing
+the actual shipping commit/task and, where the phase doc's original sketch
+was superseded (step 1's logger-capture vacuity guard → structural
+`assert_eval_outcomes` per-case check), saying so explicitly. Open questions
+1–2 answered: Q1 (judge severity thresholds) cites OWNER GATE 2's approval +
+GATE 3's subject-rule revision; Q2 (audio verification) records that the
+shipped answer is "prompt-policy + frame-based judge only, no
+audio-understanding pass" — the rubric says so in `tests/live/judge.py`,
+matching one of the question's own proposed options, with no owner ask for
+more surfacing during the workstream. Open items 2 (storage policy —
+resolved local-first, force-unset `GCS_BUCKET`), 3 (from-scratch onboarding
+live test — done, Task 13), 4 (this docs cleanup — done, this task), 5
+(Q14/Q15 evidence — done, block above) marked done; item 6 (combined-run GCS
+state leak) marked done retroactively — it was actually fixed at Task 2
+(commit `3aa9c7e`, `tests/_config_baseline.py`), predating this task, and the
+phase doc had never been updated to say so. Item 1 (demo-asset bundle
+publish) is intentionally left open — that's Task 17, not this task.
+
+**99-open-questions.md:** Q19's header appended with "DELIVERED workstream
+16, 2026-07-23" and an amendment correcting the mechanism description (same
+`AgentEvaluator`-aggregation-gap correction as CLAUDE.md, cross-referenced
+rather than duplicated in full). Q14 and Q15 each got a workstream-16
+amendment citing `calibration/media-metadata.json`'s recorded values (see the
+evidence block above) — corroborating evidence, not a new final answer to
+either question (Q14 explicitly still open in the "no owner ratification
+yet" sense; Q15's backend decision is unaffected, this is output-spec
+evidence only).
+
+**research/agents-cli-architecture.md:** Task 15 review's **M6** typo fixed
+("opinon" → "opinion").
+
+**Verification:** `make lint` green (docs/Makefile-only change; no Python
+touched). `make test` (unit + e2e) = **319 passed / 1 skipped** (unit, 35s) +
+**25 passed / 1 skipped** (e2e, 2.7s) — unchanged from Task 15's baseline, as
+expected for a docs-only task. `make -n` dry-run confirms the two edited
+Makefile targets (`reset-db`, `test-live-report`) are syntactically valid
+(tabs intact, shell logic unchanged in behavior). No `README.md` edit; no
+`Co-Authored-By`/AI-attribution trailer in any commit.
+
+Commits: see `.superpowers/sdd/task-16-report.md` for the final SHA(s) (this
+entry is written and committed alongside the docs changes, per the task's
+ledger contract).

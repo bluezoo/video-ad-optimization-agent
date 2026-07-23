@@ -57,20 +57,45 @@ Open the printed local URL. `make reset-db` wipes `campaigns.db` and repopulates
 
 ## Test
 
+**Tier map (workstream 16, 2026-07-23):**
+
 ```bash
 make test-unit         # tests/unit, ~4s, no LLM calls — fastest feedback loop
 make test-e2e           # tests/e2e workflow tests, ~1s, no LLM calls
-make test-integration   # tests/integration, uses a real LLM via AgentEvaluator eval_sets
-make test               # unit + integration (default; skips slow tests)
+make test               # unit + e2e (default now — fast, zero LLM calls, seconds)
+make test-integration   # tests/integration only (real LLM, agent-routing evals) — targeted subset of the live tier, NOT part of `make test`
+make test-live          # LIVE tier: tests/integration + tests/live against real Vertex/Veo/image-gen APIs — see "Live tier" below
+make test-live-report   # agents-cli grade/compare reporting layer over live eval traces — INFORMATIONAL, not a gate
 make test-all            # everything, including slow Veo tests, ~10+ min
 make test-coverage       # pytest --cov=app, HTML report in htmlcov/
 ```
+
+`make test` used to run unit + integration by default; as of workstream 16 integration moved out of the default target (it needs a real LLM and minutes per run) and now lives under `make test-live` alongside the new `tests/live` media/judge tests. `make test` is fast-by-default again: unit + e2e, seconds, zero network calls.
 
 Run a single test: `pytest tests/unit/test_campaign_tools.py::TestClass::test_name -v`.
 
 **Test isolation note:** Prior to the database late-binding fix (workstream version_2_bug-fixes-and-cleanup), unit tests leaked writes into the real `campaigns.db` because `DB_PATH` was bound at import time, preventing test fixtures from patching it. Older checkouts with accumulated junk campaigns should run `make reset-db` once to clear them. The fix ensures all tests use isolated temporary database copies.
 
-**`make test-integration` requires the ADK eval extra:** `pip install "google-adk[eval]"` (into `.venv`). Without it, `AgentEvaluator.evaluate` raises a *lazy* ImportError that the test suite's broad `except ImportError` silently converts into "google.adk.evaluation not available" skips — the suite reports green-looking "5 skipped" while running nothing. (Found during workstream 01; the over-broad catch itself is Phase 2, item 7.) The suite also needs `app/.env` sourced or present (real LLM calls).
+**`make test-integration` and `make test-live` require the ADK eval extra:** `pip install "google-adk[eval]==2.5.0"` (into `.venv`) — this extra is **not** in `app/requirements.txt` (deliberately; it pulls pandas/tabulate/rouge-score, which the fast tier never needs). Without it, `AgentEvaluator`/`LocalEvalService` imports raise a *lazy* ImportError that older test-suite code paths could silently convert into "not available" skips. (Found during workstream 01; the over-broad catch itself is Phase 2, item 7 — workstream 16's `tests/integration/eval_harness.py` fails loudly instead, see CLAUDE.md's Gotchas.) Both targets also need `app/.env` present with real credentials (real LLM/Veo/image-model calls); `make test-live` checks for the file and exits with an error if it's missing.
+
+### Live tier (`make test-live`) — workstream 16
+
+`make test-live` runs `pytest tests/integration tests/live` against real Vertex AI (agent routing evals, Veo video generation, image generation, and a Gemini-multimodal judge that reviews generated media against a rubric). This is the tier that closes `99-open-questions.md` Q19: fast tests prove nothing about actual model behavior, so a second, honest, real-money tier exists specifically to catch routing/prompt/media regressions that only show up against the live LLM.
+
+**Setup:**
+- `app/.env` with a working Vertex AI (or AI Studio) config — see "Environment" above. `make test-live` guards on this file's presence and exits with an error if it's missing.
+- `pip install "google-adk[eval]==2.5.0"` into `.venv` (see above) — required for the eval harness's `LocalEvalService`/`local_eval_sets_manager` imports.
+- Local-first storage: leave `GCS_BUCKET` unset in `app/.env` for the live tier. It is force-unset for the duration of the run either way (no `storage.googleapis.com` URLs anywhere in a live test's output) — the ws16 resolution of the phase doc's storage-policy open item is local-first, no exceptions.
+
+**Cost and runtime (owner-approved, 2026-07-23): cost is accepted, correctness comes first.** A full clean run: **26 passed / 0 failed in ~674s (11m13s)** — real Gemini routing calls across 5 agent eval sets, 2 full Veo two-stage media pipelines (image + video), 1 from-scratch onboarding image generation, and ~6 Gemini-judge multimodal review calls (5 media + 1 chart). Expect real Vertex/Veo/image-model billing on every run.
+
+**Flakiness watchlist (observed during workstream 16 — none of these indicate a regression by themselves; rerun before escalating):**
+- **Transient Vertex `400 INVALID_ARGUMENT`** on routing calls — roughly 1 per full run. This correctly **fails** the case (not vacuously); a clean immediate rerun has been the consistent outcome.
+- **LLM-judge nondeterminism** on the answer-dimension eval scoring and on media hard-checks — mitigated by two bounded, owner-approved one-shot retries in `tests/integration/eval_harness.py` (answer re-judge, GATE 3) and `tests/live/judge.py` (media hard-check re-judge, GATE 4); each retries exactly once and prints/`warnings.warn`s loudly when it fires, so a masked flake is always visible in the test output.
+- **Transient Veo generation error** ("operation completed after ~20s, returned no result" — abnormally fast, no video produced) — a live-infra hiccup, not a code defect; rerun the affected test.
+- **Media re-judge tradeoff (owner-approved, GATE 4):** retrying a hard-check failure once lowers the odds of *catching* a genuinely BORDERLINE policy violation (probability of detection goes from `p` to `p²` across two independent judge calls). Unambiguous violations are unaffected — the negative-control fixtures (rendered-text overlay, wrong-subject-for-archetype) fail **both** judge calls and the test still fails as expected.
+
+See `.docs/version2-plan/working-docs/16-live-api-testing/WORK_LOG.md` for the full OWNER GATE 1–4 decision record and `.docs/version2-plan/16-live-api-testing.md` for the phase's design.
 
 ## Lint/format
 
@@ -101,6 +126,7 @@ This section accumulates setup steps introduced by `.docs/version2-plan/` phases
 - **Phase 6 (workstream 06):** `APP_MODE=demo|connected` exists as a typed config value (`app/config.py`), default `demo`; invalid values fail startup with a `ValueError`. Nothing consumes it yet — Phase 11a resolves it to a data-provider selection internally (it stays the only user-facing mode knob). Both explicit deploy paths forward it (`scripts/deploy.sh` via `--set-env-vars`, `scripts/deploy_ae_inline.py` via its `env_vars` dict); `scripts/deploy_ae.sh` picks it up from `app/.env` automatically.
 - **Phase 8 (workstream 08):** Workstream 08 added the `always-on` campaign category to the campaigns table's CHECK constraint. SQLite can't ALTER a CHECK, so a `campaigns.db` created before this change must be regenerated: `make reset-db`, then restart `make dev` (demo data repopulates automatically).
 - **Phase 14a/14b (workstream 14):** agent default model is now `gemini-3.6-flash` (GA, Vertex global — pulled forward from Phase 16 step 3). Image/video generation defaults unchanged (`gemini-3-pro-image`, `veo-3.1-generate-001`); the Nano Banana 2 Lite comparison and Omni Flash prototype findings live in `.docs/version2-plan/working-docs/14-model-upgrades/`.
+- **Phase 16 (workstream 16):** two agent-behavior fixes shipped alongside the live test tier (both owner-approved, both routing/instruction changes, not schema changes): (a) the Campaign and Coordinator agents now resolve an existing product via `list_products` before creating a new one — the campaign-creation flow no longer onboards duplicate products for a product that's already in the catalog; (b) Google-Maps-link/map queries route to the Analytics Agent's `get_campaign_map_data` — the Campaign Agent now only answers plain store-address lookups (`get_campaign_locations`), its description says so explicitly. See the "Live tier" section above for `make test-live` setup and the flakiness watchlist.
 
 ## Local-first mode (Phase 15)
 

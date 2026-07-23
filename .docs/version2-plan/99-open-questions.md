@@ -83,6 +83,18 @@ Does BlueZoo or legal have a specific requirement around OTel message-content ca
 
 Is Nano Banana 2 Lite's 1K resolution cap acceptable for this app's actual display/demo surfaces, or does a specific use case need the current higher-resolution default?
 
+> **Amended (workstream 16, 2026-07-23):** corroborating live-pipeline
+> evidence, recorded opportunistically during Task 12/13's real end-to-end
+> runs (not synthetic benchmark calls like Phase 14a's) —
+> `.docs/version2-plan/working-docs/16-live-api-testing/calibration/media-metadata.json`:
+> both the wearable (blue-floral-maxi-dress) and non-wearable
+> (aurora-cold-brew-330ml) scene-image pipelines produced **768x1376 PNG,
+> ~1.4MB**, matching Phase 14a's 1K-tier benchmark finding exactly (same
+> `gemini-3-pro-image` default). No new resolution requirement surfaced from
+> real usage; still open in the sense that no owner has explicitly ratified
+> "1K is acceptable" as a final answer, but two independent measurements (a
+> synthetic benchmark and now a live product/demo pipeline) now agree.
+
 ## 15. Video backend default, post-evaluation (Phase 14b) — ANSWERED for now 2026-07-23
 
 > **Amended (workstream 14, 2026-07-23):** answered by a real prototype (not
@@ -95,6 +107,15 @@ Is Nano Banana 2 Lite's 1K resolution cap acceptable for this app's actual displ
 > half (should Omni ever become *default*) stays open for that revisit; note
 > Omni's 4s/24fps/720p ceiling vs Veo argues for Veo-as-default regardless.
 
+> **Amended (workstream 16, 2026-07-23):** live-pipeline duration/resolution
+> evidence for Veo 3.1 (the standing default), recorded from Task 12's real
+> end-to-end runs —
+> `.docs/version2-plan/working-docs/16-live-api-testing/calibration/media-metadata.json`:
+> both wearable and non-wearable pipelines produced **720x1280 @ 24fps,
+> 4.01s actual duration for a requested 4s** (96 frames). 6s/8s requested
+> durations remain unmeasured (only the 4s case was exercised live this
+> workstream). This is video-output evidence, not a backend-choice
+> reconsideration — Q15's Veo-vs-Omni decision above is unaffected.
 
 **Corrected framing after Codex review:** the Interactions API and Omni Flash model are both currently labeled experimental/preview by Google's own primary sources — not GA, as an earlier draft of this plan assumed. Given that, is it worth investing engineering time in this integration now, or should Phase 14b wait for either surface to reach GA? If pursued now, once (if) it reaches GA, should it become the *default* video backend, or does this app's specific demo needs (duration/resolution constraints) argue for keeping Veo as default regardless?
 
@@ -119,9 +140,27 @@ Small confirmations the published docs can't settle, best asked as one batch alo
 - Are `sensor_dwell` distribution bin values 0–1 shares or 0–100 percentages? (Docs say "percentage" with no numeric example; affects the cached-real conformer's normalization.)
 - `group_convert` / `group_dwell` schemas (both exist in `list_tables` with zero documentation), and `sensor_dwell.distribution_weight` semantics.
 
-## 19. Integration eval suite: vacuous under pytest, and eval sets fail when genuinely run (discovered workstream 09, 2026-07-22) — RESOLVED 2026-07-22
+## 19. Integration eval suite: vacuous under pytest, and eval sets fail when genuinely run (discovered workstream 09, 2026-07-22) — RESOLVED 2026-07-22, DELIVERED workstream 16, 2026-07-23
 
 **Resolved by the owner (2026-07-22, ws09 manual-testing feedback): full live repair — option (a), expanded.** "We should have both fast test and full test with live api and both should pass. dont worry about the cost." Scoped as new Phase 16 (`16-live-api-testing.md`): real-env integration fixture + vacuity guard, eval-set trajectory repair, default model → `gemini-3.6-flash`, live Veo/image-gen tests, and a Gemini-judge script reviewing generated media. `make test` stays fast-by-default; the live tier gets its own target. Original problem statement kept below for the record.
+
+> **Amended (workstream 16, 2026-07-23): delivered, mechanism refined.**
+> Repair option (a) shipped in full — `tests/integration/eval_harness.py` +
+> `tests/live/` (5 eval sets repaired, live media/judge tests, `make
+> test-live`, 26 passed/0 failed at completion). One correction to problem
+> statement 1 below, found while building the fix: `ADK`'s `LocalEvalService`
+> was never the culprit — it correctly records per-case
+> `InferenceStatus.FAILURE`/`final_eval_status=FAILED` when inference fails.
+> The vacuity was entirely in `AgentEvaluator.evaluate_eval_set`'s pytest
+> aggregation, which compares only *mean metric scores* and never inspects
+> `final_eval_status` — with every inference 403ing under the fake
+> `test-project`, there were no metric scores to average, so the assert
+> passed on zero real calls. The harness fixes this by asserting per-case
+> `final_eval_status` directly (`assert_eval_outcomes`), not by capturing a
+> logger as the phase doc originally sketched — see `16-live-api-testing.md`
+> step 1's amendment and `CLAUDE.md`'s Gotchas section for the full record.
+> `make test` no longer runs `tests/integration` at all (moved to the new
+> `make test-live`, which also includes `tests/live`).
 
 Two stacked pre-existing problems, mechanism fully pinned in workstream 09's WORK_LOG (2026-07-22 DISCOVERY entry):
 

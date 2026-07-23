@@ -44,10 +44,12 @@ Setup/deployment instructions for this evolving work live in `SETUP_INSTRUCTIONS
 ```bash
 make install        # create .venv, install app/requirements.txt
 make dev            # run ADK web UI locally on :8501 (alias: make playground)
-make test           # unit + integration (default; skips slow tests)
+make test           # unit + e2e (default; fast, zero LLM calls, seconds)
 make test-unit      # tests/unit only, ~4s, no LLM calls — fastest feedback loop
 make test-e2e       # tests/e2e workflow tests, ~1s, no LLM calls
-make test-integration  # tests/integration AgentEvaluator eval_sets — currently VACUOUS under pytest (see Gotchas)
+make test-integration  # targeted subset of the live tier (tests/integration only, real LLM) — not part of `make test`
+make test-live      # LIVE tier: tests/integration + tests/live against real Vertex APIs — ~11min, costs real money (owner: cost accepted, correctness first); needs app/.env, guard fails loudly if missing
+make test-live-report  # agents-cli grade/compare reporting layer over live eval traces — INFORMATIONAL, not a gate (Task 15)
 make test-all       # everything including slow Veo tests, ~10+ min
 make test-coverage  # pytest --cov=app, HTML report in htmlcov/
 make reset-db       # wipe campaigns.db, next `make dev` repopulates demo data
@@ -55,7 +57,7 @@ make reset-db       # wipe campaigns.db, next `make dev` repopulates demo data
 
 Run a single test: `pytest tests/unit/test_campaign_tools.py::TestClass::test_name -v`.
 
-Pytest markers: `slow` (>30s, Veo/chart generation), `integration` (needs LLM), `veo` (needs Veo 3.1 API), `e2e`.
+Pytest markers: `slow` (>30s, Veo/chart generation), `integration` (needs LLM), `live` (needs real Vertex APIs — Veo/image-gen/judge, part of the live tier), `veo` (needs Veo 3.1 API), `e2e`. **`make test` no longer runs `tests/integration`** (workstream 16) — integration moved to the live tier alongside the new `tests/live` (media pipeline + Gemini-judge tests); see the tier map above and the "live tier" section in `SETUP_INSTRUCTIONS.md` for setup and the flakiness watchlist.
 
 Lint/format with ruff (config in `ruff.toml`): `make lint` (check only), `make format` (auto-fix + format). A `PostToolUse` hook (`.claude/settings.json`, git-tracked, needs `jq`) runs `make test-unit` automatically after edits to `app/**/*.py` — so the safety net works inside worktrees too. Personal settings (model overrides, plugins, env) belong in the gitignored `.claude/settings.local.json`, never in the tracked `settings.json`.
 
@@ -77,4 +79,4 @@ Vertex AI path: `GOOGLE_GENAI_USE_VERTEXAI=TRUE`, `GOOGLE_CLOUD_PROJECT`, `GCS_B
 - Deploying to Agent Engine requires granting `roles/storage.objectAdmin` on the GCS bucket to the Reasoning Engine service agent (`service-<PROJECT_NUMBER>@gcp-sa-aiplatform-re.iam.gserviceaccount.com`) — run `make setup-ae-permissions` or it's handled automatically by `scripts/deploy_ae_inline.py`.
 - DB path differs by environment (see `app/config.py`): project root locally, `app/campaigns.db` on Cloud Run, `/tmp/campaigns.db` on Agent Engine (ephemeral, repopulates from mock data on restart).
 - Tests run against a **copy** of `campaigns.db`, never the real one — see `tests/conftest.py` fixtures (`test_db`, `shared_test_db`, `fresh_test_db`).
-- **The integration eval suite passes vacuously under pytest** (discovered workstream 09, 2026-07-22): `tests/conftest.py`'s autouse fixture sets `GOOGLE_CLOUD_PROJECT=test-project`, every eval inference 403s, ADK's `LocalEvalService` swallows inference exceptions by design, and `AgentEvaluator.evaluate_eval_set` counts failures only from metric results (empty when inference failed) — so "N passed in ~5s" means zero LLM calls happened. Run the evaluator standalone (`asyncio.run(AgentEvaluator.evaluate(...))` with real env) to genuinely execute an eval set — and note the pre-existing eval sets then FAIL as authored (expected direct tool calls vs actual `transfer_to_agent`-wrapped trajectories). Do not cite pytest integration passes as behavioral evidence; see `99-open-questions.md` Q19 for the repair options.
+- **The integration eval suite's old vacuity is fixed (workstream 16, 2026-07-23) — the mechanism, refined.** `tests/conftest.py`'s autouse fixture still sets `GOOGLE_CLOUD_PROJECT=test-project` for unit tests (needed, unchanged) and every eval inference under that fake project still 403s — but ADK's `LocalEvalService` itself was never the bug: it correctly records per-case `InferenceStatus.FAILURE` / `final_eval_status=FAILED`. The actual vacuity was in `AgentEvaluator`'s pytest aggregation (`evaluate_eval_set`), which compares only *mean metric scores* and never inspects `final_eval_status` — with an inference failure there are no metric scores to average, so the assert silently passed on zero real LLM calls. `tests/integration/eval_harness.py` (workstream 16) fixes this properly: it drives the same underlying `LocalEvalService` but asserts per-case `final_eval_status` directly (`assert_eval_outcomes`), scores three independent dimensions per case (tools `ANY_ORDER`, trajectory `IN_ORDER`, answer `final_response_match_v2` LLM-judge), isolates each case against a fresh seeded DB copy, and has two owner-approved bounded one-shot retries (answer re-judge; deterministic-dims-only re-inference) — both loudly logged when they fire, never silent. `make test` no longer runs `tests/integration` at all (moved to `make test-live`, alongside the new `tests/live` media/judge tests) — see the "Commands" tier map above. **Cost note (owner, 2026-07-23): accepted — correctness first.** Full `make test-live` is real Vertex/Veo/image-model spend, ~11 minutes; see `SETUP_INSTRUCTIONS.md`'s live-tier section for setup, prerequisites, and a flakiness watchlist. `99-open-questions.md` Q19 records the resolution.
