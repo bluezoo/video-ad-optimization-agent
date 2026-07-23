@@ -37,12 +37,21 @@ from tests.conftest import _copy_main_db_to_temp
 
 ENV_FILE = Path(__file__).resolve().parents[2] / "app" / ".env"
 
+# Keys force-REMOVED from the environment in the live tier.
+# Local-first storage: never GCS in the live tier (open item 2).
+LIVE_ENV_UNSET = ("GCS_BUCKET",)
 
-@pytest.fixture(autouse=True)
-def live_real_environment(monkeypatch):
-    """Real Vertex env from app/.env for the duration of one test."""
+
+def resolve_live_env() -> dict[str, str]:
+    """Validated live-tier env mapping from app/.env (shared: fixture + CLI).
+
+    Returns the exact key/value pairs to SET; callers must also delete the
+    LIVE_ENV_UNSET keys. Raises RuntimeError on a missing/unusable app/.env.
+    """
     if not ENV_FILE.exists():
-        pytest.skip("app/.env missing — live tier requires real credentials")
+        raise RuntimeError(
+            "app/.env missing — live tier requires real credentials"
+        )
     real = {k: v for k, v in dotenv_values(ENV_FILE).items() if v}
     # GOOGLE_CLOUD_PROJECT is not surfaced as an app.config attribute (the
     # google-genai/Vertex SDK clients read it straight from os.environ), so
@@ -50,16 +59,44 @@ def live_real_environment(monkeypatch):
     # app/config.py — no such attribute exists).
     project = real.get("GOOGLE_CLOUD_PROJECT")
     if not project or project == "test-project":
-        pytest.fail("app/.env must set a real GOOGLE_CLOUD_PROJECT for the live tier")
+        raise RuntimeError(
+            "app/.env must set a real GOOGLE_CLOUD_PROJECT for the live tier"
+        )
+    env = dict(real)
+    # Gemini 3.x models need the global endpoint (CLAUDE.md gotcha).
+    env["GOOGLE_CLOUD_LOCATION"] = real.get("GOOGLE_CLOUD_LOCATION", "global")
+    env["GOOGLE_GENAI_USE_VERTEXAI"] = "TRUE"
+    for key in LIVE_ENV_UNSET:
+        env.pop(key, None)
+    return env
+
+
+def apply_live_env_to_process() -> None:
+    """os.environ-level bootstrap for non-pytest entry points (recorder CLI).
+
+    Same env as the live_real_environment fixture, but applied directly to
+    the process with no undo — only for one-shot CLI runs.
+    """
+    os.environ.update(resolve_live_env())
+    for key in LIVE_ENV_UNSET:
+        os.environ.pop(key, None)
+    importlib.reload(config_module)
+    assert config_module.GCS_BUCKET is None
+
+
+@pytest.fixture(autouse=True)
+def live_real_environment(monkeypatch):
+    """Real Vertex env from app/.env for the duration of one test."""
+    if not ENV_FILE.exists():
+        pytest.skip("app/.env missing — live tier requires real credentials")
+    try:
+        real = resolve_live_env()
+    except RuntimeError as e:
+        pytest.fail(str(e))
     for key, value in real.items():
         monkeypatch.setenv(key, value)
-    # Gemini 3.x models need the global endpoint (CLAUDE.md gotcha).
-    monkeypatch.setenv(
-        "GOOGLE_CLOUD_LOCATION", real.get("GOOGLE_CLOUD_LOCATION", "global")
-    )
-    monkeypatch.setenv("GOOGLE_GENAI_USE_VERTEXAI", "TRUE")
-    # Local-first storage: never GCS in the live tier (open item 2).
-    monkeypatch.delenv("GCS_BUCKET", raising=False)
+    for key in LIVE_ENV_UNSET:
+        monkeypatch.delenv(key, raising=False)
     importlib.reload(config_module)
     assert config_module.GCS_BUCKET is None
     yield
