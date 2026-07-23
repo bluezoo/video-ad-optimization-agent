@@ -97,7 +97,7 @@ def generate_video_prompt(metadata: dict, campaign_info: dict = None) -> str:
 async def analyze_video(video_path: str) -> VideoProperties:
     """Analyze a generated video using Gemini to extract structured properties.
 
-    Uses VIDEO_ANALYSIS_MODEL from config with structured output (JSON Schema from Pydantic).
+    Uses MODEL from config with structured output (JSON Schema from Pydantic).
     This enables correlation between video properties and performance metrics.
 
     Args:

@@ -37,7 +37,7 @@ set -e  # Exit on error
 # =============================================================================
 GOOGLE_CLOUD_PROJECT="kaggle-on-gcp"
 CLOUD_RUN_REGION="us-central1"  # Cloud Run deployment region
-VERTEX_AI_LOCATION="global"     # Vertex AI API location (for gemini-3-pro-preview)
+VERTEX_AI_LOCATION="global"     # Vertex AI API location (for Gemini 3.x models)
 GCS_BUCKET="kaggle-on-gcp-ad-campaign-assets"
 SERVICE_NAME="ad-campaign-agent"
 APP_NAME="ad_campaign_agent"
