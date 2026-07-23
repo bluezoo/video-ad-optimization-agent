@@ -32,6 +32,7 @@ HITL Workflow:
     - Use review_tools.activate_video() to push live
 """
 
+import asyncio
 import io
 import json
 import os
@@ -271,6 +272,57 @@ async def generate_scene_image(
         raise
 
 
+async def _wait_for_veo_operation(
+    client,
+    operation,
+    *,
+    max_wait_time: int = 600,
+    poll_interval: int = 20,
+    debug_label: str = "veo",
+):
+    """Poll a Veo generate_videos operation to completion (consolidates three
+    formerly-duplicated loops — Phase 14b step 1).
+
+    Returns the completed operation. Raises TimeoutError after max_wait_time,
+    ValueError if the operation completes without generated videos. Callers
+    that must not raise (generate_video_ad) map these at the call site.
+    """
+    waited = 0
+    while not operation.done:
+        if waited >= max_wait_time:
+            raise TimeoutError(f"Video generation timed out after {max_wait_time} seconds")
+        print(f"[DEBUG {debug_label}] Waiting... ({waited}s elapsed)")
+        await asyncio.sleep(poll_interval)
+        waited += poll_interval
+        operation = client.operations.get(operation)
+    print(f"[DEBUG {debug_label}] Operation completed after {waited}s")
+    if operation.result is None or not operation.result.generated_videos:
+        raise ValueError("Video generation completed but returned no result")
+    return operation
+
+
+def _extract_video_bytes(client, generated_video) -> bytes:
+    """Extract video bytes from a generated video (consolidates the
+    triplicated Vertex-inline vs Developer-API-download branch)."""
+    is_vertex_ai = os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").lower() == "true"
+    if is_vertex_ai:
+        video_bytes = generated_video.video.video_bytes
+        if not video_bytes:
+            raise ValueError("No video_bytes in Vertex AI response")
+        return video_bytes
+    # Gemini Developer API: must download first, then save to temp to get bytes
+    client.files.download(file=generated_video.video)
+    import tempfile
+
+    with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
+        temp_path = tmp.name
+    generated_video.video.save(temp_path)
+    with open(temp_path, "rb") as f:
+        video_bytes = f.read()
+    os.unlink(temp_path)
+    return video_bytes
+
+
 async def animate_scene_with_veo(
     scene_image_bytes: bytes,
     product: Product,
@@ -317,46 +369,11 @@ async def animate_scene_with_veo(
         ),
     )
 
-    # Poll for completion
-    max_wait_time = 600  # 10 minutes
-    poll_interval = 20
-    waited = 0
-
-    while not operation.done:
-        if waited >= max_wait_time:
-            raise TimeoutError(f"Video generation timed out after {max_wait_time} seconds")
-
-        print(f"[DEBUG animate_scene_with_veo] Waiting... ({waited}s elapsed)")
-        time.sleep(poll_interval)
-        waited += poll_interval
-        operation = client.operations.get(operation)
-
-    print(f"[DEBUG animate_scene_with_veo] Operation completed after {waited}s")
-
-    # Check result
-    if operation.result is None or not operation.result.generated_videos:
-        raise ValueError("Video generation completed but returned no result")
-
-    # Extract video bytes
-    generated_video = operation.result.generated_videos[0]
-
-    is_vertex_ai = os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").lower() == "true"
-    print(f"[DEBUG animate_scene_with_veo] GOOGLE_GENAI_USE_VERTEXAI={os.environ.get('GOOGLE_GENAI_USE_VERTEXAI', 'NOT SET')}, is_vertex_ai={is_vertex_ai}")
-
-    if is_vertex_ai:
-        video_bytes = generated_video.video.video_bytes
-        if not video_bytes:
-            raise ValueError("No video_bytes in Vertex AI response")
-    else:
-        # Gemini Developer API: Must download first
-        client.files.download(file=generated_video.video)
-        import tempfile
-        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
-            temp_path = tmp.name
-        generated_video.video.save(temp_path)
-        with open(temp_path, "rb") as f:
-            video_bytes = f.read()
-        os.unlink(temp_path)
+    # Poll for completion + extract bytes (shared helpers, Phase 14b step 1)
+    operation = await _wait_for_veo_operation(
+        client, operation, debug_label="animate_scene_with_veo"
+    )
+    video_bytes = _extract_video_bytes(client, operation.result.generated_videos[0])
 
     print(f"[DEBUG animate_scene_with_veo] Video generated: {len(video_bytes)} bytes")
     return video_bytes, video_prompt
@@ -612,34 +629,12 @@ async def generate_video_from_product(
                 ),
             )
 
-            # Poll for completion
-            max_wait_time = 600
-            poll_interval = 20
-            waited = 0
-            while not operation.done:
-                if waited >= max_wait_time:
-                    raise TimeoutError("Video generation timed out")
-                time.sleep(poll_interval)
-                waited += poll_interval
-                operation = client.operations.get(operation)
-
-            if operation.result is None or not operation.result.generated_videos:
-                raise ValueError("No video generated")
-
-            generated_video = operation.result.generated_videos[0]
-            is_vertex_ai = os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").lower() == "true"
-
-            if is_vertex_ai:
-                video_bytes = generated_video.video.video_bytes
-            else:
-                client.files.download(file=generated_video.video)
-                import tempfile
-                with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
-                    temp_path = tmp.name
-                generated_video.video.save(temp_path)
-                with open(temp_path, "rb") as f:
-                    video_bytes = f.read()
-                os.unlink(temp_path)
+            operation = await _wait_for_veo_operation(
+                client, operation, debug_label="generate_video_from_product"
+            )
+            video_bytes = _extract_video_bytes(
+                client, operation.result.generated_videos[0]
+            )
 
             thumbnail_path = None
             thumbnail_filename = None
@@ -995,36 +990,23 @@ async def generate_video_ad(
         )
         print(f"[DEBUG generate_video_ad] Video generation started, operation: {operation}")
 
-        # Poll for completion (20 second intervals per official docs)
-        max_wait_time = 600  # 10 minutes max for video generation
-        poll_interval = 20  # 20 seconds per official docs
-        waited = 0
-
-        while not operation.done:
-            if waited >= max_wait_time:
-                print(f"[DEBUG generate_video_ad] Timed out after {max_wait_time} seconds")
-                with get_db_cursor() as cursor:
-                    cursor.execute('''
-                        UPDATE campaign_ads SET status = 'failed' WHERE id = ?
-                    ''', (ad_id,))
-                return {
-                    "status": "error",
-                    "message": "Video generation timed out after 10 minutes",
-                    "ad_id": ad_id
-                }
-
-            print(f"[DEBUG generate_video_ad] Waiting... ({waited}s elapsed)")
-            time.sleep(poll_interval)
-            waited += poll_interval
-            operation = client.operations.get(operation)
-            print(f"[DEBUG generate_video_ad] Operation done: {operation.done}")
-
-        print(f"[DEBUG generate_video_ad] Operation completed after {waited}s")
-
-        # Check if operation succeeded (use .result NOT .response per official docs)
-        print(f"[DEBUG generate_video_ad] Checking result: {operation.result}")
-        if operation.result is None or not operation.result.generated_videos:
-            print("[DEBUG generate_video_ad] No result or no generated videos")
+        # Poll for completion; this call site maps helper exceptions to the
+        # legacy behavior (mark ad failed in DB + return an error dict).
+        try:
+            operation = await _wait_for_veo_operation(
+                client, operation, debug_label="generate_video_ad"
+            )
+        except TimeoutError:
+            with get_db_cursor() as cursor:
+                cursor.execute('''
+                    UPDATE campaign_ads SET status = 'failed' WHERE id = ?
+                ''', (ad_id,))
+            return {
+                "status": "error",
+                "message": "Video generation timed out after 10 minutes",
+                "ad_id": ad_id
+            }
+        except ValueError:
             with get_db_cursor() as cursor:
                 cursor.execute('''
                     UPDATE campaign_ads SET status = 'failed' WHERE id = ?
@@ -1036,39 +1018,11 @@ async def generate_video_ad(
                 "prompt_used": prompt
             }
 
-        print(f"[DEBUG generate_video_ad] Found {len(operation.result.generated_videos)} generated video(s)")
-
-        # Get the generated video
         generated_video = operation.result.generated_videos[0]
         timestamp = int(time.time())
         output_filename = f"campaign_{campaign_id}_ad_{ad_id}_{timestamp}.mp4"
-
-        # Handle video bytes differently for Vertex AI vs Gemini Developer API
-        # - Vertex AI: video_bytes are already in the response (no download needed)
-        # - Gemini Developer API: Must call client.files.download() to populate video_bytes
-        is_vertex_ai = os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").lower() == "true"
-        print(f"[DEBUG generate_video_ad] Using Vertex AI: {is_vertex_ai}")
-
-        if is_vertex_ai:
-            # Vertex AI: video_bytes already present in response
-            print("[DEBUG generate_video_ad] Vertex AI mode - using video_bytes from response")
-            video_data = generated_video.video.video_bytes
-            if not video_data:
-                raise ValueError("No video_bytes in Vertex AI response")
-            print(f"[DEBUG generate_video_ad] Video bytes size: {len(video_data)}")
-        else:
-            # Gemini Developer API: Must download first, then use .save()
-            print("[DEBUG generate_video_ad] Gemini Developer API mode - downloading video...")
-            client.files.download(file=generated_video.video)
-            # For Gemini API, we need to save to temp file to get bytes
-            import tempfile
-            with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
-                temp_path = tmp.name
-            generated_video.video.save(temp_path)
-            with open(temp_path, "rb") as f:
-                video_data = f.read()
-            os.unlink(temp_path)
-            print(f"[DEBUG generate_video_ad] Video bytes size: {len(video_data)}")
+        video_data = _extract_video_bytes(client, generated_video)
+        print(f"[DEBUG generate_video_ad] Video bytes size: {len(video_data)}")
 
         # Save video - handle both local and GCS storage modes
         if storage.get_storage_mode() == "gcs":
