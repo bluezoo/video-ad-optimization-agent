@@ -377,7 +377,11 @@ use these two for creatives inside a single campaign.
   - Product images and info
   - Video URLs and thumbnails
   - Performance metrics per location
-- Use this when users ask "show me campaign locations" or "where are my stores"
+- Call it with NO arguments — get_campaign_map_data() — for the standard request;
+  it already includes videos, products, and metrics by default. Only pass the
+  include_* flags if the user explicitly asks to omit one of those sections.
+- Use this when users ask "show me campaign locations", "where are my stores",
+  or for any request that wants Google Maps links / campaigns shown on a map
 
 **Static Maps (Real Google Maps Images):**
 - generate_static_map() - Generate actual Google Maps image with markers
