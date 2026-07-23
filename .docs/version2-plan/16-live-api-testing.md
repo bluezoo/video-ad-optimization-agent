@@ -145,3 +145,22 @@ benefits from a truthful live gate.
    media runs should record actual image resolutions (Q14, Phase 14a) and
    qualitative video-output notes (Q15, Phase 14b) into the workstream's
    WORK_LOG — free input for those open questions, no extra API spend.
+6. **Fix the combined-run GCS state leak (found post-ws15 merge, 2026-07-23
+   review).** In a single-process run spanning unit + e2e (`pytest tests`,
+   `make test-coverage` — NOT the split `make test-unit`/`test-e2e`, which
+   stay green), `tests/unit/test_config.py` and
+   `tests/unit/test_demo_dataset_gate.py`'s cleanup
+   `importlib.reload(app.config)` executes under the root conftest's
+   session-pinned `GCS_BUCKET=test-bucket`, permanently flipping
+   `app.config.GCS_BUCKET` from None to `"test-bucket"` for the rest of the
+   process. `app/storage.py` reads config at call time, so three e2e tests
+   whose tools hit ws15's existence-checked product-image URL helper
+   (`get_video_review_table`, `get_campaign_map_data`,
+   `test_product_then_review_flow`) then issue real
+   `google.cloud.storage` requests (fail on machines with ADC credentials;
+   would also poison the coverage target). Same root cause family as item
+   2(b): reload-vs-session-env ordering. Fix candidates: make both
+   reloaders' final reload run under a scrubbed env (monkeypatch delenv
+   GCS_BUCKET before the restore reload), or have the session fixture pin
+   `app.config.GCS_BUCKET` as a module attribute too, so reloads can't
+   drift from what tests were promised.

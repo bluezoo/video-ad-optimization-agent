@@ -81,3 +81,8 @@ done: worktree removed, local + remote branch version_2_product-onboarding delet
 main checkout version_2 rebased onto the merge and pushed. STATUS.md row 15 -> merged.
 Owner follow-up (documented in SETUP_INSTRUCTIONS.md): publish the demo-asset bundle
 (make demo-assets-build SRC=... -> upload to Drive -> set DEMO_ASSETS_DRIVE_ID).
+
+## 2026-07-23 — post-merge DISCOVERY (review pass): combined single-process runs leak GCS mode
+Assumed: suite fully green (306 unit + 25 e2e, run as separate processes — accurate as verified).
+Actual: a single-process run spanning both (`pytest tests/unit tests/e2e`, or `make test-coverage`) fails 3 e2e tests with real GCS network calls: the config reloaders (test_config.py, test_demo_dataset_gate.py) restore `app.config` by reloading under the conftest session env (`GCS_BUCKET=test-bucket`), flipping the process into GCS mode; ws15's new existence-checked product-image URL helpers then do live `blob.exists()` calls in later e2e tests. Pre-existing reload behavior (since ws06), newly exposed by ws15's call-time storage checks. Not a shipped-code defect; split make targets unaffected.
+Blast radius: Phase 16 (routed — open item 6, same env-landmine family as its item 2), `make test-coverage` reliability. No downstream phase-doc claims affected.
