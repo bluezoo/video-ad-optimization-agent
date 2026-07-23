@@ -68,3 +68,21 @@ def test_all_green_passes():
         score=1.0, threshold=1.0, passed=True
     )
     assert_eval_outcomes([good], expect_cases=1)
+
+
+def test_answer_retry_targets_only_the_answer_dimension():
+    """GATE-3 bounded retry re-judges ONLY the answer dimension.
+
+    Guards the retry constant against config drift: if the config's answer
+    dimension were renamed, the retry would silently no-op. The deterministic
+    tools/trajectory dimensions exist and are never retried. Pure (no live).
+    """
+    from tests.integration.eval_harness import (
+        _ANSWER_DIMENSION,
+        load_dimension_metrics,
+    )
+
+    dims = load_dimension_metrics()
+    assert _ANSWER_DIMENSION == "answer"
+    assert _ANSWER_DIMENSION in dims, "retry would no-op: no 'answer' dimension in config"
+    assert {"tools", "trajectory"} <= set(dims)  # deterministic dims, not retried

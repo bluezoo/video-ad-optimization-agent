@@ -121,6 +121,10 @@ _INFRA_MARKERS = (
     "connection", "getaddrinfo",
 )  # kept from the old test_agents.py — infra breakage may xfail, never PASS
 
+# Dimension name (matches live_eval_config.json "dimensions" key) eligible for
+# the bounded one-shot re-judge [ws16 OWNER GATE 3, 2026-07-23].
+_ANSWER_DIMENSION = "answer"
+
 
 def load_dimension_metrics(
     config_path: str | Path = LIVE_EVAL_CONFIG_PATH,
@@ -235,8 +239,9 @@ async def run_eval_set(
     successful = [
         r for r in inference_results if r.status == InferenceStatus.SUCCESS
     ]
+    dimension_metrics = load_dimension_metrics()
     if successful:
-        for name, metrics in load_dimension_metrics().items():
+        for name, metrics in dimension_metrics.items():
             evaluate_request = EvaluateRequest(
                 inference_results=successful,
                 evaluate_config=EvaluateConfig(eval_metrics=metrics),
@@ -259,6 +264,51 @@ async def run_eval_set(
                             and metric_result.eval_status == EvalStatus.PASSED
                         ),
                     )
+                )
+
+        # Bounded answer-dimension retry [ws16 OWNER GATE 3, 2026-07-23]:
+        # final_response_match_v2 is an LLM judge and flakes on
+        # borderline-but-correct answers. Re-judge the ANSWER dimension ONCE
+        # against the SAME already-recorded inference (no new agent inference;
+        # tools/trajectory are deterministic string checks and are NOT retried).
+        # A case fails the answer dimension only if the judge fails it TWICE.
+        # The retry is logged (case names) so flake frequency stays observable.
+        answer_metrics = dimension_metrics.get(_ANSWER_DIMENSION)
+        retry_ids = [
+            eid
+            for eid, o in outcomes_by_id.items()
+            if _ANSWER_DIMENSION in o.dimensions
+            and not o.dimensions[_ANSWER_DIMENSION].passed
+        ]
+        if answer_metrics and retry_ids:
+            print(
+                "[eval-harness] answer-dimension retry (GATE 3) for: "
+                + ", ".join(sorted(retry_ids))
+            )
+            retry_results = [r for r in successful if r.eval_case_id in retry_ids]
+            evaluate_request = EvaluateRequest(
+                inference_results=retry_results,
+                evaluate_config=EvaluateConfig(eval_metrics=answer_metrics),
+            )
+            async for case_result in eval_service.evaluate(
+                evaluate_request=evaluate_request
+            ):
+                metric_results = case_result.overall_eval_metric_results
+                metric_result = metric_results[0] if metric_results else None
+                passed = bool(
+                    metric_result and metric_result.eval_status == EvalStatus.PASSED
+                )
+                prev = outcomes_by_id[case_result.eval_id].dimensions[_ANSWER_DIMENSION]
+                outcomes_by_id[case_result.eval_id].dimensions[_ANSWER_DIMENSION] = (
+                    DimensionOutcome(
+                        score=metric_result.score if metric_result else prev.score,
+                        threshold=prev.threshold,
+                        passed=passed,
+                    )
+                )
+                print(
+                    f"[eval-harness] answer-retry {case_result.eval_id}: "
+                    + ("PASSED on retry" if passed else "FAILED again")
                 )
 
     # Stable order: as authored in the eval set.

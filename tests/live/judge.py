@@ -25,7 +25,8 @@ generator can never silently drift:
 - subject expectation from the archetype registry
   (``app/tools/prompt_archetypes.py``): the ``wearable`` archetype must show
   a human model wearing the garment; every other archetype is product-centric
-  (the product is the hero, no humans);
+  (the product is the hero, no FEATURED human model — incidental/blurred
+  background people are allowed, [ws16 OWNER GATE 3]);
 - the no-rendered-text policy from ``app/tools/prompt_builders.py``'s
   ``_NO_TEXT_BLOCK`` / ``_AUDIO_BLOCK`` (owner directive, ws09): all ads are
   music-only with a clean frame — no rendered text/graphics beyond text that
@@ -119,15 +120,28 @@ _CHART_SEVERITY = {
 
 
 def _subject_rule(archetype: str) -> str:
-    """The subject expectation the archetype implies (prompt_archetypes.py)."""
+    """The subject expectation the archetype implies (prompt_archetypes.py).
+
+    Product-hero subject rule relaxed per [ws16 OWNER GATE 3, 2026-07-23]:
+    incidental / blurred background people (e.g. ambient cafe patrons) are
+    normal ad composition and are ALLOWED — only a FEATURED human model fails
+    the check. This matches the generator's intent (product-hero shots
+    deliberately allow "soft ambient depth" behind the product) and removes
+    false positives where the judge read blurred background bokeh as "people".
+    The wearable rule is unchanged.
+    """
     if archetype == WEARABLE:
         return (
             "A human model is clearly wearing and presenting the garment. The "
             "model and the worn product together are the subject of the shot."
         )
     return (
-        "The product itself is the sole hero of the frame. There are NO humans "
-        "anywhere — no models, no faces, no hands, no people in the background."
+        "The product itself must be the hero subject of the frame — the clear "
+        "focal point. No FEATURED human model: fail ONLY if a person is posed "
+        "as a subject, or is holding/using/modeling the product as a focal "
+        "figure. Incidental or blurred background people (e.g. ambient cafe "
+        "patrons, passers-by, out-of-focus figures) are normal ad composition "
+        "and are ALLOWED, as long as the product clearly remains the hero."
     )
 
 
