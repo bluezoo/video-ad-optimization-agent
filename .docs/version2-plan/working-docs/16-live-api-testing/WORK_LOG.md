@@ -334,3 +334,83 @@ per-check evidence; media paths listed for owner viewing). Owner answers:
 2. Judge negative controls: "Yes — add now (Recommended)" — corrupted-media
    fixtures the judge must FAIL become part of test-live.
 3. Task 11 legacy variation-fields fix: "Ratified (Recommended)".
+
+## 2026-07-23 — checkpoint 6: Task 14 post-gate (OWNER GATE 2 applied) — NOT green, two findings
+
+Post-OWNER-GATE-2 (severities APPROVED as proposed; add negative controls;
+run full test-live). Implementer. Code commit 1a24307.
+
+**Done + verified:**
+- Severities marked OWNER-APPROVED in `judge.py` (`_IMAGE/_VIDEO/_CHART_SEVERITY`
+  comment refs "ws16 OWNER GATE 2, 2026-07-23").
+- Negative controls added to `test_media_judge.py` (`TestJudgeNegativeControls`):
+  (a) rendered-text banner painted onto a copy of a clean image (PIL, built on
+  the fly under tmp_path) → `no_rendered_text` must FAIL; (b) wearable scene
+  image (human model) judged as `product_only` → `subject_matches_archetype`
+  must FAIL. Ran live once: BOTH correctly FAIL → tests PASS (15.4s). Judge
+  evidence: "large black banner with bright yellow text reading 'SALE...'" and
+  "A human female model is present in the center of the frame". No corrupted
+  binaries committed.
+- **Onboarding isolation fix** (`test_onboarding_from_scratch.py::empty_live_db`;
+  in-scope per Task 14 brief "modify ... if fixture plumbing needs it"): the
+  live tier writes to the persistent repo `product-images/`, so a reference
+  image left by a prior run made `create_product` report `image_status=
+  'available'` not `'pending'` (create_product derives status from
+  `storage.product_image_exists` at call time). Fix isolates PRODUCT_IMAGES_DIR
+  + GENERATED_DIR to a temp sandbox (temp `product-images` keeps that basename
+  for the dir-name assertion). Onboarding test now PASSES on reruns (24s).
+
+**Full `make test-live` (evals+media+judge) — TWO runs, both 2 failed / 17
+passed:**
+- Run 1 (pre-onboarding-fix): 426s wall. Failures: campaign-agent
+  get-campaign-locations[answer] flake; onboarding pending assertion (the
+  isolation bug, now fixed).
+- Run 2 (post-fix): 531s wall. Onboarding PASSES. Remaining failures:
+  campaign-agent get-campaign-locations[answer] flake AGAIN; **judge test
+  `test_generated_media_obey_rubric` FAILED** — see DISCOVERY below.
+- Per-stage (run 2, --durations): media pipeline dominates (2 Veo videos +
+  scene images ~90-100s each); evals ~110-120s for the set; judge calls
+  ~5-15s each. Full-run wall 8-9 min.
+
+**FLAKE (pre-existing, NOT Task 14):** get-campaign-locations[answer] scored
+0.0 in run1, run2, and a standalone rerun — then a 4th (record_to) run scored
+tools/trajectory/answer ALL 1.0 with a complete, correct answer (all 4 stores,
+city/state, product). So it is LLM answer-judge (FinalResponseMatchV2)
+non-determinism on this case, NOT a content regression — content is correct.
+Worse streak than the ws16 watchlist's "once". Owner/controller may want to
+stabilize (widen the reference, or move answer to warn for this case) — Task 8
+territory, not Task 14.
+
+**DISCOVERY (judge strictness vs generator intent — OWNER DECISION NEEDED):**
+In run 2 the judge HARD-failed the freshly-regenerated product-hero cold-brew
+media on `subject_matches_archetype`:
+- non_wearable_scene_image: "visible blurred figures of people sitting in the
+  background of the cafe setting"
+- non_wearable_video: "Multiple humans visible in the background sitting and
+  walking through the cafe frame"
+The rubric's product-hero subject rule (`judge._subject_rule`) says "NO humans
+anywhere ... no people in the background" — so the judge enforced exactly what
+was written. BUT: (1) I inspected the on-disk scene image — it shows the bottle
+as a clear hero with a BLURRED botanical/cafe background (dried flowers, a
+plant, a window); no clearly-identifiable people — likely a judge false-positive
+reading ambient blur as "figures"; (2) the SAME media type passed cleanly in
+the calibration run and run 1; (3) the generator's product/staged prompts
+intentionally allow "soft ambient depth"/background — they do NOT forbid
+incidental background figures. So the "no people in the background" clause is
+STRICTER than generator intent and is non-deterministically tripping on ambient
+blur. This is exactly the judge catching-vs-over-catching boundary the owner
+must rule on — the GATE-2 approval was over calibration media that had no
+background ambiguity.
+
+**PROPOSED (for OWNER GATE, NOT applied):** relax the product-hero subject rule
+to "no human is FEATURED as a model/subject; the product must be the clear hero
+— incidental/blurred background figures in a public setting are acceptable."
+Keeps the negative control passing (a human MODEL in a product-only shot still
+fails), matches generator intent, removes the ambient-blur false positives.
+Alternative: keep strict + tighten the generator prompt to forbid background
+people. Owner decides.
+
+**State:** code committed (1a24307); severities owner-approved + negative
+controls + onboarding fix all verified. Full test-live NOT green — held for the
+owner rubric decision above before the final "test-live green" commit. make
+lint green; make test-unit 319 passed/1 skipped.
