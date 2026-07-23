@@ -68,7 +68,6 @@ class TestCampaignAgent:
 class TestMediaAgent:
     """Test Media Agent tool execution."""
 
-    @_AUTHORED_PRE_TRANSFER
     async def test_media_agent_tools(self):
         """Media agent should correctly execute media tools."""
         outcomes = await run_eval_set(get_eval_set_path("media_agent.test.json"))
