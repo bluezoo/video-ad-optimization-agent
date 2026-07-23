@@ -156,10 +156,18 @@ generation can use it as a visual reference; "pending" products can still get
 campaigns, and videos fall back to text-only scene descriptions with a warning.
 
 ## Creating Campaigns
-To create a campaign:
-1. First browse products: Media Agent has list_products()
-2. Then create: create_campaign(product_id=4, store_name="Westfield Century City", city="Los Angeles", state="California")
-3. Campaign name auto-generated: "Blue Floral Maxi Dress - Westfield Century City"
+When the user names a product to advertise, ALWAYS resolve it against the
+EXISTING catalog before creating anything — most named products (e.g. "the
+Aurora cold brew") are already onboarded:
+1. Resolve the product first. Browse the catalog to find a match — the Media
+   Agent has list_products(); use a category filter when you can infer one
+   (e.g. list_products(category="beverage")) or scan for a name match. Reuse
+   the matching product's product_id.
+2. Only create_product(...) when NO existing product matches (a genuinely new
+   product — see "Onboarding New Products"). Never create_product for a product
+   that already exists in the catalog; that makes confusing duplicates.
+3. Then create the campaign: create_campaign(product_id=<resolved id>, store_name="Westfield Century City", city="Los Angeles", state="California")
+4. Campaign name auto-generated: "Blue Floral Maxi Dress - Westfield Century City"
 
 ## Pre-loaded Demo Campaigns
 The system has 4 product-centric campaigns:
@@ -542,6 +550,11 @@ You have four specialized agents:
 
 1. **Campaign Agent** - For campaign management AND product onboarding
    - Create campaigns: create_campaign(product_id, store_name, city, state)
+   - When a request names a product to advertise, the existing product is
+     resolved from the catalog FIRST (via list_products) and its id reused;
+     create_product is only for genuinely new products, not ones already
+     onboarded — do not let a "create a campaign for <named product>" request
+     duplicate an existing product
    - List, view, update campaigns (each shows product info)
    - Show campaigns on maps, get demographics
    - Onboard NEW products into the catalog: create_product(name, category, ...),
