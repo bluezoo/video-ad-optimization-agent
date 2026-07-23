@@ -86,3 +86,29 @@ def test_answer_retry_targets_only_the_answer_dimension():
     assert _ANSWER_DIMENSION == "answer"
     assert _ANSWER_DIMENSION in dims, "retry would no-op: no 'answer' dimension in config"
     assert {"tools", "trajectory"} <= set(dims)  # deterministic dims, not retried
+
+
+def test_isolation_guard_refuses_root_db(monkeypatch):
+    """The isolation guard must REFUSE to run against the root campaigns.db.
+
+    [ws16 GATE-3 isolation fix] Regression guard for the eval-set DB leak:
+    eval inference mutates the campaigns DB via real tools, so pointing it at
+    the seeded root DB would accumulate eval-created campaigns across runs.
+    Pure (no live inference) — just asserts the structural guard fires.
+    """
+    import app.config as config
+    from tests.conftest import MAIN_DB_PATH
+    from tests.integration.eval_harness import _assert_isolated_db
+
+    monkeypatch.setattr(config, "DB_PATH", str(MAIN_DB_PATH))
+    with pytest.raises(RuntimeError, match="root campaigns.db"):
+        _assert_isolated_db()
+
+
+def test_isolation_guard_allows_temp_db(monkeypatch, tmp_path):
+    """The isolation guard passes when config.DB_PATH is an isolated copy."""
+    import app.config as config
+    from tests.integration.eval_harness import _assert_isolated_db
+
+    monkeypatch.setattr(config, "DB_PATH", str(tmp_path / "campaigns.db"))
+    _assert_isolated_db()  # must not raise

@@ -53,8 +53,13 @@ directive 4 — findings, with file paths):
 
 import importlib
 import json
+import shutil
+import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
+
+import app.config as config
+from tests.conftest import MAIN_DB_PATH
 
 try:
     from google.adk.evaluation.base_eval_service import (
@@ -147,6 +152,39 @@ def _load_root_agent():
     return importlib.import_module("app.agent").root_agent
 
 
+def _campaign_count(db_path) -> int:
+    """Campaign-row count via a READ-ONLY connection (never touches the file).
+
+    Read-only URI mode so the isolation guard itself can't mutate/`mtime`-touch
+    the root DB it is protecting.
+    """
+    conn = sqlite3.connect(f"file:{Path(db_path).as_uri()[7:]}?mode=ro", uri=True)
+    try:
+        return conn.execute("SELECT COUNT(*) FROM campaigns").fetchone()[0]
+    finally:
+        conn.close()
+
+
+def _assert_isolated_db() -> None:
+    """Refuse to run eval inference against the real seeded DB.
+
+    [ws16 GATE-3 isolation fix, 2026-07-23] Eval inference runs REAL tools that
+    mutate the campaigns DB (create_campaign, ...). It must run against the
+    live tier's isolated temp copy (``isolated_live_db`` patches
+    ``config.DB_PATH``), never the root ``campaigns.db`` — otherwise
+    eval-created campaigns leak into and ACCUMULATE in the real DB across runs
+    (root-caused ws16: throwaway scripts that skipped the fixture did exactly
+    this). This structural guard makes that leak impossible regardless of
+    caller.
+    """
+    if Path(config.DB_PATH).resolve() == MAIN_DB_PATH.resolve():
+        raise RuntimeError(
+            "run_eval_set refuses to run against the root campaigns.db "
+            f"({MAIN_DB_PATH}); point config.DB_PATH at an isolated copy first "
+            "(the live tier's isolated_live_db fixture does this)."
+        )
+
+
 def _extract_actuals(
     invocations: list[Invocation],
 ) -> tuple[list[dict], str]:
@@ -197,6 +235,14 @@ async def run_eval_set(
     """
     eval_set = load_eval_set_from_file(eval_set_path, Path(eval_set_path).stem)
 
+    _assert_isolated_db()
+    root_campaigns_before = _campaign_count(MAIN_DB_PATH)
+
+    root_agent = _load_root_agent()
+
+    # Full-set manager/service for the metric passes (evaluate + retry, which
+    # do not touch the campaigns DB — they only run judge-model calls on the
+    # recorded inference).
     eval_sets_manager = InMemoryEvalSetsManager()
     eval_sets_manager.create_eval_set(
         app_name=_APP_NAME, eval_set_id=eval_set.eval_set_id
@@ -207,22 +253,41 @@ async def run_eval_set(
             eval_set_id=eval_set.eval_set_id,
             eval_case=eval_case,
         )
-
     eval_service = LocalEvalService(
-        root_agent=_load_root_agent(), eval_sets_manager=eval_sets_manager
+        root_agent=root_agent, eval_sets_manager=eval_sets_manager
     )
 
-    # 1. Inference — ONCE per case.
+    # 1. Inference — ONE case at a time, each against a FRESH seeded DB copy.
+    # [ws16 GATE-3 isolation fix] ADK's perform_inference runs a set's cases
+    # CONCURRENTLY (asyncio.Semaphore + as_completed) against the single shared
+    # config.DB_PATH; a mutating case (e.g. create-campaign) then races with and
+    # pollutes a read case (get-campaign-locations expects seeded-only state,
+    # its reference lists exactly the 4 seeded stores). Resetting the temp DB to
+    # the seeded snapshot before each case gives true per-case isolation — no
+    # case ever sees another case's writes.
     inference_results = []
-    inference_request = InferenceRequest(
-        app_name=_APP_NAME,
-        eval_set_id=eval_set.eval_set_id,
-        inference_config=InferenceConfig(),
-    )
-    async for inference_result in eval_service.perform_inference(
-        inference_request=inference_request
-    ):
-        inference_results.append(inference_result)
+    for eval_case in eval_set.eval_cases:
+        shutil.copy2(MAIN_DB_PATH, config.DB_PATH)  # fresh seeded state per case
+        case_manager = InMemoryEvalSetsManager()
+        case_manager.create_eval_set(
+            app_name=_APP_NAME, eval_set_id=eval_set.eval_set_id
+        )
+        case_manager.add_eval_case(
+            app_name=_APP_NAME,
+            eval_set_id=eval_set.eval_set_id,
+            eval_case=eval_case,
+        )
+        case_service = LocalEvalService(
+            root_agent=root_agent, eval_sets_manager=case_manager
+        )
+        async for inference_result in case_service.perform_inference(
+            inference_request=InferenceRequest(
+                app_name=_APP_NAME,
+                eval_set_id=eval_set.eval_set_id,
+                inference_config=InferenceConfig(),
+            )
+        ):
+            inference_results.append(inference_result)
 
     outcomes_by_id: dict[str, CaseOutcome] = {}
     for result in inference_results:
@@ -328,6 +393,18 @@ async def run_eval_set(
             for c in eval_set.eval_cases
         }
         _record_outcomes(outcomes, queries, record_to)
+
+    # Post-run: the root DB must be byte-for-byte untouched. All inference ran
+    # against config.DB_PATH (an isolated temp copy, enforced by
+    # _assert_isolated_db above); the root count must be exactly what it was.
+    # [ws16 GATE-3 isolation fix, 2026-07-23]
+    root_campaigns_after = _campaign_count(MAIN_DB_PATH)
+    if root_campaigns_after != root_campaigns_before:
+        raise RuntimeError(
+            "eval run mutated the root campaigns.db: "
+            f"{root_campaigns_before} -> {root_campaigns_after} campaigns; "
+            "isolation broke."
+        )
 
     return outcomes
 
