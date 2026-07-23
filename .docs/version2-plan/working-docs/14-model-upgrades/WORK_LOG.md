@@ -43,3 +43,32 @@ prototype, (4) controller gate NO-GO/GO (GO requires owner-approved Task 4G
 amendment), (5) gemini-3.6-flash default flip + Phase 16 provenance,
 (6) demo-scenario verification (F1 release gate, F5.2, from-scratch 2.1/2.2).
 Pre-flight fix: removed unused sqlite3 import from plan's Task-2 test code.
+
+## 2026-07-22 — Task 1 done: image-model comparison (14a) + Q14 evidence
+Live side-by-side run (scripts/compare_image_models.py, Vertex global,
+google-genai 2.14.0): gemini-3-pro-image vs gemini-3.1-flash-lite-image,
+8/8 OK — the with-reference case activated (sage-satin-camisole.png reachable
+in GCS product-images/), so both models were compared with-reference
+symmetrically.
+
+Q14 evidence (observed output resolutions — both models, every case, landed
+in the 1K pricing tier):
+- fashion-scene: 768x1376 (pro) / 768x1376 (lite)
+- retail-scene: 768x1376 / 768x1376
+- chart-16x9: 1376x768 / 1376x768
+- fashion-scene-with-reference: 768x1376 / 768x1376
+~1MP portrait for scenes and 1376x768 for 16:9 charts is what today's default
+already produces — Stage-1 frames feed Veo (which re-renders at video res) and
+charts render legibly at dashboard-preview size, so 1K output is acceptable
+for the current in-store-screen/dashboard-preview uses; nothing in the
+pipeline consumes >1K today.
+
+Full metrics table, per-case visual grading, pricing link-check
+(~$0.134/image pro vs ~$0.034 lite at 1K), and the recommendation — KEEP
+gemini-3-pro-image as the shared-knob default (lite's chart output has
+duplicate-title/label artifacts; split-knob is the future cost lever) — in
+image-model-comparison.md alongside this log. No app code changed.
+Harness deviations from plan (recorded in task report): build_scene_image_prompt
+takes a typed Product (Phase 8), so the harness converts its row-dicts via
+Product.from_row; fashion category corrected "summer"→"top" so the case
+exercises the wearable archetype as the plan intends.
