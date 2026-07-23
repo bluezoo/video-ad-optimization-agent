@@ -168,10 +168,10 @@ setup-ae-permissions:
 # TESTING
 # ============================================================================
 
-## Run all tests (unit + integration, skip slow)
-test: test-unit test-integration
+## Run fast tests (unit + e2e — seconds, zero LLM calls; the everyday loop)
+test: test-unit test-e2e
 	@echo ""
-	@echo "All tests passed!"
+	@echo "All fast tests passed!"
 
 ## Run unit tests only (fast, no LLM calls)
 test-unit:
@@ -182,7 +182,7 @@ test-unit:
 		pytest tests/unit -v --tb=short; \
 	fi
 
-## Run integration tests (with LLM, skip slow)
+## Run integration tests (with LLM, skip slow) — targeted subset of the live tier
 test-integration:
 	@echo "Running integration tests..."
 	@if [ -d ".venv" ]; then \
@@ -198,6 +198,16 @@ test-e2e:
 		.venv/bin/pytest tests/e2e -v --tb=short; \
 	else \
 		pytest tests/e2e -v --tb=short; \
+	fi
+
+## Run LIVE tier: routing evals + live media + judge (real Vertex APIs, costs money)
+test-live:
+	@echo "Running LIVE tier (real Vertex APIs — requires app/.env)..."
+	@test -f app/.env || { echo "ERROR: app/.env missing — the live tier needs real credentials (see SETUP_INSTRUCTIONS.md)"; exit 1; }
+	@if [ -d ".venv" ]; then \
+		.venv/bin/pytest tests/integration tests/live -v --tb=short; \
+	else \
+		pytest tests/integration tests/live -v --tb=short; \
 	fi
 
 ## Run all tests including slow (Veo) tests
@@ -299,10 +309,11 @@ help:
 	@echo "  make setup-ae-permissions - Grant GCS write access to Agent Engine"
 	@echo ""
 	@echo "TESTING:"
-	@echo "  make test           - Run unit + integration tests (default)"
+	@echo "  make test           - Run fast tier: unit + e2e (seconds, zero LLM calls; default)"
 	@echo "  make test-unit      - Run unit tests only (fast, no LLM)"
-	@echo "  make test-integration - Run integration tests (with LLM)"
 	@echo "  make test-e2e       - Run end-to-end workflow tests"
+	@echo "  make test-integration - Run integration tests (with LLM) — targeted subset of the live tier"
+	@echo "  make test-live      - Run LIVE tier: integration + tests/live (real Vertex APIs, needs app/.env, costs money)"
 	@echo "  make test-all       - Run ALL tests including slow Veo tests"
 	@echo "  make test-coverage  - Run tests with coverage report"
 	@echo ""
