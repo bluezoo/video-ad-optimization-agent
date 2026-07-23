@@ -24,6 +24,20 @@ The first draft of this phase (and the overview's "What changed" item 4) claimed
 - The Review Agent's tool list today (`app/agent.py:462`) contains only review/activation/status tools — **there is no existing regeneration or revision tool of any kind**. "Wiring `previous_interaction_id` into the revision flow" is not a small addition to an existing flow; it requires a new tool, new schema/storage for the interaction ID and the resulting asset's lineage, and a new route from the Review Agent to the generation pipeline that doesn't exist today.
 - **Wrong original abstraction: one shared polling helper across both backends does not fit.** Veo's three loops all poll a long-running *operation* via `client.operations.get()`. Omni Flash's Interactions API polls an *interaction* via a different method (`client.interactions.get()`, per the Interactions reference) — these are not the same operation type, and forcing them through one shared polling primitive would be the wrong abstraction boundary, not a simplification.
 
+> **Amended (workstream 14, 2026-07-23):** step-3 prototype executed against
+> google-genai 2.14.0 (Vertex, global) — text_to_video and image_to_video both
+> WORK via typed step_list shapes (~30s end-to-end, background+get polling
+> confirmed), but `previous_interaction_id` is rejected by the server for this
+> model ("gemini-omni-flash-preview on this path do not support
+> previous_interaction_id"), `interactions.get` 500s on sync-created ids, and
+> output is capped at 4s/24fps/720p-class. Findings:
+> `working-docs/14-model-upgrades/omni-prototype-findings.md`. **Steps 4-6
+> (backend toggle, revision tool, SDK pin) deferred** until
+> previous_interaction_id (or an equivalent documented revision mechanism) is
+> supported for the Omni video path, ideally with GA of the interactions
+> surface. Steps 1 (polling consolidation, with tests) and 3 (prototype) are
+> done in workstream 14.
+
 ## Steps
 
 1. **Consolidate Veo's three duplicated polling loops on their own, as a standalone cleanup, independent of Omni Flash.** Replace the blocking `time.sleep()` with `asyncio.sleep()` in one shared helper for Veo's `client.operations.get()` polling, used by all three current call sites. Do this regardless of whether Omni Flash is ever adopted — it's a real, low-risk bug fix (blocking sleep inside `async def`) on its own merits.

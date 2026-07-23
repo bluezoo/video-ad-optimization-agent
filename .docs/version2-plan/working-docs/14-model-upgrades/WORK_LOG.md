@@ -87,3 +87,19 @@ Task 3 (Interactions prototype): 3ef5c13..ee63ee4, review clean. Probe ran
 live twice (4 videos generated). Headline: previous_interaction_id explicitly
 UNSUPPORTED for gemini-omni-flash-preview; interactions.get 500s on
 sync-created ids. Findings doc committed; decisive NO-GO input for Task 4.
+
+## 2026-07-23 — DISCOVERY: previous_interaction_id unsupported for Omni video path (Task 4 gate: NO-GO)
+Assumed (14b-video-model-upgrade-omni-flash.md steps 4-5): previous_interaction_id
+enables conversational revision, motivating the omni_flash backend + a new
+Review-Agent revision tool.
+Actual (live probe, google-genai 2.14.0, Vertex global, 2026-07-23): server
+rejects the parameter itself — `400: "gemini-omni-flash-preview on this path
+do not support previous_interaction_id."` Also: interactions.get 500s on
+sync-created ids; API mid-migration (turn_list -> step_list); output capped
+at 4s/24fps/720p-class vs Veo's longer 1080p. What DOES work (banked for the
+revisit): text_to_video + image_to_video via typed step_list shapes,
+background=True + get polling (~30s end-to-end), reference images genuinely
+condition output. Full evidence: working-docs/14-model-upgrades/omni-prototype-findings.md.
+Blast radius: 14b steps 4-6 deferred (amended with provenance); Q15 in
+99-open-questions.md (amended); phase exit satisfied via its negative-result
+branch (consolidation landed + documented evaluation).
