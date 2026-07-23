@@ -569,3 +569,62 @@ Owner answer (verbatim): "Yes — one re-judge (Recommended)" — same media, on
 Owner answer (verbatim): "One re-inference, loudly logged (Recommended)" — case re-runs once end-to-end; a WARNING with case name is printed/logged so trajectory nondeterminism stays observable. Fails if it fails twice.
 
 Dispatch: relayed to judge-impl to implement both retries (marked owner-approved ws16 OWNER GATE 4, 2026-07-23), re-prove negative controls still fail, then full `make test-live` to green.
+
+## 2026-07-23 — Task 14 complete (post-GATE-4): bounded media re-judge + eval re-inference; test-live GREEN
+**Commit:** 19ae727 (`feat(tests): bounded media re-judge + eval re-inference for LLM flakes (GATE 4)`).
+Builds on 570d9df (isolation fix) + d7a7bf1 (ledger).
+
+OWNER GATE 4 (2026-07-23) approved both hardenings I proposed; implemented, all
+one-shot, mirroring the GATE-3 answer re-judge:
+
+1. **Media-judge bounded re-judge** (`tests/live/judge.py`
+   `judge_with_hard_retry`): on ANY hard-check failure, re-judge ONCE against
+   the same media file (no regeneration). The retry verdict is authoritative —
+   fails only if it hard-fails twice. A multimodal judge occasionally
+   hallucinates a hard violation (the ws16 "Softbox" text on a plain studio
+   wall); a hallucination won't reproduce, a real violation fails twice. ALL
+   `tests/live` judging — per-media (`test_generated_media_obey_rubric`), the
+   RPI chart, AND both negative controls — now routes through it. Visible log
+   line names the media + failing check on every trigger.
+
+2. **Eval-case bounded re-inference** (`tests/integration/eval_harness.py`):
+   when a case fails ONLY on deterministic dims (tools/trajectory; the answer
+   dim stays under the GATE-3 re-judge, now folded into per-case `_score_case`),
+   re-run that ONE case's inference end-to-end ONCE against a fresh seeded DB
+   copy and re-score all dims. Fails only if it fails twice. Every trigger is
+   `print`ed AND `warnings.warn`'d (owner wants trajectory nondeterminism
+   observable). The scoring pipeline was refactored to per-case
+   inference+scoring (`_infer_one_case`, `_eval_one_dim`, `_score_case`,
+   `_outcome_from_result`) so both gates share one path and a re-inference's
+   answer dim gets the same one-shot protection.
+
+**Fast unit guards (no live):** extended `test_eval_harness_guard.py` to 12
+tests — `_deterministic_only_failure` selection predicate (trajectory-only /
+tools+trajectory eligible; answer-failing NOT eligible; all-pass not eligible)
+and the media retry (recover-on-second-pass / fail-twice-for-real-violation /
+skip-when-only-warn). All pure.
+
+**Verification.**
+- Full `make test-live` = **26 passed / 0 failed in 673.84s (11m13s), EXIT 0**;
+  ROOT campaigns 4→4 (isolation held — nothing leaked to root).
+- `make lint` green; `make test-unit` 319 passed / 1 skipped.
+- Negative controls re-proven live: rendered-text overlay + wrong-subject both
+  hard-FAIL twice → tests pass (the retry never masks a real violation).
+- Retries THIS green run: the eval re-inference did NOT fire (no deterministic
+  flake — its `warnings.warn` would have surfaced in the summary; none did).
+  Media re-judge triggers print on PASSED tests, which pytest `-v` captures/
+  hides — the paths are proven by the unit guards + the fail-twice negative
+  controls.
+
+**Transient (not a Task 14 defect).** The FIRST post-GATE-4 test-live run hit
+1 failure: `test_wearable_two_stage_pipeline` (Task 12, untouched by GATE-4) —
+a TRANSIENT Veo generation error ("operation completed after 20s, returned no
+result"; abnormally fast vs the usual ~90-106s, and the scene image generated
+fine). It passed clean on the immediate re-run. This is a THIRD flaky surface —
+live Veo generation in `app/tools/video_tools.py` — orthogonal to Task 14 and
+NOT covered by GATE-4's judge/eval retries. Flagged for a possible future
+generation-retry decision (owner/Task 12 territory); no fix in this task.
+
+**State:** Task 14 COMPLETE — judge + media/chart/onboarding tests + negative
+controls + GATE 2/3/4 hardening + eval DB isolation all done and committed;
+`make test-live` GREEN (26/0). Ready for stage-6 review / workstream finish.
