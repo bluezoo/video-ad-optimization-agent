@@ -558,3 +558,14 @@ relax any rubric for the softbox case — the image is clean.
 root DB clean (4). `make test-live` NOT green — blocked only by the two
 LLM flakes above, pending a controller/owner decision on flake-hardening vs
 accept-and-re-run. Escalated to controller.
+
+## 2026-07-23 — OWNER GATE 4: flake-hardening for two newly uncovered flake surfaces
+Presented to owner (AskUserQuestion, with checkpoint-8 evidence: full `make test-live` = 20 passed/2 failed in 637s after the per-case DB-isolation fix; both failures confirmed LLM flakes outside GATE 3's answer-only retry scope — (1) media judge hallucinated rendered "Softbox" text on a visually clean wearable scene image [hard fail, false positive; image passed calibration + GATE 2 + GATE 3 runs]; (2) agent trajectory nondeterminism on create-campaign-cold-start-outerwear [tools/trajectory 0.0, clean on rerun, was stable across 6 runs at Task 11]).
+
+**Q1 — Bounded one-shot re-judge on media HARD-fail (same media file, no regeneration; fail if twice)?**
+Owner answer (verbatim): "Yes — one re-judge (Recommended)" — same media, one retry, logged when it triggers. Negative controls fail consistently, so they still fail twice.
+
+**Q2 — Bounded one-shot re-INFERENCE of an eval case when only tools/trajectory dims fail (amends GATE 3's deterministic-dims-single-shot), loudly logged?**
+Owner answer (verbatim): "One re-inference, loudly logged (Recommended)" — case re-runs once end-to-end; a WARNING with case name is printed/logged so trajectory nondeterminism stays observable. Fails if it fails twice.
+
+Dispatch: relayed to judge-impl to implement both retries (marked owner-approved ws16 OWNER GATE 4, 2026-07-23), re-prove negative controls still fail, then full `make test-live` to green.
