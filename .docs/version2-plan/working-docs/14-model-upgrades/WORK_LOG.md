@@ -103,3 +103,11 @@ condition output. Full evidence: working-docs/14-model-upgrades/omni-prototype-f
 Blast radius: 14b steps 4-6 deferred (amended with provenance); Q15 in
 99-open-questions.md (amended); phase exit satisfied via its negative-result
 branch (consolidation landed + documented evaluation).
+
+## 2026-07-23 — process note: redundant re-dispatch of Tasks 1-3 (no repo effect)
+A workflow re-invocation meant for Task 5 fell back to Tasks 1-3 (args reached
+the script as a JSON string, so the [1,2,3] default won). All six re-dispatched
+agents correctly detected the tasks were already committed, made ZERO edits and
+ZERO commits, and instead independently re-verified them (incl. re-running the
+new tests and re-reviewing the efdcbd4..3ef5c13 diff). Branch state unchanged;
+tokens wasted, nothing else. Task 5 re-dispatched with a hardcoded task list.
