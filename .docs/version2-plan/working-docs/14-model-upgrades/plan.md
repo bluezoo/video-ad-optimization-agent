@@ -237,8 +237,6 @@ These are the first tests ever covering the polling paths — previously
 triplicated inline with zero coverage.
 """
 
-import sqlite3
-
 import pytest
 
 import app.tools.video_tools as video_tools

@@ -35,3 +35,11 @@ drafted; awaiting owner approval gate.
 Owner approved via explicit yes ("Yes — approved, write the plan") to the
 six-dimension restatement. Evaluation-first 14a confirmed (no silent image
 default switch — any switch is an owner decision on the comparison evidence).
+
+## 2026-07-22 — checkpoint 3: plan approved
+plan.md approved by owner ("Yes — approved, execute"). 6 tasks: (1) image
+comparison harness+doc, (2) Veo polling consolidation TDD, (3) Interactions
+prototype, (4) controller gate NO-GO/GO (GO requires owner-approved Task 4G
+amendment), (5) gemini-3.6-flash default flip + Phase 16 provenance,
+(6) demo-scenario verification (F1 release gate, F5.2, from-scratch 2.1/2.2).
+Pre-flight fix: removed unused sqlite3 import from plan's Task-2 test code.
