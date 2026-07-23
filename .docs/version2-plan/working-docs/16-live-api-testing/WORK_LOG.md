@@ -628,3 +628,6 @@ generation-retry decision (owner/Task 12 territory); no fix in this task.
 **State:** Task 14 COMPLETE — judge + media/chart/onboarding tests + negative
 controls + GATE 2/3/4 hardening + eval DB isolation all done and committed;
 `make test-live` GREEN (26/0). Ready for stage-6 review / workstream finish.
+
+## 2026-07-23 — Task 14 review: APPROVED (mirrors .superpowers/sdd/progress.md)
+Range 9b2a07f..512a82b (16 commits). Spec ✅ — every brief requirement and every owner-gate amendment (GATE 2 severities+negative controls, GATE 3 subject relaxation+answer re-judge, GATE 4 media re-judge+case re-inference, controller DB-isolation adjudication) verified with file:line evidence, provenance markers confirmed, no attribution trailers, lint green, 12/12 unit guards pass under the reviewer's own run. 0 Critical, 0 Important. 4 Minor recorded for final-review triage — headline: media re-judge lowers borderline-violation detection (p→p², owner-approved GATE-4 tradeoff; negative controls prove unambiguous violations still fail twice) → carry to Task 16 flakiness-watchlist docs. Task 14 COMPLETE: full `make test-live` GREEN 26 passed/0 failed (673.84s), root DB 4→4.
