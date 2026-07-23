@@ -224,10 +224,19 @@ test-live-report:
 		echo "Using existing record file: $(RECORD_JSON) (SKIP_RECORD=1)"; \
 	else \
 		echo "Recording actuals from $(EVAL_SET) -> $(RECORD_JSON)"; \
-		.venv/bin/python -m tests.integration.record_actuals $(EVAL_SET) $(RECORD_JSON) || \
-			echo "[test-live-report] recorder reported case failure(s) — grading whatever succeeded"; \
+		if [ -d ".venv" ]; then \
+			.venv/bin/python -m tests.integration.record_actuals $(EVAL_SET) $(RECORD_JSON) || \
+				echo "[test-live-report] recorder reported case failure(s) — grading whatever succeeded"; \
+		else \
+			python -m tests.integration.record_actuals $(EVAL_SET) $(RECORD_JSON) || \
+				echo "[test-live-report] recorder reported case failure(s) — grading whatever succeeded"; \
+		fi; \
 	fi
-	.venv/bin/python scripts/eval_grade_report.py $(RECORD_JSON) --output artifacts/grade_results
+	@if [ -d ".venv" ]; then \
+		.venv/bin/python scripts/eval_grade_report.py $(RECORD_JSON) --output artifacts/grade_results; \
+	else \
+		python scripts/eval_grade_report.py $(RECORD_JSON) --output artifacts/grade_results; \
+	fi
 
 ## Run all tests including slow (Veo) tests
 test-all:
@@ -282,14 +291,14 @@ clean:
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	@echo "Cleaned build artifacts"
 
-## Reset database to fresh demo state (4 campaigns, 22 products)
+## Reset database to fresh demo state (4 campaigns, 28 products with DEMO_DATASET=fashion)
 reset-db:
 	@echo "Resetting database to fresh demo state..."
 	rm -f campaigns.db
 	rm -f app/campaigns.db
-	@echo "Database deleted. Next 'make dev' will create fresh demo data:"
+	@echo "Database deleted. Next 'make dev' will create fresh demo data (DEMO_DATASET-dependent; default 'fashion'):"
 	@echo "  - 4 demo campaigns (LA, NYC, Chicago)"
-	@echo "  - 22 fashion products"
+	@echo "  - 28 products (22 fashion + 6 retail core)"
 	@echo "  - 1 activated video per campaign with 30 days of metrics"
 
 ## Show help
