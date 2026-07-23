@@ -425,3 +425,67 @@ Owner answer (verbatim): "Relax: no FEATURED human (Recommended)" — product mu
 Owner answer (verbatim): "One bounded answer-retry (Recommended)" — on answer-dimension failure only, re-judge once against the same recorded response (no new inference); fail if it fails twice. Deterministic dimensions (tools/trajectory) stay single-shot.
 
 Dispatch: relayed to judge-impl to (a) relax subject_matches_archetype for product-hero archetypes to "no featured human model" (marked owner-approved ws16 GATE 3), (b) add the bounded single re-judge of the answer dimension in tests/integration/eval_harness.py (same recorded response, no new inference, logged when it triggers), then re-run full `make test-live` to green and commit.
+
+## 2026-07-23 — checkpoint 7: Task 14 post-GATE-3 — items 1&2 DONE; test-live blocked by pre-existing eval DB-isolation bug
+
+Post-OWNER-GATE-3. Implementer. Code commit 9b8efdb.
+
+**GATE 3 item 1 (subject rubric relaxation) — DONE, owner-approved.** `judge.py
+_subject_rule` product-hero branch relaxed from "no humans in frame" to "no
+FEATURED human model; incidental/blurred background people (ambient cafe
+patrons) allowed" (marker `[ws16 OWNER GATE 3, 2026-07-23]` on the rule +
+module docstring). Re-proved live: the previously-failing cold-brew scene
+image + video now PASS subject_matches_archetype ("no human models present"),
+and BOTH negative controls still FAIL correctly — the wrong-subject control
+evidence updated to "A human model is prominently featured and posed modeling
+the floral dress", confirming a FEATURED model still trips the check. All 5
+disk media pass the relaxed rubric standalone.
+
+**GATE 3 item 2 (bounded answer-dim retry) — DONE, owner-approved.**
+`eval_harness.py`: after the per-dimension metric passes, if the ANSWER
+dimension (`_ANSWER_DIMENSION="answer"`) failed for any case, re-judge THAT
+dimension ONCE against the SAME recorded inference (no new agent inference; no
+retry for tools/trajectory). Fails only if it fails twice. Visible logging:
+"[eval-harness] answer-dimension retry (GATE 3) for: <ids>" + per-case
+"PASSED on retry" / "FAILED again". Marker in comment. Added fast guard
+`test_eval_harness_guard.py::test_answer_retry_targets_only_the_answer_dimension`
+(no live calls) locking the constant against config drift. Verified live: the
+retry FIRED for get-campaign-locations and logged "FAILED again".
+
+**Full `make test-live` (GATE 3 run) = 19 passed / 1 FAILED, 470s.** ALL Task
+14 deliverables green (relaxed judge rubric incl. cold-brew, chart, both
+negative controls, media pipeline x2, onboarding). Only failure:
+get-campaign-locations[answer] — double-flaked (retry fired, failed twice).
+
+**DISCOVERY (supersedes the earlier "answer-judge flake" diagnosis — the GATE-3
+retry premise was WRONG):** get-campaign-locations is NOT a judge flake — it is
+a pre-existing **eval DB-isolation / intra-set ordering bug**. Captured the
+actual answer (record_to): the agent correctly returns **6 stores**, including
+"Target Downtown (Aurora Cold Brew 330mL)" and "Macy's Herald Square (Camel
+Wool Overcoat)" — the exact campaigns the sibling cases `create-campaign-beverage`
+and `create-campaign-cold-start-outerwear` create in the SAME eval set. The
+reference lists only the 4 seeded fashion stores, so final_response_match_v2
+(threshold 0.75) correctly scores 0.0. Two compounding causes:
+  1. **Intra-set pollution:** all cases in campaign_agent.test.json share ONE
+     DB (config.DB_PATH is one temp copy per test); the create-campaign cases
+     add 2 stores that get-campaign-locations then reports. Races with case
+     execution order → intermittent (why it passed ~1/6 times: those runs read
+     before the create cases wrote).
+  2. **Cross-run pollution to ROOT:** root `campaigns.db` now holds 8 campaigns
+     — ids 1-4 seeded fashion; 5,7 = Target Downtown/Austin; 6,8 = Macy's/New
+     York — i.e. TWO pairs of eval-created Target+Macy's campaigns persisted to
+     ROOT across test-live runs. So the create-campaign eval cases are NOT
+     isolated to the temp copy; they write to (and accumulate in) the real DB.
+Neither is fixable by the retry (content is correct-but-mismatched-reference,
+not judge noise) or by Task 14. This is Task 8/11/Q19 eval-isolation territory.
+`make reset-db` restores root to the seeded 4, but a full-set run still fails
+via cause #1 (sibling create cases pollute the shared copy) — so this needs an
+eval-design fix (per-case DB isolation, OR a store-count-tolerant
+get-campaign-locations reference, OR reordering create cases last), an OWNER/
+controller decision, not a Task 14 change.
+
+**State:** Task 14 code complete + committed (9b8efdb); GATE 3 items 1&2 done,
+verified. `make test-live` NOT green — blocked ONLY by the pre-existing
+get-campaign-locations eval-isolation bug above (root DB also left polluted by
+prior runs; not reset pending controller inspection). make lint green;
+make test-unit 319 passed/1 skipped.
