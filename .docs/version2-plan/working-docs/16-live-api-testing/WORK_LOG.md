@@ -489,3 +489,6 @@ verified. `make test-live` NOT green — blocked ONLY by the pre-existing
 get-campaign-locations eval-isolation bug above (root DB also left polluted by
 prior runs; not reset pending controller inspection). make lint green;
 make test-unit 319 passed/1 skipped.
+
+## 2026-07-23 — Controller adjudication: eval DB-isolation leak is a bug fix, not an owner gate
+judge-impl escalated the get-campaign-locations[answer] failure for an owner decision. Adjudicated by controller without a gate: directive 6 covers unclear expected responses / judge thresholds / quality bars — this is neither. DB isolation for eval runs was already the approved design (Task 4's `isolated_live_db`); eval-created campaigns leaking into the ROOT campaigns.db (polluted to 8) is a defect in implementing that approved design, and the expected behavior is unambiguous (eval runs never touch the real DB; analytics references assume seeded-only state). Dispatching judge-impl to root-cause the leak, fix it, reset the polluted root DB, and re-run full `make test-live` to green. The GATE 3 bounded answer-retry gets credit here: it fired, double-failed, and proved this was NOT a judge flake.
