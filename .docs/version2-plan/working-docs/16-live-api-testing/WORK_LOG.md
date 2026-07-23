@@ -266,3 +266,59 @@ Task 13 review: approved (e3006e2..9b2a07f)
 - Generated media on disk for Task 14's judge: generated/ videos (wearable
   blue-floral-maxi-dress 2.1MB; non-wearable aurora-cold-brew 1.2MB),
   product-images/artisan-coffee-beans.png (1408x768).
+
+## 2026-07-23 — checkpoint 5: Task 14 pre-gate (Gemini judge + calibration)
+
+Implementer, pre-OWNER-GATE-2 only (the gate is the controller's). Base
+e47c541; code+calibration commit ad5671f.
+
+**judge.py** (`tests/live/judge.py`): gemini-3.6-flash multimodal reviewer
+(Vertex, global) via `google.genai`, structured JSON verdicts through
+`response_schema` (Pydantic `_Check{verdict,evidence}` per named check).
+Public API `judge_image` / `judge_video` / `judge_chart` (+ `judge_media_entry`
+dispatch); `JudgeVerdict` = `{check: {verdict, severity, evidence}}`. Severity
+is module-owned policy (`_IMAGE/_VIDEO/_CHART_SEVERITY`), NOT model-decided.
+Rubric derived from source so judge/generator can't drift: subject rule from
+`prompt_archetypes.WEARABLE` (wearable=human model; else product-hero no
+humans), no-text policy from `prompt_builders._NO_TEXT_BLOCK`/`_AUDIO_BLOCK`.
+Video judged via **direct mp4 bytes** (proven pattern from
+`video_tools.analyze_video`), with a 4-evenly-spaced-frames ffmpeg fallback
+(`_sample_frames`) if the API refuses on size/format. Honesty bound: pixels
+only — videos check burned-in captions per visible frame, audio NOT verified
+(rubric text says so).
+
+**test_media_judge.py**: `test_generated_media_obey_rubric` judges every
+`generated_media` entry (registry-or-disk resolver `_resolve_media` — works
+in-session AND standalone off disk, skip-with-reason if absent), FAILS on any
+hard-check fail, `warnings.warn` on warn checks. `test_rpi_chart_obeys_inverted_rubric`
+renders one chart via the REAL `metrics_tools.generate_creative_comparison_chart`
+(seeded campaign 1, MagicMock ToolContext to capture PNG bytes, tmp_path) and
+judges it with the INVERTED rubric: axis/label/value text REQUIRED + bar count
+== seeded activated-creative count (3). Marks `[live, slow]`.
+
+**Calibration live run** (once, over EXISTING disk media + fresh chart):
+5 media (2 videos, 2 scene images, 1 onboarding product image) + 1 RPI chart,
+6 multimodal judge calls in one pass → **ALL hard checks pass, all 3 warn
+checks pass, zero failures**. Both videos used direct-mp4 (fallback NOT
+exercised). Chart: 3 bars confirmed, axes/labels/value tags legible.
+Verdicts + evidence sentences + proposed hard/warn split written to
+`calibration/judge-calibration.md`; the rendered chart saved to
+`calibration/rpi-chart-campaign1.png` (owner opens both at the gate).
+
+**Proposed severities (NOT owner-pinned — decided at OWNER GATE 2):**
+subject_matches_archetype=hard, no_rendered_text=hard, no_captions_any_frame
+(video)=hard, setting_mood_plausible=warn; chart axes_and_labels_legible=hard,
+correct_creative_count=hard. Open for the owner: keep setting_mood as warn or
+promote; confirm chart checks hard; want a product-identity check?
+
+**Limitations flagged:** no negative controls this run (all media is
+policy-conformant, so this proves no-false-positive, NOT catch-violations —
+a text-injected image / human-in-product-hero would be the negative control,
+deferred to owner/Task 16). Ordering nuance: in a full `make test-live` the
+judge file sorts before the pipeline file alphabetically, so in-session the
+judge falls back to on-disk media from a prior run unless reordered — the
+resolver is order-independent by design; flag for Task 14 Step 4 (controller).
+
+**Verify (pre-gate):** make lint green (all touched); make test-unit 319
+passed/1 skipped. NOT run: full `make test-live` (Step 4, controller);
+regeneration of existing videos/images (expensive, reused on disk).
