@@ -246,3 +246,23 @@ Task 12 implemented (commits e411976..4d61789; tests/live/test_media_pipeline.py
 Task 12 review: approved (e411976..492c49f)
 Task 13 implemented (commits e3006e2..9c0583a; tests/live/test_onboarding_from_scratch.py 1 passed in 32.00s live — non-fashion product [Artisan Coffee Beans] on schema-only empty DB: create_product (pending) -> generate_product_image via real image model (available, product-images/artisan-coffee-beans.png, verified coherent labeled coffee-bag photo) -> create_campaign attach, no storage.googleapis.com anywhere; image registered in generated_media for Task 14's judge; make lint green; unit+e2e 340 passed/2 skipped, golden prompt tests 4 passed)
 Task 13 review: approved (e3006e2..9b2a07f)
+
+## 2026-07-23 — controller notes after Tasks 11–13 (all approved)
+
+- Task 11 note: the legacy variation-fields writer fix (video_tools
+  _variation_params_for_storage) was executed under OWNER GATE 1 decision 1's
+  "fix, don't xfail" precedent (controller dispatch instruction), not a
+  separate owner gate — flagged to the owner at the next gate for
+  ratification. Cold-start phrasing lesson: "New York, NY" produced unstable
+  state args; pinned query uses "Manhattan, New York" (stable across 6 runs).
+- Live-flakiness watchlist (for Task 16 docs + Task 18 verification):
+  transient Vertex 400 INVALID_ARGUMENT (not in _INFRA_MARKERS — correctly
+  FAILS, passes on rerun) seen twice; answer-dimension judge flap seen once
+  on get-campaign-locations. Frequency so far ≈1 case per full-suite run,
+  always clean on immediate rerun.
+- Q14 evidence (Phase 14a): Stage-1 scene images 768x1376 PNG (~1.4MB).
+  Q15 evidence (Phase 14b): Veo 3.1 output 720x1280 @ 24fps, 4.01s for a
+  requested 4s (6s/8s unmeasured). In calibration/media-metadata.json.
+- Generated media on disk for Task 14's judge: generated/ videos (wearable
+  blue-floral-maxi-dress 2.1MB; non-wearable aurora-cold-brew 1.2MB),
+  product-images/artisan-coffee-beans.png (1408x768).
