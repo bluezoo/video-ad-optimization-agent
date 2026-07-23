@@ -30,3 +30,8 @@ Live probes this kickoff: gemini-3.6-flash and gemini-3.1-flash-lite-image
 both respond on Vertex global; gemini-3.6-flash is GA (2026-07-21 per model
 page). Baseline in fresh worktree: 306 unit + 25 e2e green. Working doc
 drafted; awaiting owner approval gate.
+
+## 2026-07-22 — checkpoint 2: working doc approved
+Owner approved via explicit yes ("Yes — approved, write the plan") to the
+six-dimension restatement. Evaluation-first 14a confirmed (no silent image
+default switch — any switch is an owner decision on the comparison evidence).
