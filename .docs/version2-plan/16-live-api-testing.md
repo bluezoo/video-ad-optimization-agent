@@ -103,3 +103,45 @@ benefits from a truthful live gate.
 2. Audio verification: Veo output audio can't be fully verified by a
    frame-based judge; is prompt-policy + spot manual listening acceptable, or
    is an audio-understanding pass (Gemini video+audio input) worth adding?
+
+## Open items to address while testing
+
+> **Amended (owner request, 2026-07-22, post-ws15 merge):** carried-in items
+> from merged workstreams that this phase's live testing is the natural place
+> to close. The doc's original "Independent of Phases 10-15" note predates
+> ws15's merge — item 2 below supersedes it for storage behavior.
+
+1. **Publish and live-verify the demo-asset bundle (ws15 owner follow-up).**
+   Only the graceful-skip path is proven live today. Close the loop:
+   `make demo-assets-build SRC=<folder>` → upload zip to Google Drive
+   (anyone-with-link) → set `DEMO_ASSETS_DRIVE_ID` in `app/.env` → verify a
+   first `make dev` (or `make demo-assets`) downloads, sha256-verifies, and
+   installs into `product-images/`, and a second run is a marker no-op.
+   Seeded products should then report `image_status: available` locally.
+2. **Pin the live tier's storage mode and assert the URL policy (ws15).**
+   Decide which storage mode live tests run in — recommend local-first
+   (`GCS_BUCKET` unset), matching the demo default. Assert the ws09
+   directive as a test: no `storage.googleapis.com` URL in any tool
+   response, and generated media lands under `LOCAL_ASSETS_DIR`
+   (`generated/`, `selected/`, `product-images/`). Two known env landmines
+   for step 1's integration conftest: (a) a dev `app/.env` that still sets
+   `GCS_BUCKET` silently keeps GCS mode; (b) the root conftest's
+   session-scoped env fixture runs AFTER `app.config` is imported, so env
+   pins set there never reach module-level config values (ws15 discovery) —
+   the live-tier conftest must set env before `app.config` import or reload
+   the module.
+3. **From-scratch onboarding as a live test case (ws15).** `DEMO_DATASET=none`
+   → `create_product` → `generate_product_image` against the real image
+   model → campaign attach — the
+   `docs/demo-scenarios/from-scratch-onboarding.md` path, currently proven
+   only by manual verification. Run the generated image through the step-5
+   judge like any other media output.
+4. **Docs/targets cleanup once the tier lands.** Rewrite the CLAUDE.md
+   "integration eval suite passes vacuously" gotcha (it becomes wrong the
+   moment step 1 ships), update `make help`/`make test` descriptions for the
+   new tier split, and fix the stale `reset-db` echo text ("22 fashion
+   products" — dataset is now `DEMO_DATASET`-dependent).
+5. **Opportunistic evidence for Q14/Q15 while paying for the calls.** Live
+   media runs should record actual image resolutions (Q14, Phase 14a) and
+   qualitative video-output notes (Q15, Phase 14b) into the workstream's
+   WORK_LOG — free input for those open questions, no extra API spend.
