@@ -22,8 +22,8 @@ Tests the 5 analytics-related tools (non-visualization):
 - generate_metrics_visualization (requires LLM, marked slow)
 """
 
-from unittest.mock import patch
 from datetime import date, timedelta
+from unittest.mock import patch
 
 
 def _make_campaign_with_metrics(rows, num_videos=1):

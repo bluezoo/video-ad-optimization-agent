@@ -30,7 +30,6 @@ Mode Detection:
 
 import io
 import os
-from typing import Optional
 
 # Lazy GCS initialization to avoid import errors when running locally
 _gcs_client = None
@@ -137,7 +136,7 @@ def save_image(filename: str, data: bytes) -> str:
     Returns:
         Full path (local) or gs:// URL (GCS) of saved image.
     """
-    from .config import SELECTED_DIR, GCS_BUCKET
+    from .config import GCS_BUCKET, SELECTED_DIR
     if get_storage_mode() == "gcs":
         bucket = _get_bucket()
         blob = bucket.blob(f"seed-images/{filename}")
@@ -161,7 +160,7 @@ def get_image_path(filename: str) -> str:
     Returns:
         Full path (local) or gs:// URL (GCS).
     """
-    from .config import SELECTED_DIR, GCS_BUCKET
+    from .config import GCS_BUCKET, SELECTED_DIR
     if get_storage_mode() == "gcs":
         return f"gs://{GCS_BUCKET}/seed-images/{filename}"
     else:
@@ -240,7 +239,7 @@ def save_video(filename: str, data: bytes) -> str:
     Returns:
         Full path (local) or gs:// URL (GCS) of saved video.
     """
-    from .config import GENERATED_DIR, GCS_BUCKET
+    from .config import GCS_BUCKET, GENERATED_DIR
     if get_storage_mode() == "gcs":
         bucket = _get_bucket()
         blob = bucket.blob(f"generated/{filename}")
@@ -267,7 +266,7 @@ def read_video(path_or_filename: str) -> bytes:
     Returns:
         Video data as bytes.
     """
-    from .config import GENERATED_DIR, GCS_BUCKET
+    from .config import GCS_BUCKET, GENERATED_DIR
     if get_storage_mode() == "gcs":
         bucket = _get_bucket()
         # Handle both gs:// URLs and bare filenames
@@ -317,7 +316,7 @@ def video_exists(path_or_filename: str) -> bool:
         True if the video exists, False otherwise.
         Returns False on any error (permission denied, network issues, etc.)
     """
-    from .config import GENERATED_DIR, GCS_BUCKET
+    from .config import GCS_BUCKET, GENERATED_DIR
     if get_storage_mode() == "gcs":
         try:
             bucket = _get_bucket()
@@ -351,7 +350,7 @@ def video_exists(path_or_filename: str) -> bool:
 # Public URL Functions (for public GCS bucket access)
 # =============================================================================
 
-def get_public_url(blob_path: str) -> Optional[str]:
+def get_public_url(blob_path: str) -> str | None:
     """Get a public URL for a GCS blob.
 
     Assumes the bucket has public read access configured.
@@ -369,7 +368,7 @@ def get_public_url(blob_path: str) -> Optional[str]:
     return f"https://storage.googleapis.com/{GCS_BUCKET}/{blob_path}"
 
 
-def get_video_public_url(filename: str, check_exists: bool = False) -> Optional[str]:
+def get_video_public_url(filename: str, check_exists: bool = False) -> str | None:
     """Get public URL for a generated video.
 
     Args:
@@ -384,7 +383,7 @@ def get_video_public_url(filename: str, check_exists: bool = False) -> Optional[
     return get_public_url(f"generated/{filename}")
 
 
-def get_thumbnail_public_url(filename: str, check_exists: bool = True) -> Optional[str]:
+def get_thumbnail_public_url(filename: str, check_exists: bool = True) -> str | None:
     """Public URL for a video thumbnail (generated/ prefix), or None.
 
     None when not in GCS mode, or (by default) when the file doesn't exist —

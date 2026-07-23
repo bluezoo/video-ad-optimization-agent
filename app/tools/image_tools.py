@@ -16,14 +16,13 @@
 
 import json
 import os
-from typing import Optional
 
 from google import genai
 from google.genai import types
 
+from .. import storage
 from ..config import GCS_BUCKET, SELECTED_DIR
 from ..database.db import get_db_cursor
-from .. import storage
 
 
 def analyze_image(image_filename: str) -> dict:
