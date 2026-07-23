@@ -160,3 +160,10 @@ empty-bytes case previously saved a zero-byte video as success, now raises.
 Reviewer independently reproduced the combined-run e2e interference (3 tests)
 AT BASE — confirmed it is the pre-existing Phase 16 open item 6 (owner commit
 1ec85cb), not a ws14 regression; suites as gated by the Makefile are green.
+
+## 2026-07-23 — checkpoint 6: FINISHED (merged)
+PR #14 squash-merged into version_2 as e3c771d (owner-approved). Post-merge
+cleanup done: worktree removed, local+remote branch deleted, version_2
+rebased and pushed, STATUS rows 14a and 14b -> merged. Outcomes: image
+default unchanged (comparison-backed), Veo polling consolidated with tests,
+Omni Flash deferred with banked findings, agent default gemini-3.6-flash.
