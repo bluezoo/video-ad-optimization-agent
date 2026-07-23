@@ -567,12 +567,16 @@ imported images land under `product-images/` in the project root.
 #### Journey 15.4 — demo-asset bundle install (and graceful skip)
 
 ```bash
-.venv/bin/python -m scripts.demo_assets install
+make demo-assets
 ```
+
+(`make dev` also runs this automatically before starting the server; a local
+zip installs via `make demo-assets-from-file FILE=<bundle.zip>`.)
 
 **Expect (today, no Drive ID configured):** a graceful skip —
 `"Demo asset bundle not configured"` — and the app keeps working. Once a
 bundle is published and `DEMO_ASSETS_DRIVE_ID` is set in `app/.env`, the same
 command downloads, sha256-verifies, and installs the demo product images into
 `product-images/`; a second run reports already-installed. Building/publishing
-the bundle is documented in `SETUP_INSTRUCTIONS.md` ("Demo asset bundle").
+the bundle (`make demo-assets-build SRC=<folder>`) is documented in
+`SETUP_INSTRUCTIONS.md` ("Demo asset bundle").

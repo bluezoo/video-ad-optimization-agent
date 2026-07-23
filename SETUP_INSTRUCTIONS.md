@@ -125,11 +125,14 @@ for local-first mode.
 
 ### Demo asset bundle (product images without GCS)
 
-Demo product images ship as an owner-hosted Google Drive zip:
+Demo product images ship as an owner-hosted Google Drive zip. `make dev` runs
+the installer automatically before starting the server (a no-op once
+installed, a graceful skip when unconfigured), or run it directly:
 
 ```bash
-python -m scripts.demo_assets install                     # uses DEMO_ASSETS_DRIVE_ID
-python -m scripts.demo_assets install --from-file x.zip   # or a local bundle
+make demo-assets                              # uses DEMO_ASSETS_DRIVE_ID
+make demo-assets-from-file FILE=x.zip         # or a local bundle
+# equivalently: python -m scripts.demo_assets install [--from-file x.zip]
 ```
 
 Unset `DEMO_ASSETS_DRIVE_ID` → the installer skips gracefully; the app still
@@ -139,7 +142,8 @@ works, seeded products just report `image_status: missing` locally.
 folder tree (`<src>/product-images/<file>...`), then:
 
 ```bash
-python -m scripts.demo_assets build --source <src> --out demo-assets.zip
+make demo-assets-build SRC=<src> OUT=demo-assets.zip
+# (wraps: python -m scripts.demo_assets build --source <src> --out demo-assets.zip)
 # upload demo-assets.zip to Google Drive (anyone-with-link), then set
 # DEMO_ASSETS_DRIVE_ID=<drive-file-id> in app/.env
 ```

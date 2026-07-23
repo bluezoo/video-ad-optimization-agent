@@ -18,6 +18,10 @@ google-cloud-storage>=2.19.0
 # Demo-asset bundle download from Google Drive (scripts/demo_assets.py)
 gdown>=5.2.0
 
+# app/.env loading for standalone scripts (scripts/demo_assets.py); ADK
+# already depends on it, pinned here because scripts import it directly
+python-dotenv>=1.0.0
+
 # Google Gen AI SDK
 google-genai>=1.55.0
 
