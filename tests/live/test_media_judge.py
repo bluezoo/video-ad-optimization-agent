@@ -37,7 +37,7 @@ from pathlib import Path
 import pytest
 
 import app.config as config
-from tests.live.judge import judge_chart, judge_media_entry
+from tests.live.judge import judge_chart, judge_image, judge_media_entry
 
 pytestmark = [pytest.mark.live, pytest.mark.slow]
 
@@ -74,6 +74,29 @@ _DISK_SPECS = [
     ("onboarding_product_image", "image", "onboarding-product-reference",
      "PRODUCT_IMAGES_DIR", "artisan-coffee-beans.png", _ONBOARDING_CONTEXT),
 ]
+
+
+def _make_text_overlay(src_path: str, dst_path: Path, text: str) -> None:
+    """Paint a large rendered-text banner onto a copy of ``src_path``.
+
+    Built on the fly for the negative-control test (no corrupted binary is
+    committed). The banner is deliberately large and high-contrast so a
+    correctly-working judge cannot miss it.
+    """
+    from PIL import Image, ImageDraw, ImageFont
+
+    img = Image.open(src_path).convert("RGB")
+    draw = ImageDraw.Draw(img)
+    font_size = max(48, img.width // 8)
+    font = ImageFont.load_default(size=font_size)
+    bbox = draw.textbbox((0, 0), text, font=font)
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    x = (img.width - tw) // 2
+    y = (img.height - th) // 2
+    pad = font_size // 3
+    draw.rectangle([x - pad, y - pad, x + tw + pad, y + th + pad], fill=(0, 0, 0))
+    draw.text((x - bbox[0], y - bbox[1]), text, fill=(255, 255, 0), font=font)
+    img.save(dst_path)
 
 
 def _resolve_media(registry: dict) -> dict:
@@ -176,3 +199,59 @@ class TestMediaJudge:
                 hard_failures.append(f"{check}: {res['evidence']}")
         print("\n[chart-judge report]" + "".join(report))
         assert not hard_failures, "chart hard-check failures:\n" + "\n".join(hard_failures)
+
+
+class TestJudgeNegativeControls:
+    """Deliberately-violating controls: the judge MUST fail them (ws16 OWNER GATE 2).
+
+    Proves the judge catches violations, not merely that it passes conformant
+    media. Controls are built on the fly under ``tmp_path`` or evaluated against
+    a mismatched archetype — no corrupted media binary is committed.
+    """
+
+    def test_rendered_text_overlay_is_caught(self, generated_media, tmp_path):
+        """A big rendered-text banner must trip no_rendered_text (hard)."""
+        entries = _resolve_media(generated_media)
+        source = entries.get("wearable_scene_image") or next(
+            (e for e in entries.values() if e["kind"] == "image"), None
+        )
+        if source is None:
+            pytest.skip("no source image on disk/registry to build the text-overlay control")
+        overlay_path = tmp_path / "rendered_text_control.png"
+        _make_text_overlay(source["path"], overlay_path, "MEGA SALE - 50% OFF TODAY")
+
+        verdict = judge_image(
+            str(overlay_path),
+            archetype=source["archetype"],
+            request_context=source["request_context"],
+        )
+        check = verdict["no_rendered_text"]
+        print(f"\n[neg-control rendered_text] {check}")
+        assert check["verdict"] == "fail", (
+            f"judge missed a rendered text banner: {check['evidence']}"
+        )
+        assert check["severity"] == "hard"
+
+    def test_wrong_subject_is_caught(self, generated_media):
+        """A human-model image judged as product_only must trip subject (hard)."""
+        entries = _resolve_media(generated_media)
+        source = entries.get("wearable_scene_image")
+        if source is None:
+            pytest.skip("wearable scene image (with human model) not available")
+
+        # Judge the human-model image as if it were a product_only shot (no
+        # humans allowed) — the human presence must fail subject_matches_archetype.
+        verdict = judge_image(
+            source["path"],
+            archetype="product_only",
+            request_context=(
+                "Product-only hero shot (NO humans) — deliberately mismatched "
+                "against a wearable image that contains a human model."
+            ),
+        )
+        check = verdict["subject_matches_archetype"]
+        print(f"\n[neg-control wrong_subject] {check}")
+        assert check["verdict"] == "fail", (
+            f"judge missed a human in a product-only shot: {check['evidence']}"
+        )
+        assert check["severity"] == "hard"

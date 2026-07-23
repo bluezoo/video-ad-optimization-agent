@@ -27,6 +27,7 @@ exactly like the Task 12 pipeline media.
 
 import json
 import os
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -51,16 +52,37 @@ def empty_live_db(isolated_live_db, monkeypatch):
     inline here since that fixture patches ``app.config.DB_PATH`` via
     ``unittest.mock.patch`` directly, while the live tier's fixtures use
     ``monkeypatch`` on the already-imported ``config`` module object.
+
+    Also isolates the asset directories (``product-images/``, ``generated/``)
+    to a temp sandbox. The live tier writes to the persistent repo
+    ``product-images/``, so a reference image left behind by a prior run would
+    make ``create_product`` report ``image_status='available'`` instead of
+    ``'pending'`` — breaking the from-scratch precondition on every rerun
+    (ws16 DISCOVERY, 2026-07-23: create_product derives status from
+    ``storage.product_image_exists`` at call time). Isolating the dirs makes
+    this test hermetic and deterministic across reruns; the temp
+    ``product-images`` subdir keeps that exact basename so the test's
+    directory-name assertion still holds.
     """
     fd, db_path = tempfile.mkstemp(suffix=".db", prefix="test_live_empty_")
     os.close(fd)
     monkeypatch.setattr(config, "DB_PATH", db_path)
+
+    assets_root = tempfile.mkdtemp(prefix="test_live_assets_")
+    product_images = os.path.join(assets_root, "product-images")
+    generated = os.path.join(assets_root, "generated")
+    os.makedirs(product_images)
+    os.makedirs(generated)
+    monkeypatch.setattr(config, "PRODUCT_IMAGES_DIR", product_images)
+    monkeypatch.setattr(config, "GENERATED_DIR", generated)
+
     init_database()
     yield db_path
     try:
         os.unlink(db_path)
     except OSError:
         pass
+    shutil.rmtree(assets_root, ignore_errors=True)
 
 
 class TestFromScratchOnboarding:

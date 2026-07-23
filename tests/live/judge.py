@@ -96,9 +96,11 @@ class _ChartJudgment(BaseModel):
     correct_creative_count: _Check
 
 
-# Severity is a policy decision owned by this module (phase-doc open question 1
-# default; the owner ratifies the split at the Task 14 gate). "hard" fails a
-# test; "warn" only surfaces a warning.
+# Severity is a policy decision owned by this module. "hard" fails a test;
+# "warn" only surfaces a warning. This split is OWNER-APPROVED exactly as
+# proposed (ws16 OWNER GATE 2, 2026-07-23): subject/no-text/no-captions block,
+# setting-mood only warns; both chart checks block (phase-doc open question 1
+# decided — see calibration/judge-calibration.md).
 _IMAGE_SEVERITY = {
     "subject_matches_archetype": "hard",
     "no_rendered_text": "hard",
