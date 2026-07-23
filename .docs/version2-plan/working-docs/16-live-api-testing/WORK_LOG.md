@@ -106,3 +106,4 @@ Task 2 implemented (commits f5c26fc..3aa9c7e; combined tests/unit + tests/e2e 34
 Task 2 review: approved (f5c26fc..4c16ebc)
 Task 3 implemented (commits 67da5ee..6921bda; make test = 316 passed/1 skipped (unit) + 25 passed/1 skipped (e2e), no integration output; make lint clean; make test-live invokes pytest tests/integration tests/live — tests/live collects 0 items cleanly, tests/integration pre-existing ModuleNotFoundError: pandas/google-adk[eval] unrelated to this task, out of scope, Task 4+ owns it)
 Task 3 review: approved (67da5ee..a65f3ad)
+Task 4 implemented (commits 12ebc02..1381958; tests/integration/test_live_env_smoke.py 2 passed; make test 316 passed/1 skipped (unit) + 25 passed/1 skipped (e2e); combined tests/unit+e2e+smoke 343 passed/2 skipped; make lint clean on touched files)
