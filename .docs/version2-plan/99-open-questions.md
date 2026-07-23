@@ -55,6 +55,8 @@ Which non-fashion vertical should the generalization work's proof-of-concept fix
 
 ~~Is a full product-CRUD tool actually needed now, or is seeded-fixture-only sufficient for near-term demos?~~ **Answered by the owner: yes, it's needed.** From-scratch onboarding (fresh product images → products → campaigns → analytics, no preseeded catalog) is a stated goal; product CRUD (agent tools + CLI wrapper) is now Phase 15, `15-product-onboarding.md`. No client input required.
 
+> **Amended (workstream 15, 2026-07-22):** implemented — `create_product` / `import_products_from_folder` / `generate_product_image` on the Campaign agent, plus the CLI twin `scripts/onboard_products.py` (creation-side only; update/delete tools remain unbuilt by design).
+
 ## 9. RPI demo range realism (Phase 5)
 
 The two existing (soon-to-be-unified) mock generators use different RPI ranges ($0.02-$0.08 vs. $0.08-$0.15) — which looks more credible for demo purposes in front of the client/prospects?
@@ -88,6 +90,8 @@ Is Nano Banana 2 Lite's 1K resolution cap acceptable for this app's actual displ
 ## 16. Is "zero external accounts for demo mode" actually a requirement? (Phase 6/philosophy) — RESOLVED 2026-07-16
 
 ~~Is "no BlueZoo/PoS credentials required" the actual bar, or does "zero external accounts" need to be taken literally?~~ **Resolved by the owner: local-first.** The bar is: GCP credentials are needed **only for model calls** (Gemini/Veo/image generation); product images and generated videos save/load locally with no GCS bucket required, and GCS becomes an explicit opt-in for cloud deploys. The local storage backend (and removal of the personal-bucket default at `app/config.py:52-53`, which `app/storage.py:189/208/224` currently hard-depend on) is Phase 15, `15-product-onboarding.md`, step 1. No client input required.
+
+> **Amended (workstream 15, 2026-07-22):** implemented — the personal-bucket default is deleted (`GCS_BUCKET` unset ⇒ local mode; the cited `config.py:52-53` lines no longer exist), product images gained a full local path under `product-images/`, all four URL-emitting tools are existence-checked and emit no `storage.googleapis.com` URLs locally, and demo assets ship via the Drive-bundle scripts (`scripts/demo_assets.py`).
 
 ## 17. Sub-15-minute per-ad-play windows: which fallback does BlueZoo support? (Phase 11b; shapes Phase 7's credibility once real data lands)
 
