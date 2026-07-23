@@ -20,7 +20,7 @@ def test_media_model_defaults_are_ga_ids(monkeypatch):
     monkeypatch.delenv("IMAGE_GENERATION_MODEL", raising=False)
     monkeypatch.delenv("VIDEO_GEN_MODEL", raising=False)
     cfg = importlib.reload(config_module)
-    assert cfg.MODEL == "gemini-3.5-flash"
+    assert cfg.MODEL == "gemini-3.6-flash"
     assert cfg.IMAGE_GENERATION == "gemini-3-pro-image"
     assert cfg.VIDEO_GEN_MODEL == "veo-3.1-generate-001"
 

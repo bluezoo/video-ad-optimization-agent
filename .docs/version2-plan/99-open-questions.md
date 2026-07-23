@@ -83,7 +83,18 @@ Does BlueZoo or legal have a specific requirement around OTel message-content ca
 
 Is Nano Banana 2 Lite's 1K resolution cap acceptable for this app's actual display/demo surfaces, or does a specific use case need the current higher-resolution default?
 
-## 15. Video backend default, post-evaluation (Phase 14b)
+## 15. Video backend default, post-evaluation (Phase 14b) — ANSWERED for now 2026-07-23
+
+> **Amended (workstream 14, 2026-07-23):** answered by a real prototype (not
+> docs alone): wait. `previous_interaction_id` — the capability that would
+> justify an omni_flash backend + revision tool — is explicitly unsupported
+> server-side for gemini-omni-flash-preview, and the interactions surface is
+> mid-migration (get 500s on sync ids; turn_list->step_list). Veo 3.1 stays
+> the only video backend. Revisit condition + banked working request shapes:
+> `working-docs/14-model-upgrades/omni-prototype-findings.md`. Q15's second
+> half (should Omni ever become *default*) stays open for that revisit; note
+> Omni's 4s/24fps/720p ceiling vs Veo argues for Veo-as-default regardless.
+
 
 **Corrected framing after Codex review:** the Interactions API and Omni Flash model are both currently labeled experimental/preview by Google's own primary sources — not GA, as an earlier draft of this plan assumed. Given that, is it worth investing engineering time in this integration now, or should Phase 14b wait for either surface to reach GA? If pursued now, once (if) it reaches GA, should it become the *default* video backend, or does this app's specific demo needs (duration/resolution constraints) argue for keeping Veo as default regardless?
 

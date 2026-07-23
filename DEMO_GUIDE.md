@@ -580,3 +580,16 @@ command downloads, sha256-verifies, and installs the demo product images into
 `product-images/`; a second run reports already-installed. Building/publishing
 the bundle (`make demo-assets-build SRC=<folder>`) is documented in
 `SETUP_INSTRUCTIONS.md` ("Demo asset bundle").
+
+### Workstream 14
+
+#### Journey 14.1 — agent default model is gemini-3.6-flash
+
+```bash
+.venv/bin/python -c "from app import config; print(config.MODEL)"
+```
+
+**Expect:** `gemini-3.6-flash` (override still via `AGENT_MODEL` in `app/.env`).
+Then in the web UI ask: **"Show me all my campaigns"** — expect routing to the
+Campaign Agent's `list_campaigns` exactly as before (the flip changes the
+model, not the routing contract; F1 Scene 1 is the full check).

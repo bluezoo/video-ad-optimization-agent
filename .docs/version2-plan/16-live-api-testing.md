@@ -47,6 +47,11 @@ Two test tiers, both green and both honest:
    `GOOGLE_CLOUD_LOCATION=global` constraint still holds for 3.6 and update
    the CLAUDE.md gotcha if the constraint changed. Fast + live suites both
    pass on the new default.
+
+   > **Amended (workstream 14, 2026-07-22):** done here — default flipped to
+   > `gemini-3.6-flash` (GA 2026-07-21, verified live on Vertex `global` at
+   > ws14 kickoff; CLAUDE.md gotcha unchanged). Phase 16 keeps this step only
+   > as a no-op re-verification when the live tier lands.
 4. **Live media-generation tests.** Fold/extend the existing `slow`/`veo`
    markers into the live tier: a test that runs the two-stage pipeline for one
    wearable and one non-wearable (retail core set) end-to-end against the real
