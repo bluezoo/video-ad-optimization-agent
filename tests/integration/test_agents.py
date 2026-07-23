@@ -20,10 +20,10 @@ the real Vertex env + isolated DB), then tools / trajectory / answer
 dimensions scored from live_eval_config.json. assert_eval_outcomes is the
 vacuity guard (Q19): zero or partial inference runs can never PASS.
 
-The xfail markers below are honest: the five eval sets were authored before
-the transfer_to_agent-wrapped trajectories ws09 discovered, so they now
-genuinely run and genuinely fail. Each stage-4 repair task (Tasks 6-10)
-removes its marker.
+All five eval sets were repaired in Phase 16 stage 4 to the real
+transfer_to_agent-wrapped trajectories (ws09 discovery) and owner-approved
+reference answers, so they run live and are expected to PASS — no xfail
+markers remain.
 """
 
 import pytest
@@ -35,14 +35,6 @@ from tests.integration.eval_harness import (
 )
 
 pytestmark = pytest.mark.integration
-
-_AUTHORED_PRE_TRANSFER = pytest.mark.xfail(
-    reason=(
-        "eval set authored pre-transfer_to_agent (ws09 discovery) — repaired"
-        " in Phase 16 stage 4"
-    ),
-    strict=False,
-)
 
 
 class TestCoordinatorAgentRouting:
@@ -77,7 +69,6 @@ class TestMediaAgent:
 class TestReviewAgent:
     """Test Review Agent tool execution."""
 
-    @_AUTHORED_PRE_TRANSFER
     async def test_review_agent_tools(self):
         """Review agent should correctly execute review tools."""
         outcomes = await run_eval_set(get_eval_set_path("review_agent.test.json"))
