@@ -155,3 +155,58 @@ produced. Blast radius: app/agent.py routing instructions (fixed this
 workstream per decision 2); eval set analytics_agent/get-map-data. Bug 1 was
 already flagged by ws14's WORK_LOG (candidate case) — now reproduced live and
 being fixed here, which resolves Task 11's open fix-vs-xfail question as FIX.
+
+## 2026-07-23 — checkpoint 4: stage 4 implemented (Tasks 6-10 + owner gate 1 agent fixes)
+
+Post-OWNER-GATE-1 execution (implementer). Base dc289e4.
+
+**Two owner-mandated agent fixes (app/agent.py):**
+- **Dup-product fix** (decision 1): commits e69f0b2 (campaign_agent "Creating
+  Campaigns" + coordinator Campaign-Agent bullet now require resolving an
+  existing product before create_product) + 24754e0 (gave campaign_agent its
+  OWN list_products tool — instruction-only was insufficient: the model
+  bounced campaign_agent->media_agent->campaign_agent and still created a
+  duplicate product id 585 because no list_products call ever fired; giving
+  campaign_agent list_products makes the owner-pinned 3-call trajectory real).
+  Confirmed live: create-campaign-beverage now runs [transfer(campaign_agent),
+  list_products(beverage), create_campaign(product_id=23)], NO create_product,
+  all 3 dims 1.0.
+- **Maps-routing fix** (decision 2): commits 1f50278 (coordinator Analytics-
+  Agent bullet + campaign_agent responsibilities: Google-Maps-link / "on a map"
+  queries go to analytics_agent.get_campaign_map_data; campaign_agent's
+  get_campaign_locations returns plain addresses only, no Maps links) + 8054c3a
+  (analytics instruction nudges get_campaign_map_data() to a no-argument call
+  for stable trajectory args — the model was flapping between {} and the three
+  explicit include_* default flags; the ADK trajectory evaluator does EXACT
+  args equality per pinned call, so an unstable arg set fails tools/trajectory
+  intermittently; the nudge stabilized it to {} across repeated runs).
+  Confirmed live: get-map-data now routes [transfer(analytics_agent),
+  get_campaign_map_data({})], all 3 dims pass.
+
+**Five eval sets repaired** (one commit each): coordinator 696e4ba, campaign
+cd6051a, media ee02c87, analytics f0e8a74, review 12fa6aa. Each: pinned the
+real transfer_to_agent-wrapped trajectory with minimal-but-meaningful args
+(exact-match per OWNER_REVIEW proposals; Option A for create-campaign-beverage
+product_id=23 and get-map-data; minimal refs for get-campaign-locations and
+list-pending-videos, dropping legacy list_pending_videos); replaced every
+empty/stale final_response with a compact factual reference embedding the
+owner-approved must-contain bullets (seeds FinalResponseMatchV2). xfail markers
+removed per set; the shared _AUTHORED_PRE_TRANSFER marker definition removed
+with the last (review) commit. expect_cases set to real counts (4/4/5/4/3).
+
+**Green loop:** full `tests/integration` = **12 passed / 0 failed / 0 xfailed**
+in 112.98s (16 eval cases x 3 dims + guard 3 + smoke 2). Two owner-flagged bug
+cases both pass all three dimensions. make test (unit+e2e) 341 passed/2
+skipped; make lint green on all touched files.
+
+**Deliberate-break (plan Task 6 Step 5):** corrupted coordinator.test.json
+list_campaigns -> list_campaignsX; coordinator test FAILED with
+`route-to-campaign-agent-list[tools]: score=0.0 < 1.0` and
+`route-to-campaign-agent-list[trajectory]: score=0.0 < 1.0`; reverted -> 1
+passed. Confirms the tools/trajectory dimensions genuinely gate on tool names.
+
+Calibration nuance worth noting for downstream tasks: exact-arg trajectory
+matching + LLM non-determinism means tools with several optional/default args
+(e.g. get_campaign_map_data's include_* flags) can flap; the mitigation used
+here is an instruction nudge toward a canonical call shape plus pinning that
+shape, NOT loosening the eval.
