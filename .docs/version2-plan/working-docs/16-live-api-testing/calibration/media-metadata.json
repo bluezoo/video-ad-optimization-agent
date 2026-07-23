@@ -1,6 +1,6 @@
 {
   "wearable_pipeline": {
-    "recorded_at": "2026-07-23T07:15:50.028661+00:00",
+    "recorded_at": "2026-07-23T11:42:45.317136+00:00",
     "product": "blue-floral-maxi-dress",
     "product_id": 4,
     "campaign_id": 1,
@@ -10,18 +10,18 @@
       "video": "veo-3.1-generate-001"
     },
     "requested_duration_seconds": 4,
-    "generation_time_seconds": 90,
+    "generation_time_seconds": 100,
     "reference_image_used": false,
     "scene_image": {
       "path": "generated/blue-floral-maxi-dress-072326-default-elegant-thumbnail.png",
-      "bytes": 1404750,
+      "bytes": 1539138,
       "width": 768,
       "height": 1376,
       "format": "PNG"
     },
     "video": {
       "path": "generated/blue-floral-maxi-dress-072326-default-elegant.mp4",
-      "bytes": 2098828,
+      "bytes": 3056490,
       "width": 720,
       "height": 1280,
       "fps": 24.0,
@@ -30,7 +30,7 @@
     }
   },
   "non_wearable_pipeline": {
-    "recorded_at": "2026-07-23T07:17:26.764465+00:00",
+    "recorded_at": "2026-07-23T11:44:09.956676+00:00",
     "product": "aurora-cold-brew-330ml",
     "product_id": 23,
     "campaign_id": 4,
@@ -40,18 +40,18 @@
       "video": "veo-3.1-generate-001"
     },
     "requested_duration_seconds": 4,
-    "generation_time_seconds": 96,
+    "generation_time_seconds": 84,
     "reference_image_used": true,
     "scene_image": {
       "path": "generated/aurora-cold-brew-330ml-072326-beverage-cafe-vibrant-thumbnail.png",
-      "bytes": 1474137,
+      "bytes": 1490114,
       "width": 768,
       "height": 1376,
       "format": "PNG"
     },
     "video": {
       "path": "generated/aurora-cold-brew-330ml-072326-beverage-cafe-vibrant.mp4",
-      "bytes": 1229453,
+      "bytes": 1188817,
       "width": 720,
       "height": 1280,
       "fps": 24.0,
