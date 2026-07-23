@@ -72,3 +72,18 @@ Harness deviations from plan (recorded in task report): build_scene_image_prompt
 takes a typed Product (Phase 8), so the harness converts its row-dicts via
 Product.from_row; fashion category corrected "summer"→"top" so the case
 exercises the wearable archetype as the plan intends.
+
+## 2026-07-23 — checkpoint 4: Tasks 1-3 complete (mirrors .superpowers/sdd/progress.md)
+Task 1 (image comparison): 01e06d5..efdcbd4, review clean. 8/8 live cases
+(2 models x 4 cases incl. with-reference via GCS-mode product image).
+Reviewer independently opened the PNGs and confirmed the doc's gradings.
+Two disclosed adaptations: Product.from_row (typed signature), category
+summer->top (real seeded category, keeps wearable archetype).
+Task 2 (Veo polling consolidation): efdcbd4..3ef5c13, review clean. Helpers
+_wait_for_veo_operation/_extract_video_bytes; 3 call sites converted;
+generate_video_ad semantics + local-mode save path preserved byte-for-byte;
+8 new tests (first-ever coverage of these paths); 314 unit + 25 e2e green.
+Task 3 (Interactions prototype): 3ef5c13..ee63ee4, review clean. Probe ran
+live twice (4 videos generated). Headline: previous_interaction_id explicitly
+UNSUPPORTED for gemini-omni-flash-preview; interactions.get 500s on
+sync-created ids. Findings doc committed; decisive NO-GO input for Task 4.
