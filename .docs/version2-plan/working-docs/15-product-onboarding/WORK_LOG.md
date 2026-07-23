@@ -74,3 +74,10 @@ python-dotenv pinned in requirements. Docs updated to the make targets
 (SETUP_INSTRUCTIONS.md bundle section, DEMO_GUIDE.md Journey 15.4, Makefile help incl.
 GCS_BUCKET-is-optional guidance). Verified: graceful-skip JSON via `make demo-assets`,
 usage errors on missing FILE/SRC, ruff clean, 306 unit + 25 e2e pass. Pushed to PR #13.
+
+## 2026-07-23 — checkpoint 6: FINISHED (merged)
+PR #13 squash-merged into version_2 as 59cf08c (owner-approved). Post-merge cleanup
+done: worktree removed, local + remote branch version_2_product-onboarding deleted,
+main checkout version_2 rebased onto the merge and pushed. STATUS.md row 15 -> merged.
+Owner follow-up (documented in SETUP_INSTRUCTIONS.md): publish the demo-asset bundle
+(make demo-assets-build SRC=... -> upload to Drive -> set DEMO_ASSETS_DRIVE_ID).
