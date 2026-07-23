@@ -82,3 +82,13 @@ rests on conversation memory.
     (gitignored).
 - Next: working doc draft → owner gate (incl. lint fold-in proposal, agents-cli
   hybrid architecture decision, skills-vendor-on-branch flag).
+
+## 2026-07-23 — checkpoint 2: working doc approved (owner)
+
+Owner gate answers (verbatim):
+1. Working doc: "Yes — approved, write the plan" (hybrid pytest+agents-cli
+   architecture, 10-stage incremental plan, coverage matrix approved).
+2. Lint fold-in (ws10 item 4): "Yes — fold in as stage 0 (Recommended)".
+3. agents-cli skills vendor: "Keep on branch (Recommended)" — commit 3fd4879
+   stands, ships to client with the PR.
+Next: writing-plans → plan.md alongside this doc, then plan-approval gate.
