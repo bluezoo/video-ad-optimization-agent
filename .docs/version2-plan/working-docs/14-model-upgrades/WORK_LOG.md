@@ -111,3 +111,12 @@ agents correctly detected the tasks were already committed, made ZERO edits and
 ZERO commits, and instead independently re-verified them (incl. re-running the
 new tests and re-reviewing the efdcbd4..3ef5c13 diff). Branch state unchanged;
 tokens wasted, nothing else. Task 5 re-dispatched with a hardcoded task list.
+
+## 2026-07-23 — checkpoint 4 (cont.): Task 5 complete
+Task 5 (agent default -> gemini-3.6-flash): e10a3c2..712fa25, review clean,
+0 fix rounds. config.py:64 + authorized test edit + SETUP_INSTRUCTIONS +
+16-live-api-testing.md provenance amendment + stale-comment cleanups +
+Journey 14.1. 314 unit + 25 e2e green; test_config 12/12 on new default.
+Noted: scripts/deploy_ae_inline.py has 13 PRE-EXISTING ruff errors (verified
+byte-identical at base; not touched beyond the one comment word).
+Tasks 1-5 all complete; Task 4 resolved NO-GO. Entering verification.
