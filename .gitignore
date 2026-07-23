@@ -37,3 +37,9 @@ htmlcov/
 # OS
 .DS_Store
 .superpowers/
+
+# Local-first runtime asset dirs (Phase 15) — populated at runtime, never committed
+generated/
+selected/
+product-images/
+local_assets/
