@@ -1,0 +1,190 @@
+[
+  {
+    "eval_id": "list-all-products",
+    "query": "Show me all available products with their image links",
+    "inference_ok": true,
+    "error_message": null,
+    "actual_tool_calls": [
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "media_agent"
+        }
+      },
+      {
+        "name": "list_products",
+        "args": {
+          "include_urls": true
+        }
+      }
+    ],
+    "final_response_text": "Here are all 28 available products in the catalog:\n\n### \ud83e\udd64 Beverages & Quick Service Restaurant (QSR)\n* **ID 23**: `aurora-cold-brew-330ml`\n  * **Category**: Beverage\n  * **Image Filename**: `aurora-cold-brew-330ml.png` *(Status: Available)*\n* **ID 24**: `citrus-grove-sparkling-water-500ml`\n  * **Category**: Beverage\n  * **Image Filename**: `citrus-grove-sparkling-water-500ml.png` *(Status: Missing)*\n* **ID 25**: `smoky-brisket-stack-sandwich`\n  * **Category**: QSR Menu Item\n  * **Image Filename**: `smoky-brisket-stack-sandwich.png` *(Status: Missing)*\n\n### \ud83c\udfa7 Electronics & Home Appliances\n* **ID 26**: `pulse-anc-wireless-earbuds`\n  * **Category**: Electronics\n  * **Image Filename**: `pulse-anc-wireless-earbuds.png` *(Status: Missing)*\n* **ID 28**: `crispwave-air-fryer-5l`\n  * **Category**: Home Appliance\n  * **Image Filename**: `crispwave-air-fryer-5l.png` *(Status: Missing)*\n\n### \ud83e\ude91 Furniture\n* **ID 27**: `nordic-oak-lounge-chair`\n  * **Category**: Furniture\n  * **Image Filename**: `nordic-oak-lounge-chair.png` *(Status: Missing)*\n\n### \ud83d\udc57 Fashion & Apparel\n\n#### Dresses\n* **ID 4**: `blue-floral-maxi-dress` \u2014 Blue and yellow floral on white cotton (`blue-floral-maxi-dress.png`)\n* **ID 5**: `blue-floral-summer-dress` \u2014 Blue and yellow florals on white cotton (`blue-floral-summer-dress.png`)\n* **ID 12**: `elegant-black-cocktail-dress` \u2014 Black stretch crepe (`elegant-black-cocktail-dress.png`)\n* **ID 13**: `emerald-satin-slip-dress` \u2014 Emerald green satin (`emerald-satin-slip-dress.png`)\n* **ID 14**: `floral-midi-wrap-dress` \u2014 Pink and white chiffon (`floral-midi-wrap-dress.png`)\n* **ID 20**: `rust-boho-peasant-dress` \u2014 Rust orange cotton gauze (`rust-boho-peasant-dress.png`)\n\n#### Tops & Blouses\n* **ID 6**: `blush-ruffle-peplum-blouse` \u2014 Blush pink crepe (`blush-ruffle-peplum-blouse.png`)\n* **ID 16**: `ivory-lace-crochet-top` \u2014 Ivory cream crochet lace (`ivory-lace-crochet-top.png`)\n* **ID 18**: `navy-striped-breton-top` \u2014 Navy/white striped cotton jersey (`navy-striped-breton-top.png`)\n* **ID 21**: `sage-satin-camisole` \u2014 Sage green silky satin (`sage-satin-camisole.png`)\n* **ID 22**: `white-classic-button-blouse` \u2014 Crisp white cotton poplin (`white-classic-button-blouse.png`)\n\n#### Pants & Jeans\n* **ID 1**: `black-high-waist-trousers` \u2014 Classic black wool blend suiting (`black-high-waist-trousers.png`)\n* **ID 7**: `camel-pleated-culottes` \u2014 Warm camel crepe (`camel-pleated-culottes.png`)\n* **ID 9**: `cream-linen-palazzo-pants` \u2014 Cream lightweight linen (`cream-linen-palazzo-pants.png`)\n* **ID 15**: `indigo-straight-leg-jeans` \u2014 Medium indigo stretch denim (`indigo-straight-leg-jeans.png`)\n* **ID 19**: `olive-cargo-joggers` \u2014 Olive green twill cotton (`olive-cargo-joggers.png`)\n\n#### Skirts\n* **ID 3**: `black-pleated-midi-skirt` \u2014 Black flowy chiffon (`black-pleated-midi-skirt.png`)\n* **ID 10**: `denim-a-line-mini-skirt` \u2014 Light blue wash cotton denim (`denim-a-line-mini-skirt.png`)\n* **ID 17**: `leopard-print-pencil-skirt` \u2014 Leopard print stretch ponte (`leopard-print-pencil-skirt.png`)\n\n#### Outerwear\n* **ID 2**: `black-leather-moto-jacket` \u2014 Genuine black leather (`black-leather-moto-jacket.png`)\n* **ID 8**: `camel-wool-overcoat` \u2014 Camel tan wool-cashmere blend (`camel-wool-overcoat.png`)\n* **ID 11**: `dusty-rose-blazer` \u2014 Dusty rose stretch suiting (`dusty-rose-blazer.png`)\n\n---\n\nLet me know if you would like to generate an ad video using any of these products!",
+    "dimensions": {
+      "tools": {
+        "score": 0.0,
+        "threshold": 1.0,
+        "passed": false
+      },
+      "trajectory": {
+        "score": 0.0,
+        "threshold": 1.0,
+        "passed": false
+      },
+      "answer": {
+        "score": 1.0,
+        "threshold": 0.75,
+        "passed": true
+      }
+    }
+  },
+  {
+    "eval_id": "list-products-by-category",
+    "query": "List all dress products",
+    "inference_ok": true,
+    "error_message": null,
+    "actual_tool_calls": [
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "media_agent"
+        }
+      },
+      {
+        "name": "list_products",
+        "args": {
+          "category": "dress"
+        }
+      }
+    ],
+    "final_response_text": "Here are the dress products available in the catalog:\n\n1. **Blue Floral Maxi Dress** (ID: 4)\n   - **Style:** Tiered maxi dress\n   - **Color:** Blue and yellow floral on white\n   - **Fabric:** Lightweight cotton\n\n2. **Blue Floral Summer Dress** (ID: 5)\n   - **Style:** Tiered midi dress\n   - **Color:** Blue and yellow florals on white\n   - **Fabric:** Lightweight cotton\n\n3. **Elegant Black Cocktail Dress** (ID: 12)\n   - **Style:** Fitted cocktail dress\n   - **Color:** Classic black\n   - **Fabric:** Stretch crepe\n\n4. **Emerald Satin Slip Dress** (ID: 13)\n   - **Style:** Bias-cut slip dress\n   - **Color:** Rich emerald green\n   - **Fabric:** Luxurious satin\n\n5. **Floral Midi Wrap Dress** (ID: 14)\n   - **Style:** Midi wrap dress\n   - **Color:** Pink and white\n   - **Fabric:** Flowing chiffon\n\n6. **Rust Boho Peasant Dress** (ID: 20)\n   - **Style:** Bohemian peasant dress\n   - **Color:** Warm rust orange\n   - **Fabric:** Textured cotton gauze\n\n---\n\nLet me know if you'd like to generate a video ad for any of these dresses using our two-stage pipeline!",
+    "dimensions": {
+      "tools": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "trajectory": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "answer": {
+        "score": 1.0,
+        "threshold": 0.75,
+        "passed": true
+      }
+    }
+  },
+  {
+    "eval_id": "get-variation-presets",
+    "query": "What variation presets are available for video generation?",
+    "inference_ok": true,
+    "error_message": null,
+    "actual_tool_calls": [
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "media_agent"
+        }
+      },
+      {
+        "name": "get_variation_presets",
+        "args": {}
+      }
+    ],
+    "final_response_text": "Here are the available preset variations for video generation, grouped by category:\n\n---\n\n### 1. **Diversity Presets** (Focus on model ethnicity, settings, and moods)\n* **asian-urban-confident**: Asian model, urban setting, confident mood, natural lighting, walking activity.\n* **european-studio-elegant**: European model, studio setting, elegant mood, studio lighting, posing activity.\n* **african-rooftop-bold**: African model, rooftop setting, bold mood, golden lighting, standing activity.\n* **latina-beach-playful**: Latina model, beach setting, playful mood, natural lighting, walking activity.\n* **south-asian-garden-romantic**: South Asian model, garden setting, romantic mood, soft lighting, walking activity.\n\n---\n\n### 2. **Settings Presets** (Focus on environment, time, and atmosphere)\n* **beach-summer**: Beach setting, playful mood, natural lighting, walking activity.\n* **urban-night**: Urban setting, bold mood, neon lighting, walking activity.\n* **cafe-morning**: Cafe setting, sophisticated mood, natural lighting, sitting activity.\n* **luxury-interior**: Luxury interior setting, elegant mood, soft lighting, walking activity.\n* **nature-fall**: Nature setting, serene mood, golden lighting, walking activity.\n\n---\n\n### 3. **Moods Presets** (Focus on visual tone and emotional feel)\n* **romantic-soft**: Romantic mood, garden setting, soft lighting.\n* **energetic-dynamic**: Energetic mood, urban setting, natural lighting.\n* **mysterious-moody**: Mysterious mood, studio setting, moody lighting.\n* **playful-fun**: Playful mood, beach setting, natural lighting, dancing activity.\n* **confident-bold**: Confident mood, rooftop setting, dramatic lighting.\n\n---\n\n### **Custom Parameter Options**\nIn addition to these presets, you can customize individual parameters when generating videos:\n* **Presentation Mode**: `auto` (default by category), `with_model` (wearables), `product_only`\n* **Model Ethnicity**: `asian`, `european`, `african`, `latina`, `south-asian`, `diverse`\n* **Setting**: `studio`, `beach`, `urban`, `cafe`, `rooftop`, `garden`, `nature`, `luxury-interior`, etc.\n* **Mood**: `elegant`, `romantic`, `bold`, `playful`, `sophisticated`, `energetic`, `serene`, `mysterious`, `confident`\n* **Lighting**: `natural`, `studio`, `dramatic`, `soft`, `golden`, `neon`, `moody`\n* **Activity**: `walking`, `standing`, `sitting`, `dancing`, `spinning`, `posing`\n* **Camera Movement**: `orbit`, `pan`, `dolly`, `static`, `tracking`, `crane`\n* **Time of Day**: `golden-hour`, `sunrise`, `day`, `sunset`, `dusk`, `night`\n* **Visual Style**: `cinematic`, `editorial`, `commercial`, `artistic`\n* **Energy**: `calm`, `moderate`, `dynamic`, `high-energy`\n\nLet me know if you'd like to generate a video using one of these presets or custom parameters!",
+    "dimensions": {
+      "tools": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "trajectory": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "answer": {
+        "score": 1.0,
+        "threshold": 0.75,
+        "passed": true
+      }
+    }
+  },
+  {
+    "eval_id": "list-campaign-videos",
+    "query": "List all videos for campaign 1",
+    "inference_ok": true,
+    "error_message": null,
+    "actual_tool_calls": [
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "media_agent"
+        }
+      },
+      {
+        "name": "list_campaign_videos",
+        "args": {
+          "campaign_id": 1
+        }
+      }
+    ],
+    "final_response_text": "Here are the videos generated for **Campaign 1** (*Blue Floral Maxi Dress - Westfield Century City*):\n\n### 1. **Video ID #1**\n* **Product:** Blue Floral Maxi Dress (ID: 4)\n* **Variation:** `asian-beach-romantic`\n  * **Model Ethnicity:** Asian\n  * **Setting:** Beach\n  * **Mood:** Romantic\n* **Status:** `activated`\n* **Duration:** 8 seconds\n* **File:** `blue-floral-maxi-dress-122025-asian-beach-romantic.mp4`\n\n---\n\n### 2. **Video ID #2**\n* **Product:** Blue Floral Maxi Dress (ID: 4)\n* **Variation:** `european-urban-bold`\n  * **Model Ethnicity:** European\n  * **Setting:** Urban\n  * **Mood:** Bold\n* **Status:** `activated`\n* **Duration:** 8 seconds\n* **File:** `blue-floral-maxi-dress-122025-european-urban-bold.mp4`\n\n---\n\n### 3. **Video ID #3**\n* **Product:** Blue Floral Maxi Dress (ID: 4)\n* **Variation:** `latina-beach-romantic`\n  * **Model Ethnicity:** Latina\n  * **Setting:** Beach\n  * **Mood:** Romantic\n* **Status:** `activated`\n* **Duration:** 8 seconds\n* **File:** `blue-floral-maxi-dress-122225-latina-beach-romantic.mp4`",
+    "dimensions": {
+      "tools": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "trajectory": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "answer": {
+        "score": 1.0,
+        "threshold": 0.75,
+        "passed": true
+      }
+    }
+  },
+  {
+    "eval_id": "list-products-beverage",
+    "query": "List the beverage products",
+    "inference_ok": true,
+    "error_message": null,
+    "actual_tool_calls": [
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "media_agent"
+        }
+      },
+      {
+        "name": "list_products",
+        "args": {
+          "category": "beverage"
+        }
+      }
+    ],
+    "final_response_text": "Here are the available beverage products in the catalog:\n\n1. **Aurora Cold Brew (330ml)**\n   * **Product ID:** 23\n   * **Filename:** `aurora-cold-brew-330ml.png`\n   * **Image Status:** Available\n\n2. **Citrus Grove Sparkling Water (500ml)**\n   * **Product ID:** 24\n   * **Filename:** `citrus-grove-sparkling-water-500ml.png`\n   * **Image Status:** Missing\n\nLet me know if you'd like to generate a video ad or view details for any of these products!",
+    "dimensions": {
+      "tools": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "trajectory": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "answer": {
+        "score": 1.0,
+        "threshold": 0.75,
+        "passed": true
+      }
+    }
+  }
+]

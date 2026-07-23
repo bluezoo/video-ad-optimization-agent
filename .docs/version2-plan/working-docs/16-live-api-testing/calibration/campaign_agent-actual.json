@@ -1,0 +1,190 @@
+[
+  {
+    "eval_id": "list-all-campaigns",
+    "query": "What campaigns do we have?",
+    "inference_ok": true,
+    "error_message": null,
+    "actual_tool_calls": [
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "campaign_agent"
+        }
+      },
+      {
+        "name": "list_campaigns",
+        "args": {}
+      }
+    ],
+    "final_response_text": "We currently have **4 active product-centric ad campaigns**:\n\n1. **Blue Floral Maxi Dress - Westfield Century City**\n   - **ID:** `1`\n   - **Product:** Blue Floral Maxi Dress (ID: `4`, Color: Blue and yellow floral on white)\n   - **Location:** Westfield Century City, Los Angeles, CA\n   - **Category:** Summer\n   - **Status:** Active\n   - **Video Count:** 3\n\n2. **Elegant Black Cocktail Dress - Bloomingdale's 59th Street**\n   - **ID:** `2`\n   - **Product:** Elegant Black Cocktail Dress (ID: `12`, Color: Classic black)\n   - **Location:** Bloomingdale's 59th Street, New York, NY\n   - **Category:** Formal\n   - **Status:** Active\n   - **Video Count:** 1\n\n3. **Black High Waist Trousers - Water Tower Place**\n   - **ID:** `3`\n   - **Product:** Black High Waist Trousers (ID: `1`, Color: Classic black)\n   - **Location:** Water Tower Place, Chicago, IL\n   - **Category:** Professional\n   - **Status:** Active\n   - **Video Count:** 3\n\n4. **Sage Satin Camisole - The Grove**\n   - **ID:** `4`\n   - **Product:** Sage Satin Camisole (ID: `21`, Color: Soft sage green)\n   - **Location:** The Grove, Los Angeles, CA\n   - **Category:** Essentials\n   - **Status:** Active\n   - **Video Count:** 3\n\n---\n\n### What would you like to do next?\n- **View Campaign Details:** Inspect full video list, metrics summary, and product info for a specific campaign.\n- **Create a New Campaign:** Pair an existing or new product with a store location.\n- **View Locations on Map:** Show geographical locations of all campaigns.",
+    "dimensions": {
+      "tools": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "trajectory": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "answer": {
+        "score": 0.0,
+        "threshold": 0.75,
+        "passed": false
+      }
+    }
+  },
+  {
+    "eval_id": "get-campaign-details",
+    "query": "Show me the details of campaign 2",
+    "inference_ok": true,
+    "error_message": null,
+    "actual_tool_calls": [
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "campaign_agent"
+        }
+      },
+      {
+        "name": "get_campaign",
+        "args": {
+          "campaign_id": 2
+        }
+      }
+    ],
+    "final_response_text": "Here are the details for **Campaign #2**:\n\n### \ud83d\udccb Campaign Overview\n* **Campaign Name:** Elegant Black Cocktail Dress - Bloomingdale's 59th Street\n* **Campaign ID:** 2\n* **Status:** `Active`\n* **Category:** Formal\n* **Location:** Bloomingdale's 59th Street, New York, NY\n* **Created:** July 23, 2026\n\n---\n\n### \ud83d\udc57 Associated Product\n* **Product Name:** `elegant-black-cocktail-dress` (ID: 12)\n* **Category:** Dress\n* **Color:** Classic Black\n* **Style:** Fitted cocktail dress\n\n---\n\n### \ud83d\udcca Performance Metrics (Last 30 Days)\n* **Total Impressions:** 45,627\n* **Total Circulation:** 217,016\n* **Total Revenue:** $2,103.43\n* **RPM (Revenue per 1,000 Impressions):** $46.10\n* **Average Dwell Time:** 8.2 seconds\n\n---\n\n### \ud83c\udfa5 Videos (1)\n* **Video ID:** 4\n* **Variation Name:** `diverse-rooftop-sophisticated`\n* **Status:** `Activated`\n* **Duration:** 8 seconds",
+    "dimensions": {
+      "tools": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "trajectory": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "answer": {
+        "score": 0.0,
+        "threshold": 0.75,
+        "passed": false
+      }
+    }
+  },
+  {
+    "eval_id": "get-campaign-locations",
+    "query": "Show me all store locations",
+    "inference_ok": true,
+    "error_message": null,
+    "actual_tool_calls": [
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "campaign_agent"
+        }
+      },
+      {
+        "name": "get_campaign_locations",
+        "args": {}
+      },
+      {
+        "name": "list_campaigns",
+        "args": {}
+      }
+    ],
+    "final_response_text": "Here are the store locations currently running ad campaigns across our retail network:\n\n### 1. **Westfield Century City**\n* **Location:** Los Angeles, CA\n* **Campaign:** Blue Floral Maxi Dress - Westfield Century City\n* **Product:** Blue Floral Maxi Dress\n* **Status:** Active\n\n---\n\n### 2. **Bloomingdale's 59th Street**\n* **Location:** New York, NY\n* **Campaign:** Elegant Black Cocktail Dress - Bloomingdale's 59th Street\n* **Product:** Elegant Black Cocktail Dress\n* **Status:** Active\n\n---\n\n### 3. **Water Tower Place**\n* **Location:** Chicago, IL\n* **Campaign:** Black High Waist Trousers - Water Tower Place\n* **Product:** Black High Waist Trousers\n* **Status:** Active\n\n---\n\n### 4. **The Grove**\n* **Location:** Los Angeles, CA\n* **Campaign:** Sage Satin Camisole - The Grove\n* **Product:** Sage Satin Camisole\n* **Status:** Active\n\n---\n\n### Need to expand?\nYou can easily create a new campaign for an existing product at a new store location, or onboard a new product into our catalog!",
+    "dimensions": {
+      "tools": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "trajectory": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "answer": {
+        "score": 1.0,
+        "threshold": 0.75,
+        "passed": true
+      }
+    }
+  },
+  {
+    "eval_id": "create-campaign-beverage",
+    "query": "Create a campaign for the Aurora cold brew at Target Downtown in Austin, Texas",
+    "inference_ok": true,
+    "error_message": null,
+    "actual_tool_calls": [
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "campaign_agent"
+        }
+      },
+      {
+        "name": "list_campaigns",
+        "args": {}
+      },
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "media_agent"
+        }
+      },
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "campaign_agent"
+        }
+      },
+      {
+        "name": "create_product",
+        "args": {
+          "description": "Cold brew coffee 330ml",
+          "name": "Aurora Cold Brew 330ml",
+          "category": "beverage",
+          "attributes": {
+            "volume_ml": 330
+          }
+        }
+      },
+      {
+        "name": "generate_product_image",
+        "args": {
+          "product_id": 399
+        }
+      },
+      {
+        "name": "create_campaign",
+        "args": {
+          "state": "Texas",
+          "city": "Austin",
+          "store_name": "Target Downtown",
+          "product_id": 399
+        }
+      }
+    ],
+    "final_response_text": "The campaign for **Aurora Cold Brew 330ml** at **Target Downtown** in **Austin, Texas** has been created successfully!\n\n### Summary of Actions:\n1. **Product Onboarded:**\n   - **Product Name:** Aurora Cold Brew 330ml (Product ID: `399`)\n   - **Category:** Beverage\n   - **Reference Image:** Clean catalog image generated and set to `available`.\n\n2. **Campaign Created:**\n   - **Campaign ID:** `5`\n   - **Campaign Name:** `Aurora Cold Brew 330Ml - Target Downtown`\n   - **Location:** Target Downtown, Austin, Texas\n   - **Status:** `draft`\n   - **Category Theme:** `always-on`\n\n---\n\n### Next Steps:\n- **Generate Ad Videos:** You can work with the **Media Agent** to generate video ad creatives for this product and campaign using `generate_video_from_product` or creative variations for A/B testing.\n- **Activate Videos:** Once videos are created, use the **Review Agent** to activate them so they can air on in-store screens.",
+    "dimensions": {
+      "tools": {
+        "score": 0.0,
+        "threshold": 1.0,
+        "passed": false
+      },
+      "trajectory": {
+        "score": 0.0,
+        "threshold": 1.0,
+        "passed": false
+      },
+      "answer": {
+        "score": 1.0,
+        "threshold": 0.75,
+        "passed": true
+      }
+    }
+  }
+]

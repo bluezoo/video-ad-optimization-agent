@@ -1,0 +1,148 @@
+[
+  {
+    "eval_id": "route-to-campaign-agent-list",
+    "query": "List all campaigns",
+    "inference_ok": true,
+    "error_message": null,
+    "actual_tool_calls": [
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "campaign_agent"
+        }
+      },
+      {
+        "name": "list_campaigns",
+        "args": {}
+      }
+    ],
+    "final_response_text": "Here are all the current ad campaigns:\n\n1. **Blue Floral Maxi Dress - Westfield Century City**\n   - **ID:** 1\n   - **Product:** Blue Floral Maxi Dress (`blue-floral-maxi-dress`, ID: 4)\n   - **Location:** Los Angeles, CA (Westfield Century City)\n   - **Category/Theme:** Summer\n   - **Status:** Active\n   - **Videos:** 3\n\n2. **Elegant Black Cocktail Dress - Bloomingdale's 59th Street**\n   - **ID:** 2\n   - **Product:** Elegant Black Cocktail Dress (`elegant-black-cocktail-dress`, ID: 12)\n   - **Location:** New York, NY (Bloomingdale's 59th Street)\n   - **Category/Theme:** Formal\n   - **Status:** Active\n   - **Videos:** 1\n\n3. **Black High Waist Trousers - Water Tower Place**\n   - **ID:** 3\n   - **Product:** Black High Waist Trousers (`black-high-waist-trousers`, ID: 1)\n   - **Location:** Chicago, IL (Water Tower Place)\n   - **Category/Theme:** Professional\n   - **Status:** Active\n   - **Videos:** 3\n\n4. **Sage Satin Camisole - The Grove**\n   - **ID:** 4\n   - **Product:** Sage Satin Camisole (`sage-satin-camisole`, ID: 21)\n   - **Location:** Los Angeles, CA (The Grove)\n   - **Category/Theme:** Essentials\n   - **Status:** Active\n   - **Videos:** 3\n\n---\n\n*Note: Each campaign is tied to a single product at a specific store location. You can create additional campaigns for the same product at different store locations or onboard new products at any time!*",
+    "dimensions": {
+      "tools": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "trajectory": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "answer": {
+        "score": 0.0,
+        "threshold": 0.75,
+        "passed": false
+      }
+    }
+  },
+  {
+    "eval_id": "route-to-media-agent-products",
+    "query": "Show me all available products",
+    "inference_ok": true,
+    "error_message": null,
+    "actual_tool_calls": [
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "media_agent"
+        }
+      },
+      {
+        "name": "list_products",
+        "args": {}
+      }
+    ],
+    "final_response_text": "Here are the available products in the catalog (28 total):\n\n### \ud83d\udc57 Apparel & Fashion\n\n#### **Dresses**\n* **ID 4:** `blue-floral-maxi-dress` \u2014 Tiered maxi dress (Blue & yellow floral on white cotton)\n* **ID 5:** `blue-floral-summer-dress` \u2014 Tiered midi dress (Blue & yellow florals on white cotton)\n* **ID 12:** `elegant-black-cocktail-dress` \u2014 Fitted cocktail dress (Classic black stretch crepe)\n* **ID 13:** `emerald-satin-slip-dress` \u2014 Bias-cut slip dress (Emerald green satin)\n* **ID 14:** `floral-midi-wrap-dress` \u2014 Midi wrap dress (Pink & white chiffon)\n* **ID 20:** `rust-boho-peasant-dress` \u2014 Bohemian peasant dress (Warm rust orange cotton gauze)\n\n#### **Tops**\n* **ID 6:** `blush-ruffle-peplum-blouse` \u2014 Feminine peplum blouse (Blush pink crepe)\n* **ID 16:** `ivory-lace-crochet-top` \u2014 Bohemian crochet top (Ivory lace)\n* **ID 18:** `navy-striped-breton-top` \u2014 Classic Breton top (Navy & white stripes)\n* **ID 21:** `sage-satin-camisole` \u2014 Drapey camisole (Soft sage green satin)\n* **ID 22:** `white-classic-button-blouse` \u2014 Tailored button-down (Crisp white poplin)\n\n#### **Pants**\n* **ID 1:** `black-high-waist-trousers` \u2014 Tailored wide-leg trousers (Classic black wool blend)\n* **ID 7:** `camel-pleated-culottes` \u2014 Cropped pleated culottes (Warm camel crepe)\n* **ID 9:** `cream-linen-palazzo-pants` \u2014 Flowing palazzo pants (Natural cream linen)\n* **ID 15:** `indigo-straight-leg-jeans` \u2014 Classic straight-leg jeans (Indigo stretch denim)\n* **ID 19:** `olive-cargo-joggers` \u2014 Modern cargo joggers (Olive green twill)\n\n#### **Outerwear**\n* **ID 2:** `black-leather-moto-jacket` \u2014 Motorcycle jacket (Black leather)\n* **ID 8:** `camel-wool-overcoat` \u2014 Classic wool overcoat (Camel tan wool-cashmere)\n* **ID 11:** `dusty-rose-blazer` \u2014 Tailored single-button blazer (Dusty rose pink)\n\n#### **Skirts**\n* **ID 3:** `black-pleated-midi-skirt` \u2014 Accordion pleated midi skirt (Black chiffon)\n* **ID 10:** `denim-a-line-mini-skirt` \u2014 Classic A-line mini skirt (Light blue denim)\n* **ID 17:** `leopard-print-pencil-skirt` \u2014 Fitted pencil skirt (Leopard print)\n\n---\n\n### \ud83e\udd64 Beverages & Food\n* **ID 23:** `aurora-cold-brew-330ml` \u2014 Cold Brew Coffee\n* **ID 24:** `citrus-grove-sparkling-water-500ml` \u2014 Sparkling Water\n* **ID 25:** `smoky-brisket-stack-sandwich` \u2014 QSR Menu Item\n\n---\n\n### \ud83c\udfa7 Electronics & Home\n* **ID 26:** `pulse-anc-wireless-earbuds` \u2014 Wireless Earbuds\n* **ID 27:** `nordic-oak-lounge-chair` \u2014 Furniture\n* **ID 28:** `crispwave-air-fryer-5l` \u2014 Air Fryer\n\n---\n\nLet me know if you would like to generate a video ad for any of these products using our **Two-Stage Generation Pipeline**! You can specify setting, mood, lighting, model ethnicity, or camera style.",
+    "dimensions": {
+      "tools": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "trajectory": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "answer": {
+        "score": 1.0,
+        "threshold": 0.75,
+        "passed": true
+      }
+    }
+  },
+  {
+    "eval_id": "route-to-review-agent-table",
+    "query": "Show me the video review table",
+    "inference_ok": true,
+    "error_message": null,
+    "actual_tool_calls": [
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "review_agent"
+        }
+      },
+      {
+        "name": "get_video_review_table",
+        "args": {}
+      }
+    ],
+    "final_response_text": "Here is the video review table showing all existing videos and their current status:\n\n---\n\n## \ud83d\udfe2 Video #1 \u2014 LIVE\n**\ud83d\udce6 Product Details**\n- **Name:** blue-floral-maxi-dress\n- **Category:** dress | **Color:** blue and yellow floral on white\n- **Style:** tiered maxi dress | **Fabric:** lightweight cotton\n\n**\ud83d\udccd Location**\n- **Store:** Westfield Century City\n- **Location:** Los Angeles, CA\n\n**\ud83c\udfac Video Info**\n- **Variation:** asian-beach-romantic\n- **Model:** asian | **Setting:** beach | **Mood:** romantic\n- **Duration:** 8s | **Pipeline:** two-stage\n- **Created:** 2026-07-23 03:52:31\n\n---\n\n## \ud83d\udfe2 Video #2 \u2014 LIVE\n**\ud83d\udce6 Product Details**\n- **Name:** blue-floral-maxi-dress\n- **Category:** dress | **Color:** blue and yellow floral on white\n- **Style:** tiered maxi dress | **Fabric:** lightweight cotton\n\n**\ud83d\udccd Location**\n- **Store:** Westfield Century City\n- **Location:** Los Angeles, CA\n\n**\ud83c\udfac Video Info**\n- **Variation:** european-urban-bold\n- **Model:** european | **Setting:** urban | **Mood:** bold\n- **Duration:** 8s | **Pipeline:** two-stage\n- **Created:** 2026-07-23 03:52:31\n\n---\n\n## \ud83d\udfe2 Video #3 \u2014 LIVE\n**\ud83d\udce6 Product Details**\n- **Name:** blue-floral-maxi-dress\n- **Category:** dress | **Color:** blue and yellow floral on white\n- **Style:** tiered maxi dress | **Fabric:** lightweight cotton\n\n**\ud83d\udccd Location**\n- **Store:** Westfield Century City\n- **Location:** Los Angeles, CA\n\n**\ud83c\udfac Video Info**\n- **Variation:** latina-beach-romantic\n- **Model:** latina | **Setting:** beach | **Mood:** romantic\n- **Duration:** 8s | **Pipeline:** two-stage\n- **Created:** 2026-07-23 03:52:31\n\n---\n\n## \ud83d\udfe2 Video #4 \u2014 LIVE\n**\ud83d\udce6 Product Details**\n- **Name:** elegant-black-cocktail-dress\n- **Category:** dress | **Color:** classic black\n- **Style:** fitted cocktail dress | **Fabric:** stretch crepe\n\n**\ud83d\udccd Location**\n- **Store:** Bloomingdale's 59th Street\n- **Location:** New York, NY\n\n**\ud83c\udfac Video Info**\n- **Variation:** diverse-rooftop-sophisticated\n- **Model:** diverse | **Setting:** rooftop | **Mood:** sophisticated\n- **Duration:** 8s | **Pipeline:** two-stage\n- **Created:** 2026-07-23 03:52:31\n\n---\n\n## \ud83d\udfe2 Video #5 \u2014 LIVE\n**\ud83d\udce6 Product Details**\n- **Name:** black-high-waist-trousers\n- **Category:** pants | **Color:** classic black\n- **Style:** tailored wide-leg trousers | **Fabric:** wool blend suiting\n\n**\ud83d\udccd Location**\n- **Store:** Water Tower Place\n- **Location:** Chicago, IL\n\n**\ud83c\udfac Video Info**\n- **Variation:** african-studio-sophisticated\n- **Model:** african | **Setting:** studio | **Mood:** sophisticated\n- **Duration:** 8s | **Pipeline:** two-stage\n- **Created:** 2026-07-23 03:52:31\n\n---\n\n## \ud83d\udfe2 Video #6 \u2014 LIVE\n**\ud83d\udce6 Product Details**\n- **Name:** black-high-waist-trousers\n- **Category:** pants | **Color:** classic black\n- **Style:** tailored wide-leg trousers | **Fabric:** wool blend suiting\n\n**\ud83d\udccd Location**\n- **Store:** Water Tower Place\n- **Location:** Chicago, IL\n\n**\ud83c\udfac Video Info**\n- **Variation:** asian-cafe-sophisticated\n- **Model:** asian | **Setting:** cafe | **Mood:** sophisticated\n- **Duration:** 8s | **Pipeline:** two-stage\n- **Created:** 2026-07-23 03:52:31\n\n---\n\n## \ud83d\udfe2 Video #7 \u2014 LIVE\n**\ud83d\udce6 Product Details**\n- **Name:** black-high-waist-trousers\n- **Category:** pants | **Color:** classic black\n- **Style:** tailored wide-leg trousers | **Fabric:** wool blend suiting\n\n**\ud83d\udccd Location**\n- **Store:** Water Tower Place\n- **Location:** Chicago, IL\n\n**\ud83c\udfac Video Info**\n- **Variation:** latina-rooftop-bold\n- **Model:** latina | **Setting:** rooftop | **Mood:** bold\n- **Duration:** 8s | **Pipeline:** two-stage\n- **Created:** 2026-07-23 03:52:31\n\n---\n\n## \ud83d\udfe2 Video #8 \u2014 LIVE\n**\ud83d\udce6 Product Details**\n- **Name:** sage-satin-camisole\n- **Category:** top | **Color:** soft sage green\n- **Style:** drapey camisole | **Fabric:** silky satin\n\n**\ud83d\udccd Location**\n- **Store:** The Grove\n- **Location:** Los Angeles, CA\n\n**\ud83c\udfac Video Info**\n- **Variation:** african-studio-bold\n- **Model:** african | **Setting:** studio | **Mood:** bold\n- **Duration:** 8s | **Pipeline:** two-stage\n- **Created:** 2026-07-23 03:52:31\n\n---\n\n## \ud83d\udfe2 Video #9 \u2014 LIVE\n**\ud83d\udce6 Product Details**\n- **Name:** sage-satin-camisole\n- **Category:** top | **Color:** soft sage green\n- **Style:** drapey camisole | **Fabric:** silky satin\n\n**\ud83d\udccd Location**\n- **Store:** The Grove\n- **Location:** Los Angeles, CA\n\n**\ud83c\udfac Video Info**\n- **Variation:** asian-cafe-sophisticated\n- **Model:** asian | **Setting:** cafe | **Mood:** sophisticated\n- **Duration:** 8s | **Pipeline:** two-stage\n- **Created:** 2026-07-23 03:52:31\n\n---\n\n## \ud83d\udfe2 Video #10 \u2014 LIVE\n**\ud83d\udce6 Product Details**\n- **Name:** sage-satin-camisole\n- **Category:** top | **Color:** soft sage green\n- **Style:** drapey camisole | **Fabric:** silky satin\n\n**\ud83d\udccd Location**\n- **Store:** The Grove\n- **Location:** Los Angeles, CA\n\n**\ud83c\udfac Video Info**\n- **Variation:** european-urban-elegant\n- **Model:** european | **Setting:** urban | **Mood:** elegant\n- **Duration:** 8s | **Pipeline:** two-stage\n- **Created:** 2026-07-23 03:52:31\n\n---\n\n### **Summary**\n- **Pending Activation:** 0\n- **Live / Activated:** 10\n- **Total Shown:** 10\n\nAll existing videos are currently **Live**. If you generate new videos using the Media Agent or wish to inspect details, pause, or archive any video, let me know!",
+    "dimensions": {
+      "tools": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "trajectory": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "answer": {
+        "score": 1.0,
+        "threshold": 0.75,
+        "passed": true
+      }
+    }
+  },
+  {
+    "eval_id": "route-to-analytics-agent-metrics",
+    "query": "Get metrics for campaign 1",
+    "inference_ok": true,
+    "error_message": null,
+    "actual_tool_calls": [
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "analytics_agent"
+        }
+      },
+      {
+        "name": "get_campaign_metrics",
+        "args": {
+          "campaign_id": 1
+        }
+      }
+    ],
+    "final_response_text": "Here are the performance metrics for **Campaign 1: Blue Floral Maxi Dress - Westfield Century City** over the last 30 days:\n\n### \ud83d\udcca **Key Performance Indicators (Summary)**\n\n| Metric | Value | Retail Context / Notes |\n| :--- | :--- | :--- |\n| **Primary KPI: Revenue Per Impression (RPI)** | **$0.0596** | **$59.60 per 1,000 impressions** |\n| **Total Revenue Generated** | **$8,154.15** | Direct revenue tied to ad displays |\n| **Total Impressions** | **136,728** | Total ad displays across in-store screens |\n| **Total Circulation (Foot Traffic)** | **648,463** | Total shopper flow past screens (~21.1% conversion to impressions) |\n| **Average Dwell Time** | **8.1 seconds** | Strong engagement (>5s target) |\n| **Active Creatives** | **3 Videos** | Currently active ad variations |\n\n---\n\n### \ud83d\udcc8 **Performance Insights**\n* **High Dwell Time:** Shoppers are viewing the ad for an average of **8.1 seconds**, indicating high creative appeal and strong screen placement in high-visibility areas.\n* **Consistent RPI:** Revenue generation per display remains stable at ~$0.0596/impression.\n* **Weekend Spikes:** High circulation and impression totals consistently occur on weekends (Saturdays and Sundays reaching ~25k+ circulation and 5.3k+ impressions).\n\n---\n\n\ud83d\udca1 **Next Steps You Can Ask For:**\n1. **Compare Creatives:** See which individual video ad variation is driving the highest RPI (`compare_creatives_within_campaign`).\n2. **Generate Charts:** Create a bar chart or trendline visual for this campaign (`generate_metrics_visualization` or `generate_creative_comparison_chart`).\n3. **View Locations:** See store map locations with Google Maps links (`get_campaign_map_data`).",
+    "dimensions": {
+      "tools": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "trajectory": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "answer": {
+        "score": 0.0,
+        "threshold": 0.75,
+        "passed": false
+      }
+    }
+  }
+]
