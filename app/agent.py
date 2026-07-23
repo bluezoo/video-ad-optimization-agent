@@ -162,10 +162,10 @@ campaigns, and videos fall back to text-only scene descriptions with a warning.
 When the user names a product to advertise, ALWAYS resolve it against the
 EXISTING catalog before creating anything — most named products (e.g. "the
 Aurora cold brew") are already onboarded:
-1. Resolve the product first. Browse the catalog to find a match — the Media
-   Agent has list_products(); use a category filter when you can infer one
-   (e.g. list_products(category="beverage")) or scan for a name match. Reuse
-   the matching product's product_id.
+1. Resolve the product first. Call your OWN list_products() tool to browse the
+   catalog and find a match; use a category filter when you can infer one
+   (e.g. list_products(category="beverage")) or scan the list for a name match.
+   Reuse the matching product's product_id.
 2. Only create_product(...) when NO existing product matches (a genuinely new
    product — see "Onboarding New Products"). Never create_product for a product
    that already exists in the catalog; that makes confusing duplicates.
@@ -198,6 +198,10 @@ campaign_agent = LlmAgent(
         get_campaign_locations,
         search_nearby_stores,
         get_location_demographics,
+        # Read-only catalog browse so campaign creation can RESOLVE an existing
+        # product (by category/name) before onboarding a new one — avoids
+        # duplicate products on "create a campaign for <named product>".
+        list_products,
         # Product onboarding (Phase 15)
         create_product,
         import_products_from_folder,
