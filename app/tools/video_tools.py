@@ -577,13 +577,8 @@ async def generate_video_from_product(
                 archetype=archetype
             )
 
-            # Save scene image as thumbnail
-            if storage.get_storage_mode() == "gcs":
-                thumbnail_path = storage.save_video(thumbnail_filename, scene_image_bytes)
-            else:
-                thumbnail_path = os.path.join(GENERATED_DIR, thumbnail_filename)
-                with open(thumbnail_path, 'wb') as f:
-                    f.write(scene_image_bytes)
+            # Save scene image as thumbnail (storage seam handles local vs GCS)
+            thumbnail_path = storage.save_video(thumbnail_filename, scene_image_bytes)
             print(f"[DEBUG generate_video_from_product] Saved thumbnail: {thumbnail_path}")
 
             # Stage 2: Animate scene with Veo
@@ -652,13 +647,8 @@ async def generate_video_from_product(
         generation_time = int(time.time() - start_time)
         print(f"[DEBUG generate_video_from_product] Total generation time: {generation_time}s")
 
-        # Save video
-        if storage.get_storage_mode() == "gcs":
-            video_path = storage.save_video(video_filename, video_bytes)
-        else:
-            video_path = os.path.join(GENERATED_DIR, video_filename)
-            with open(video_path, 'wb') as f:
-                f.write(video_bytes)
+        # Save video (storage seam handles local vs GCS)
+        video_path = storage.save_video(video_filename, video_bytes)
         print(f"[DEBUG generate_video_from_product] Saved video: {video_path}")
 
         # Save metadata file
@@ -1797,11 +1787,21 @@ def list_products(category: str = None, include_urls: bool = True) -> dict:
             "image_filename": p.image_filename
         }
 
-        # Add public URL for product image
+        # Image URL policy (ws09): existence-checked public URL in GCS mode,
+        # no URL in local mode — image_status says what a UI can rely on.
         if include_urls and p.image_filename:
-            image_url = storage.get_public_url(f"product-images/{p.image_filename}")
-            if image_url:
-                product_data["image_url"] = image_url
+            image_available = False
+            try:
+                image_available = storage.product_image_exists(p.image_filename)
+            except Exception:
+                image_available = False
+            product_data["image_status"] = "available" if image_available else "missing"
+            if image_available:
+                image_url = storage.get_product_image_public_url(
+                    p.image_filename, check_exists=False
+                )
+                if image_url:
+                    product_data["image_url"] = image_url
 
         product_list.append(product_data)
 
@@ -1809,7 +1809,7 @@ def list_products(category: str = None, include_urls: bool = True) -> dict:
         "status": "success",
         "product_count": len(product_list),
         "products": product_list,
-        "note": "Click image_url links to view product images in browser"
+        "note": "image_status shows whether each product's reference image is stored; image_url is present only in GCS mode for images that exist"
     }
 
 

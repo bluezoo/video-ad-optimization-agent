@@ -74,7 +74,7 @@ MOCK_CAMPAIGNS = [
 ]
 
 # =============================================================================
-# REAL Videos in GCS (gs://kaggle-on-gcp-ad-campaign-assets/generated/)
+# REAL demo videos (generated/ prefix in whatever GCS bucket is configured)
 # =============================================================================
 # These are actual Veo-generated videos that exist in the bucket.
 # Each campaign gets multiple real videos with thumbnails.
@@ -389,3 +389,24 @@ def populate_mock_data() -> dict:
         "videos_created": videos_created,
         "metrics_created": metrics_created
     }
+
+
+def seed_demo_data() -> dict:
+    """Seed demo data per config.DEMO_DATASET (Phase 15 gated seeding).
+
+    fashion: the full demo — 22 fashion products, the retail core test set,
+    and 4 demo campaigns with activated videos and metrics (all idempotent).
+    none: seed nothing — schema-only empty catalog for from-scratch onboarding.
+
+    Reads config at call time so tests can monkeypatch app.config.DEMO_DATASET.
+    """
+    from .. import config
+    from .db import populate_products, populate_retail_test_products
+
+    if config.DEMO_DATASET is config.DemoDataset.NONE:
+        print("[DB] DEMO_DATASET=none — skipping demo seeding (empty catalog)")
+        return {"seeded": False}
+    populate_products()
+    populate_retail_test_products()
+    counts = populate_mock_data()
+    return {"seeded": True, **(counts or {})}

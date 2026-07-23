@@ -256,10 +256,6 @@ def init_database() -> None:
     # Create indexes for columns added by migrations
     create_migration_indexes()
 
-    # Populate products table
-    populate_products()
-    populate_retail_test_products()
-
 
 def create_migration_indexes() -> None:
     """Create indexes for columns added by migrations.

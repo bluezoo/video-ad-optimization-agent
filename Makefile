@@ -1,7 +1,7 @@
 # Makefile for Ad Campaign Agent
 # Compatible with agent-starter-pack deployment
 
-.PHONY: install dev playground deploy deploy-ae deploy-ae-global clean help test test-unit test-integration test-e2e test-all test-coverage setup-ae-permissions lint format
+.PHONY: install dev playground deploy deploy-ae deploy-ae-global clean help test test-unit test-integration test-e2e test-all test-coverage setup-ae-permissions lint format demo-assets demo-assets-from-file demo-assets-build
 
 # ============================================================================
 # LOCAL DEVELOPMENT
@@ -23,8 +23,9 @@ install-uv:
 	uv venv .venv
 	uv pip install -r app/requirements.txt
 
-## Run agent locally with ADK web UI
-dev:
+## Run agent locally with ADK web UI (auto-installs demo assets first; skips
+## gracefully if DEMO_ASSETS_DRIVE_ID is unset or assets are already installed)
+dev: demo-assets
 	@if [ -d ".venv" ]; then \
 		.venv/bin/adk web --port 8501; \
 	else \
@@ -37,6 +38,42 @@ playground: dev
 ## Run with pip-installed adk (no venv)
 dev-global:
 	adk web --port 8501
+
+# ============================================================================
+# DEMO ASSETS (Phase 15 — local-first Drive bundle)
+# ============================================================================
+
+## Download + verify + install the demo asset bundle into the local asset dirs.
+## Needs DEMO_ASSETS_DRIVE_ID in the environment (or app/.env, exported); with
+## it unset this prints a graceful skip. Re-runs are no-ops (marker file).
+demo-assets:
+	@if [ -d ".venv" ]; then \
+		.venv/bin/python -m scripts.demo_assets install; \
+	else \
+		python -m scripts.demo_assets install; \
+	fi
+
+## Install the bundle from a local zip instead of Drive.
+## Usage: make demo-assets-from-file FILE=demo-assets.zip
+demo-assets-from-file:
+	@test -n "$(FILE)" || { echo "Usage: make demo-assets-from-file FILE=<bundle.zip>"; exit 1; }
+	@if [ -d ".venv" ]; then \
+		.venv/bin/python -m scripts.demo_assets install --from-file "$(FILE)"; \
+	else \
+		python -m scripts.demo_assets install --from-file "$(FILE)"; \
+	fi
+
+## Build the demo asset bundle zip from a source folder (owner publishing step;
+## upload the zip to Google Drive, then set DEMO_ASSETS_DRIVE_ID).
+## Usage: make demo-assets-build SRC=<folder> [OUT=demo-assets.zip]
+OUT ?= demo-assets.zip
+demo-assets-build:
+	@test -n "$(SRC)" || { echo "Usage: make demo-assets-build SRC=<source-folder> [OUT=demo-assets.zip]"; exit 1; }
+	@if [ -d ".venv" ]; then \
+		.venv/bin/python -m scripts.demo_assets build --source "$(SRC)" --out "$(OUT)"; \
+	else \
+		python -m scripts.demo_assets build --source "$(SRC)" --out "$(OUT)"; \
+	fi
 
 # ============================================================================
 # DEPLOYMENT
@@ -236,6 +273,13 @@ help:
 	@echo "  make dev         - Run agent locally with ADK web UI (port 8501)"
 	@echo "  make playground  - Alias for 'make dev'"
 	@echo ""
+	@echo "DEMO ASSETS (local-first mode):"
+	@echo "  make demo-assets           - Download + install the demo asset bundle"
+	@echo "                               (needs DEMO_ASSETS_DRIVE_ID; skips gracefully if unset;"
+	@echo "                               runs automatically before 'make dev')"
+	@echo "  make demo-assets-from-file FILE=bundle.zip - Install from a local zip"
+	@echo "  make demo-assets-build SRC=<folder> [OUT=demo-assets.zip] - Build the bundle (owner step)"
+	@echo ""
 	@echo "DEPLOYMENT:"
 	@echo "  make deploy             - Deploy to Cloud Run (with Web UI)"
 	@echo "  make deploy-trace       - Deploy to Cloud Run with Cloud Trace"
@@ -279,9 +323,10 @@ help:
 	@echo "  For Vertex AI (recommended):"
 	@echo "    echo 'GOOGLE_GENAI_USE_VERTEXAI=TRUE' >> app/.env"
 	@echo "    echo 'GOOGLE_CLOUD_PROJECT=your_project' >> app/.env"
-	@echo "    echo 'GCS_BUCKET=your_bucket' >> app/.env"
 	@echo ""
 	@echo "  For AI Studio:"
 	@echo "    echo 'GOOGLE_GENAI_USE_VERTEXAI=FALSE' >> app/.env"
 	@echo "    echo 'GOOGLE_API_KEY=your_key' >> app/.env"
-	@echo "    echo 'GCS_BUCKET=your_bucket' >> app/.env"
+	@echo ""
+	@echo "  GCS_BUCKET is OPTIONAL: leave it unset for local-first mode (assets on disk);"
+	@echo "  set it only to store generated assets in GCS (required for cloud deploys)."

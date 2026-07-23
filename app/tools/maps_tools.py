@@ -479,8 +479,8 @@ def get_campaign_map_data(
             if include_products and camp["product_id"]:
                 product_image_url = None
                 if camp["product_image"]:
-                    product_image_url = storage.get_public_url(
-                        f"product-images/{camp['product_image']}"
+                    product_image_url = storage.get_product_image_public_url(
+                        camp["product_image"]
                     )
 
                 loc_data["product"] = {
@@ -508,7 +508,6 @@ def get_campaign_map_data(
 
                 video_list = []
                 for vid in videos:
-                    # Check if video actually exists in storage
                     video_url = None
                     video_exists = False
                     if vid["video_filename"]:
@@ -516,10 +515,6 @@ def get_campaign_map_data(
                             vid["video_filename"], check_exists=True
                         )
                         video_exists = video_url is not None
-                        if not video_exists:
-                            video_url = storage.get_video_public_url(
-                                vid["video_filename"], check_exists=False
-                            )
                     thumb_filename = (
                         vid["thumbnail_path"].split("/")[-1]
                         if vid["thumbnail_path"] and "/" in vid["thumbnail_path"]
@@ -532,7 +527,7 @@ def get_campaign_map_data(
                     video_list.append(
                         {
                             "id": vid["id"],
-                            "video_url": video_url if video_exists else None,
+                            "video_url": video_url,
                             "video_exists": video_exists,
                             "thumbnail_url": thumbnail_url,
                             "variation": vid["variation_name"],

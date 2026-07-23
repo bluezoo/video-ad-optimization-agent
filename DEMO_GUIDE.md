@@ -498,3 +498,85 @@ These are two different layers: an invalid `APP_MODE` value fails at **config
 load** (`ValueError`), while a valid-but-unimplemented value (`connected`) fails
 at **datasource resolution** (`RuntimeError`) the first time something actually
 needs audience data.
+
+### Workstream 15 — local-first storage, gated seeding, product onboarding
+
+Phase 15 made the app local-first (GCS is now an explicit opt-in: `GCS_BUCKET`
+unset ⇒ every asset lives under the project root and tool responses never
+contain `storage.googleapis.com` URLs), added `DEMO_DATASET=fashion|none` to
+gate demo seeding, and put three product-onboarding tools on the Campaign agent
+(`create_product`, `import_products_from_folder`, `generate_product_image`)
+plus a CLI twin (`scripts/onboard_products.py`) and a Drive-hosted demo-asset
+bundle (`scripts/demo_assets.py`). **Check your `app/.env` first:** if it still
+sets `GCS_BUCKET`, you are in GCS mode — comment that line out for these
+journeys.
+
+#### Journey 15.1 — from-scratch onboarding on an empty catalog
+
+```bash
+make reset-db
+DEMO_DATASET=none make dev
+```
+
+Then in the chat, in order:
+
+1. `Show me all products in the catalog` — **expect** `list_products` reports
+   **0 products** (empty catalog, nothing seeded).
+2. `Add a new product: Aurora Cold Brew 330ml, category beverage, a nitro cold
+   brew in a slim can, 330ml volume` — **expect** routing to the **Campaign
+   agent** and `create_product` returning success with
+   `image_status: "pending"`.
+3. `Generate a product image for Aurora Cold Brew` — **expect**
+   `generate_product_image` to run (real image-model call, ~30–90s), the image
+   to render inline as an artifact, and `image_status: "available"` — with
+   **no** `image_url` field (local mode has no public URLs).
+4. `Create a campaign for Aurora Cold Brew at Demo Store in Austin, Texas` —
+   **expect** a campaign named like "Aurora Cold Brew 330Ml - Demo Store".
+
+Full scripted version with per-scene assertions:
+`docs/demo-scenarios/from-scratch-onboarding.md`.
+
+#### Journey 15.2 — default demo unchanged, minus dead links
+
+```bash
+make reset-db
+make dev
+```
+
+**Expect:** the full fashion demo seeds as always (22 fashion + 6 retail-core
+products, 4 campaigns) — `DEMO_DATASET` defaults to `fashion`. Browse products:
+each item now carries `image_status` (`"available"`/`"missing"`); locally the
+seeded catalog shows `"missing"` until you install the demo-asset bundle
+(Journey 15.4) — what's gone is the old behavior of emitting
+`storage.googleapis.com` links that may or may not resolve. Metrics journeys
+(e.g. Act 4) are numerically unchanged.
+
+#### Journey 15.3 — CLI onboarding (terminal, no browser needed)
+
+```bash
+.venv/bin/python -m scripts.onboard_products create \
+  --name "Trail Shoe X" --category footwear --attr weight_grams=240
+.venv/bin/python -m scripts.onboard_products import-folder ~/my-product-photos \
+  --category homeware
+```
+
+**Expect:** JSON results identical in shape to the agent tools' responses (the
+CLI calls the very same functions); duplicates are skipped with a message, and
+imported images land under `product-images/` in the project root.
+
+#### Journey 15.4 — demo-asset bundle install (and graceful skip)
+
+```bash
+make demo-assets
+```
+
+(`make dev` also runs this automatically before starting the server; a local
+zip installs via `make demo-assets-from-file FILE=<bundle.zip>`.)
+
+**Expect (today, no Drive ID configured):** a graceful skip —
+`"Demo asset bundle not configured"` — and the app keeps working. Once a
+bundle is published and `DEMO_ASSETS_DRIVE_ID` is set in `app/.env`, the same
+command downloads, sha256-verifies, and installs the demo product images into
+`product-images/`; a second run reports already-installed. Building/publishing
+the bundle (`make demo-assets-build SRC=<folder>`) is documented in
+`SETUP_INSTRUCTIONS.md` ("Demo asset bundle").

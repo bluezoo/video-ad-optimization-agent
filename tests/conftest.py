@@ -89,10 +89,10 @@ def _ensure_main_db_exists():
     if not MAIN_DB_PATH.exists():
         # Import and initialize if main DB doesn't exist
         from app.database.db import init_database
-        from app.database.mock_data import populate_mock_data
+        from app.database.mock_data import seed_demo_data
 
         init_database()
-        populate_mock_data()
+        seed_demo_data()
 
 
 def _copy_main_db_to_temp():
@@ -163,11 +163,33 @@ def fresh_test_db():
 
     with patch("app.config.DB_PATH", db_path):
         from app.database.db import init_database
-        from app.database.mock_data import populate_mock_data
+        from app.database.mock_data import seed_demo_data
 
         init_database()
-        populate_mock_data()
+        seed_demo_data()
 
+        yield db_path
+
+    try:
+        os.unlink(db_path)
+    except OSError:
+        pass
+
+
+@pytest.fixture(scope="function")
+def empty_test_db():
+    """Schema-only database — the DEMO_DATASET=none / from-scratch state.
+
+    Phase 15: init_database() no longer seeds, so this is just init on a
+    temp file. Use for onboarding-tool and empty-catalog tests.
+    """
+    fd, db_path = tempfile.mkstemp(suffix=".db", prefix="test_empty_")
+    os.close(fd)
+
+    with patch("app.config.DB_PATH", db_path):
+        from app.database.db import init_database
+
+        init_database()
         yield db_path
 
     try:
@@ -213,6 +235,8 @@ def mock_storage_module():
         get_public_url=MagicMock(return_value="https://storage.googleapis.com/test-bucket/test.mp4"),
         get_video_public_url=MagicMock(return_value="https://storage.googleapis.com/test-bucket/video.mp4"),
         get_thumbnail_public_url=MagicMock(return_value="https://storage.googleapis.com/test-bucket/thumb.jpg"),
+        product_image_exists=MagicMock(return_value=True),
+        get_product_image_public_url=MagicMock(return_value="https://storage.googleapis.com/test-bucket/product-images/test.png"),
     ) as mocks:
         yield mocks
 

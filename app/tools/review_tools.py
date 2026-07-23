@@ -679,17 +679,16 @@ def get_video_review_table(
         status_counts = {"generated": 0, "activated": 0, "paused": 0, "archived": 0}
 
         for row in rows:
-            # Get public URLs for viewing - check if video actually exists in GCS
+            # Public URLs (ws09 policy): only for files that actually exist
             video_url = None
             video_exists_in_storage = False
             if row["video_filename"]:
                 video_url = storage.get_video_public_url(row["video_filename"], check_exists=True)
                 video_exists_in_storage = video_url is not None
-                # If file doesn't exist, still provide URL for reference but mark it
-                if not video_exists_in_storage:
-                    video_url = storage.get_video_public_url(row["video_filename"], check_exists=False)
-            # Product image URL (not thumbnail)
-            product_image_url = storage.get_public_url(f"product-images/{row['product_image']}") if row["product_image"] else None
+            product_image_url = (
+                storage.get_product_image_public_url(row["product_image"])
+                if row["product_image"] else None
+            )
 
             # Map status to display text
             status_display = {
@@ -851,15 +850,12 @@ def get_video_details(video_id: int) -> dict:
                 "message": f"Video {video_id} not found"
             }
 
-        # Get public URLs - check if video actually exists in GCS
+        # Public URLs (ws09 policy): only for files that actually exist
         video_url = None
         video_exists_in_storage = False
         if row["video_filename"]:
             video_url = storage.get_video_public_url(row["video_filename"], check_exists=True)
             video_exists_in_storage = video_url is not None
-            # If file doesn't exist, still provide URL for reference
-            if not video_exists_in_storage:
-                video_url = storage.get_video_public_url(row["video_filename"], check_exists=False)
 
         thumbnail_url = None
         if row["thumbnail_path"]:
