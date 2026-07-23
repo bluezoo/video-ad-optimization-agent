@@ -631,3 +631,61 @@ controls + GATE 2/3/4 hardening + eval DB isolation all done and committed;
 
 ## 2026-07-23 — Task 14 review: APPROVED (mirrors .superpowers/sdd/progress.md)
 Range 9b2a07f..512a82b (16 commits). Spec ✅ — every brief requirement and every owner-gate amendment (GATE 2 severities+negative controls, GATE 3 subject relaxation+answer re-judge, GATE 4 media re-judge+case re-inference, controller DB-isolation adjudication) verified with file:line evidence, provenance markers confirmed, no attribution trailers, lint green, 12/12 unit guards pass under the reviewer's own run. 0 Critical, 0 Important. 4 Minor recorded for final-review triage — headline: media re-judge lowers borderline-violation detection (p→p², owner-approved GATE-4 tradeoff; negative controls prove unambiguous violations still fail twice) → carry to Task 16 flakiness-watchlist docs. Task 14 COMPLETE: full `make test-live` GREEN 26 passed/0 failed (673.84s), root DB 4→4.
+
+## 2026-07-23 — Task 15: agents-cli grade/compare reporting layer (stage 7)
+
+**Built.** `scripts/eval_grade_report.py` converts a `record_actuals.py`
+`record_to` JSON dump into a `vertexai._genai.types.common.EvaluationDataset`
+trace file (constructed with the real SDK models for schema fidelity, not
+hand-rolled dicts), writes a minimal `metrics_to_run:
+[tool_use_quality, final_response_quality]` config, and invokes
+`agents-cli eval grade --traces --output --config` in the confirmed
+project-free mode. `make test-live-report` chains `record_actuals.py`
+(default eval set `review_agent.test.json`) into the conversion+grade step;
+`SKIP_RECORD=1` + `RECORD_JSON=<path>` reuses an existing recorder dump to
+avoid re-paying for live inference. Output (`artifacts/traces/`,
+`artifacts/grade_results/`) is gitignored. This is an INFORMATIONAL layer
+only — it does not gate `make test`, `make test-unit`, or `make test-live`.
+
+**Live-run evidence** (real Vertex AI Eval Service calls, `review_agent.test.json`,
+3 cases, all `inference_ok`):
+- First run, `agent_data.agents` omitted: `tool_use_quality_v1` mean 0.11
+  (0.0/0.33/0.0) vs. the harness's `tools`=pass(1.0) on all 3 — sharp
+  disagreement. Reading `rubric_verdicts[].reasoning` in the results JSON
+  showed the server-side adaptive-rubric generator assumes "no declared
+  tools" means the agent shouldn't call any, and penalizes every observed
+  `function_call` as a violation of that assumption.
+- Fix (in the conversion script, not the harness): introspect
+  `app.agent.root_agent` + `sub_agents` via the SDK's own
+  `AgentConfig.from_agent()` (same helper agents-cli's local inference
+  runner uses) and attach the resulting `agent_data.agents` map to every
+  case. Re-grading the SAME recorded traces with `SKIP_RECORD=1` (no new
+  inference) flipped `tool_use_quality_v1` to **1.0/1.0/1.0 — full
+  agreement** with the harness's `tools`/`trajectory` dimensions.
+- `final_response_quality_v1` stayed low (0.0/0.0/0.6) vs. the harness's
+  `answer`=pass(1.0) on all 3, even with declarations attached. Root cause
+  (structural, not fixed): `record_actuals.py`'s `_extract_actuals()` only
+  records tool call names/args, never the tool's return value, so the
+  judge's grounding rubrics see every tool call as returning nothing and
+  fail the final answer for not matching a fabricated null result — verified
+  by reading the rubric reasoning text directly. Closing this needs a
+  recorder-format change to `eval_harness.py`, which Task 15's constraints
+  explicitly forbid touching.
+
+**Fit verdict** (full writeup: `research/agents-cli-architecture.md` §"Task
+15 addendum", 2026-07-23): **KEEP as an informational reporting layer.**
+Not promoted to a gate — `final_response_quality_v1` is unreliable on this
+repo's traces today for a real, documented reason, and a 3-case sample is
+too small to justify a promotion regardless. Not dropped —
+`tool_use_quality_v1` is genuinely usable and in full agreement with the
+harness once tool declarations are attached (now automatic in the script).
+Follow-up noted for a future task: extend the recorder to persist tool
+return values so `final_response_quality_v1` can be re-evaluated.
+
+**Verification.** `make lint` green on touched files; `make test-unit` 319
+passed / 1 skipped (untouched — no `app/**/*.py` edits in this task). Live
+run produced `artifacts/grade_results/results_<ts>.json` + `.html` and
+`artifacts/traces/traces_<ts>.json` (all gitignored, not committed).
+
+Commits: `1384d94` (script + Makefile target + `.gitignore`), `407d24f`
+(research addendum).
