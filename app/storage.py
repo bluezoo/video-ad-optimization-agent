@@ -395,7 +395,7 @@ def get_thumbnail_public_url(filename: str, check_exists: bool = True) -> Option
     return get_public_url(f"generated/{filename}")
 
 
-def get_product_image_public_url(filename: str, check_exists: bool = True) -> Optional[str]:
+def get_product_image_public_url(filename: str, check_exists: bool = True) -> str | None:
     """Public URL for a product image, or None.
 
     None when not in GCS mode, or (by default) when the blob doesn't exist —
