@@ -211,6 +211,12 @@ benefits from a truthful live gate.
    first `make dev` (or `make demo-assets`) downloads, sha256-verifies, and
    installs into `product-images/`, and a second run is a marker no-op.
    Seeded products should then report `image_status: available` locally.
+
+   > **Amended (workstream 16, 2026-07-23, OWNER GATE 5):** DEFERRED by the
+   > owner — no asset source folder exists yet (the owner supplies it), so
+   > publishing stays an owner follow-up exactly as SETUP_INSTRUCTIONS.md
+   > documents it. The build/verify/install code remains covered by ws15's
+   > `test_demo_assets` (6/6) and the graceful "bundle not configured" skip.
 2. **Pin the live tier's storage mode and assert the URL policy (ws15).**
    Decide which storage mode live tests run in — recommend local-first
    (`GCS_BUCKET` unset), matching the demo default. Assert the ws09
