@@ -169,3 +169,56 @@ benefits from a truthful live gate.
    GCS_BUCKET before the restore reload), or have the session fixture pin
    `app.config.GCS_BUCKET` as a module attribute too, so reloads can't
    drift from what tests were promised.
+
+## Execution directives (owner, 2026-07-23) — binding for this workstream
+
+> **Amended (owner directive, 2026-07-23, pre-kickoff):** how this workstream
+> must run, not just what it must build. These are process constraints on the
+> same level as the working-doc/plan gates — deviations need explicit owner
+> approval.
+
+1. **Coverage bar: everything, output-validated.** The live tier must look at
+   ALL changes merged across ws01–ws15 (archetype prompts, ad-style policy,
+   attribution join, provider seam, onboarding, local-first storage, model
+   defaults) and give each a test that validates the OUTPUT, not merely that
+   the call ran: judge scripts analyze generated videos and images against
+   rubrics, and agent-answer checks assert the response content is what a
+   user should get. "It returned 200" is never a pass criterion by itself.
+2. **Agent evals on three explicit dimensions.** For every eval case: (a) were
+   the proper tool calls made, (b) was the trajectory correct (routing,
+   ordering, transfer_to_agent wrapping), (c) is the received answer the
+   expected one. Cases must be able to fail on each dimension independently.
+3. **Toolchain: agents-cli is the eval-building system.** Use `agents-cli`
+   (installed 1.1.0; verify/upgrade to the LATEST version at kickoff — it
+   ships fast) as the core toolchain for this workstream: study its
+   architecture first (`eval generate` / `grade` / `run` / `compare` /
+   `metric`, experimental `dataset`/`analyze`/`optimize`), run
+   `agents-cli setup` to install its ADK development skills into the coding
+   agent, and use those skills both to CREATE the evals and to DIAGNOSE/FIX
+   when something goes wrong. Survey what agents-cli can generate before
+   hand-building anything — prefer its native formats/harness over bespoke
+   scripts wherever they fit.
+4. **Doc sources: July-2026-current only.** The core is ADK, so rely
+   exclusively on: agents-cli core + its skills, the google-dev-knowledge
+   MCP, and context7 (latest ADK docs). Fetch current docs for any ADK/eval
+   API touched; never trust memory of older ADK behavior — if memory and the
+   fetched docs disagree, the docs win. This applies to every subagent
+   dispatched in this workstream, not just the controller.
+5. **Incremental, not big-bang.** This is a big workstream: the plan must be
+   staged so each step lands green and is committed before the next starts
+   (constant commits at every fixed/passing increment). Build toward the end
+   state step by step; no single mega-change, no long-lived uncommitted work.
+6. **Never assume expected behavior — ask.** Whenever the expected agent
+   response, judge verdict threshold, or output quality bar is unclear or
+   ambiguous, STOP and ask the owner instead of assuming (e.g. "what should
+   the agent's answer to X contain?"). Show the owner real outputs — agent
+   answers AND generated media (images/videos or frame grabs) — and take
+   their input before pinning expectations into eval cases or rubrics. Owner
+   answers become the recorded expectation.
+7. **Running log discipline.** Keep WORK_LOG.md continuously current as a
+   running log this workstream re-reads whenever context is lost: every step
+   taken, every fix, and EVERY owner decision/input (verbatim where short)
+   logged at the moment it happens — the log is the reference of record for
+   what was decided, so nothing rests on conversation memory. This is the
+   most crucial workstream of the internal track; the log standard is
+   accordingly higher, not lower.
