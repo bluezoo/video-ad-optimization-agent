@@ -210,6 +210,25 @@ test-live:
 		pytest tests/integration tests/live -v --tb=short; \
 	fi
 
+## Run agents-cli grade/compare reporting layer over live eval traces (INFORMATIONAL — not a test gate)
+# Override EVAL_SET to point at a different tests/integration/eval_sets/*.test.json.
+# Override RECORD_JSON + set SKIP_RECORD=1 to grade an existing record_actuals.py
+# dump instead of re-running (real) inference.
+EVAL_SET ?= tests/integration/eval_sets/review_agent.test.json
+RECORD_JSON ?= artifacts/traces/record_$(notdir $(basename $(EVAL_SET))).json
+test-live-report:
+	@echo "Running agents-cli grade reporting layer (real Vertex APIs — requires app/.env + agents-cli on PATH)..."
+	@test -f app/.env || { echo "ERROR: app/.env missing — the live tier needs real credentials (see SETUP_INSTRUCTIONS.md)"; exit 1; }
+	@command -v agents-cli >/dev/null 2>&1 || { echo "ERROR: agents-cli not found on PATH (install: uv tool install google-agents-cli)"; exit 1; }
+	@if [ "$(SKIP_RECORD)" = "1" ] && [ -f "$(RECORD_JSON)" ]; then \
+		echo "Using existing record file: $(RECORD_JSON) (SKIP_RECORD=1)"; \
+	else \
+		echo "Recording actuals from $(EVAL_SET) -> $(RECORD_JSON)"; \
+		.venv/bin/python -m tests.integration.record_actuals $(EVAL_SET) $(RECORD_JSON) || \
+			echo "[test-live-report] recorder reported case failure(s) — grading whatever succeeded"; \
+	fi
+	.venv/bin/python scripts/eval_grade_report.py $(RECORD_JSON) --output artifacts/grade_results
+
 ## Run all tests including slow (Veo) tests
 test-all:
 	@echo "Running ALL tests including slow Veo tests..."
@@ -314,6 +333,7 @@ help:
 	@echo "  make test-e2e       - Run end-to-end workflow tests"
 	@echo "  make test-integration - Run integration tests (with LLM) — targeted subset of the live tier"
 	@echo "  make test-live      - Run LIVE tier: integration + tests/live (real Vertex APIs, needs app/.env, costs money)"
+	@echo "  make test-live-report - agents-cli grade reporting layer over live eval traces (INFORMATIONAL, not a gate)"
 	@echo "  make test-all       - Run ALL tests including slow Veo tests"
 	@echo "  make test-coverage  - Run tests with coverage report"
 	@echo ""

@@ -43,3 +43,6 @@ generated/
 selected/
 product-images/
 local_assets/
+
+# agents-cli eval traces/results (Phase 16 Task 15 — informational grading layer)
+artifacts/
