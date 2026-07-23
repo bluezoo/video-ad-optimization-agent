@@ -120,3 +120,32 @@ Journey 14.1. 314 unit + 25 e2e green; test_config 12/12 on new default.
 Noted: scripts/deploy_ae_inline.py has 13 PRE-EXISTING ruff errors (verified
 byte-identical at base; not touched beyond the one comment word).
 Tasks 1-5 all complete; Task 4 resolved NO-GO. Entering verification.
+
+## 2026-07-23 — checkpoint 5: demo-scenario verification PASS (5/5 scenes)
+All via demo-scenario-verifier, sequential, port 8501, local-first
+(GCS_BUCKET= export; zero storage.googleapis.com URLs in any session JSON).
+- F1 (fashion.md, release gate): 2/2 PASS. gemini-3.6-flash on every agent
+  call (server log); refactored polling loop live ("Operation completed after
+  60s"); video sage-satin-camisole-072226-diverse-studio-elegant.mp4, 3.3MB,
+  8.0s, 720x1280 h264+aac, landed in worktree generated/. Evidence /tmp/ws14-verify/f1/.
+- F5.2 (non-fashion video): 1/1 PASS. aurora-cold-brew video 2.3MB, 8.0s,
+  720x1280; prompts free of fashion/human language; reference_image_used=false
+  + warning as expected; consumable-hero quality strong. Evidence /tmp/ws14-verify/f52/.
+- from-scratch 2.1+2.2 (DEMO_DATASET=none): 2/2 PASS. create_product routed to
+  campaign_agent on the new default; generate_product_image real call on
+  gemini-3-pro-image, image_status available, artifact rendered; PNG 1408x768,
+  866KB, landed in product-images/. Evidence /tmp/ws14-verify/fso/.
+
+Q14 evidence (image resolutions, also in image-model-comparison.md):
+gemini-3-pro-image 1408x768 (product image) / ~1.3MB scene frames;
+gemini-3.1-flash-lite-image 1K-class outputs, chart text quality below demo
+bar — full table in the comparison doc. Q15 evidence (video outputs): Veo 3.1
+8.0s 720x1280 24fps h264+aac ~2.3-3.3MB, strong subjective quality both
+archetypes; Omni probe videos fixed 4s/24fps/720p-class ~1.0-1.1MB (~30s
+end-to-end vs Veo's ~60-130s) — see omni-prototype-findings.md.
+
+Observations (non-blocking, candidate Phase 16 eval cases): cold-start
+"create campaign for <product>" without a prior list_products led the agent
+to create_product a duplicate instead of resolving the seeded id (verifier
+cleaned up; correct after listing first); legacy variation fields
+(model_ethnicity/activity) still in saved variation JSON — cosmetic only.
