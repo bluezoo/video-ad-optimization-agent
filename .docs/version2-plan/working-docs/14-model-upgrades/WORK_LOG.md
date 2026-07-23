@@ -149,3 +149,14 @@ Observations (non-blocking, candidate Phase 16 eval cases): cold-start
 to create_product a duplicate instead of resolving the seeded id (verifier
 cleaned up; correct after listing first); legacy variation fields
 (model_ethnicity/activity) still in saved variation JSON — cosmetic only.
+
+## 2026-07-23 — final whole-branch review: READY TO MERGE
+Reviewer (most capable model) over 38041a3..4152b72 (14 commits): zero
+Critical, zero Important; five Minors, all pre-existing/disclosed/cosmetic
+(deploy_ae_inline.py's 13 ruff errors are pre-existing and byte-identical at
+base bar one comment word). All six binding constraints PASS against the
+actual diff. Notable: the consolidation fixed a latent bug — site 2's Vertex
+empty-bytes case previously saved a zero-byte video as success, now raises.
+Reviewer independently reproduced the combined-run e2e interference (3 tests)
+AT BASE — confirmed it is the pre-existing Phase 16 open item 6 (owner commit
+1ec85cb), not a ws14 regression; suites as gated by the Makefile are green.
