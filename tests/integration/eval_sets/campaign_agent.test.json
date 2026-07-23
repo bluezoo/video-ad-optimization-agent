@@ -13,11 +13,12 @@
             "role": "user"
           },
           "final_response": {
-            "parts": [{"text": ""}],
+            "parts": [{"text": "We have 4 active campaigns: 1. Blue Floral Maxi Dress - Westfield Century City (ID 1); 2. Elegant Black Cocktail Dress - Bloomingdale's 59th Street (ID 2); 3. Black High Waist Trousers - Water Tower Place (ID 3); 4. Sage Satin Camisole - The Grove (ID 4). Campaign IDs 1-4 are all present and Active."}],
             "role": "model"
           },
           "intermediate_data": {
             "tool_uses": [
+              {"name": "transfer_to_agent", "args": {"agent_name": "campaign_agent"}},
               {"name": "list_campaigns", "args": {}}
             ],
             "intermediate_responses": []
@@ -36,11 +37,12 @@
             "role": "user"
           },
           "final_response": {
-            "parts": [{"text": ""}],
+            "parts": [{"text": "Campaign 2 is Elegant Black Cocktail Dress - Bloomingdale's 59th Street (New York, NY), status Active. Product: elegant-black-cocktail-dress (ID 12). Performance over the last 30 days: 45,627 impressions, 217,016 circulation, $2,103.43 revenue, $46.10 RPM (RPI $0.0461), 8.2s dwell time; 1 activated video."}],
             "role": "model"
           },
           "intermediate_data": {
             "tool_uses": [
+              {"name": "transfer_to_agent", "args": {"agent_name": "campaign_agent"}},
               {"name": "get_campaign", "args": {"campaign_id": 2}}
             ],
             "intermediate_responses": []
@@ -59,11 +61,12 @@
             "role": "user"
           },
           "final_response": {
-            "parts": [{"text": ""}],
+            "parts": [{"text": "Here are all 4 store locations with their city/state and the campaign/product running at each: Westfield Century City, Los Angeles CA (Blue Floral Maxi Dress); Bloomingdale's 59th Street, New York NY (Elegant Black Cocktail Dress); Water Tower Place, Chicago IL (Black High Waist Trousers); The Grove, Los Angeles CA (Sage Satin Camisole)."}],
             "role": "model"
           },
           "intermediate_data": {
             "tool_uses": [
+              {"name": "transfer_to_agent", "args": {"agent_name": "campaign_agent"}},
               {"name": "get_campaign_locations", "args": {}}
             ],
             "intermediate_responses": []
@@ -82,11 +85,13 @@
             "role": "user"
           },
           "final_response": {
-            "parts": [{"text": "Your campaign for Aurora Cold Brew at Target Downtown in Austin, Texas has been created."}],
+            "parts": [{"text": "A new campaign for Aurora Cold Brew at Target Downtown in Austin, Texas has been created. It reuses the existing Aurora Cold Brew product (ID 23) already in the catalog rather than onboarding a duplicate."}],
             "role": "model"
           },
           "intermediate_data": {
             "tool_uses": [
+              {"name": "transfer_to_agent", "args": {"agent_name": "campaign_agent"}},
+              {"name": "list_products", "args": {"category": "beverage"}},
               {"name": "create_campaign", "args": {"product_id": 23, "store_name": "Target Downtown", "city": "Austin", "state": "Texas"}}
             ],
             "intermediate_responses": []

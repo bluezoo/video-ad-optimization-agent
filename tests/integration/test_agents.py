@@ -57,7 +57,6 @@ class TestCoordinatorAgentRouting:
 class TestCampaignAgent:
     """Test Campaign Agent tool execution."""
 
-    @_AUTHORED_PRE_TRANSFER
     async def test_campaign_agent_tools(self):
         """Campaign agent should correctly execute campaign tools."""
         outcomes = await run_eval_set(
