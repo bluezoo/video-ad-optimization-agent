@@ -414,3 +414,14 @@ people. Owner decides.
 controls + onboarding fix all verified. Full test-live NOT green — held for the
 owner rubric decision above before the final "test-live green" commit. make
 lint green; make test-unit 319 passed/1 skipped.
+
+## 2026-07-23 01:39 — OWNER GATE 3: judge subject strictness + answer-dimension flake policy
+Presented to owner (AskUserQuestion, with the Task 14 post-gate evidence: full `make test-live` x2 = 17 passed/2 failed; failure A = get-campaign-locations[answer] LLM-judge flake, content correct and 3-dims-1.0 on clean rerun; failure B = judge HARD-failed the regenerated product-hero cold-brew video on subject_matches_archetype because of blurred background people in the cafe scene — the rubric's "no humans in product_only output" is stricter than what the ws09 generator prompts actually enforce).
+
+**Q1 — Judge subject rubric for product-hero (non-wearable) media: how strict on humans in frame?**
+Owner answer (verbatim): "Relax: no FEATURED human (Recommended)" — product must be the hero; incidental blurred background people allowed (normal ad composition, matches what ws09 prompts actually generate). Negative control (featured full human model) must still fail.
+
+**Q2 — Policy for the ~1-per-run LLM-judge answer-dimension flake (content correct, clean on rerun)?**
+Owner answer (verbatim): "One bounded answer-retry (Recommended)" — on answer-dimension failure only, re-judge once against the same recorded response (no new inference); fail if it fails twice. Deterministic dimensions (tools/trajectory) stay single-shot.
+
+Dispatch: relayed to judge-impl to (a) relax subject_matches_archetype for product-hero archetypes to "no featured human model" (marked owner-approved ws16 GATE 3), (b) add the bounded single re-judge of the answer dimension in tests/integration/eval_harness.py (same recorded response, no new inference, logged when it triggers), then re-run full `make test-live` to green and commit.
