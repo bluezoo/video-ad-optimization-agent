@@ -188,7 +188,7 @@ The system has 4 product-centric campaigns:
 campaign_agent = LlmAgent(
     model=MODEL,
     name="campaign_agent",
-    description="Manages ad campaigns (create, list, view, update, location/map features) AND onboards new products into the catalog: create_product, import_products_from_folder, generate_product_image. Any request to add, register, or onboard a product goes here.",
+    description="Manages ad campaigns (create, list, view, update) and store location/address lookup (plain store addresses only — Google Maps links and maps come from the Analytics Agent), AND onboards new products into the catalog: create_product, import_products_from_folder, generate_product_image. Any request to add, register, or onboard a product goes here.",
     instruction=CAMPAIGN_AGENT_INSTRUCTION,
     tools=[
         create_campaign,
