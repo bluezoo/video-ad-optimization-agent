@@ -210,3 +210,30 @@ matching + LLM non-determinism means tools with several optional/default args
 (e.g. get_campaign_map_data's include_* flags) can flap; the mitigation used
 here is an instruction nudge toward a canonical call shape plus pinning that
 shape, NOT loosening the eval.
+
+## 2026-07-23 — checkpoint 4b: stage-4 review fix (Important finding)
+
+Review returned one Important finding (all else approved): campaign_agent's
+`description=` (app/agent.py:191) still said "location/map features". ADK
+injects each sub-agent's description verbatim into the coordinator's
+transfer-decision prompt (google/adk/flows/llm_flows/agent_transfer.py), so the
+description contradicted the new instruction text and risked reintroducing the
+Maps misroute (owner decision 2).
+
+Fix (commit b5be5a7): campaign_agent description now reads "Manages ad
+campaigns (create, list, view, update) and store location/address lookup (plain
+store addresses only — Google Maps links and maps come from the Analytics
+Agent), AND onboards new products into the catalog...". Checked the other three
+sub-agent descriptions: analytics_agent (line 425) correctly OWNS the Maps
+claim ("provides Google Maps integration with store locations, static maps..."),
+media_agent and review_agent carry no map language — no other contradiction.
+
+Verification: make test-unit 316 passed/1 skipped; make lint green. Live
+re-run `pytest tests/integration/test_agents.py -k "analytics or campaign"`
+(the -k filter also pulls in the coordinator test via its method name):
+campaign_agent PASS, analytics_agent PASS; coordinator hit a TRANSIENT Vertex
+`400 INVALID_ARGUMENT` on route-to-media-agent-products during inference (the
+vacuity guard correctly FAILED rather than passed it — 400 INVALID_ARGUMENT is
+not in the infra-marker xfail list), and passed clean on immediate re-run (1
+passed in 53s). Not a regression from the description edit (that touched only
+campaign_agent; the error was on the media-routing turn).
