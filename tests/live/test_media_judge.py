@@ -37,7 +37,12 @@ from pathlib import Path
 import pytest
 
 import app.config as config
-from tests.live.judge import judge_chart, judge_image, judge_media_entry
+from tests.live.judge import (
+    judge_chart,
+    judge_image,
+    judge_media_entry,
+    judge_with_hard_retry,
+)
 
 pytestmark = [pytest.mark.live, pytest.mark.slow]
 
@@ -136,7 +141,7 @@ class TestMediaJudge:
         hard_failures: list[str] = []
         report: list[str] = []
         for label, entry in sorted(entries.items()):
-            verdict = judge_media_entry(entry)
+            verdict = judge_with_hard_retry(label, judge_media_entry, entry)
             report.append(f"\n[{label}] {entry['path']}")
             for check, res in verdict.items():
                 line = (
@@ -178,7 +183,9 @@ class TestMediaJudge:
         chart_path = tmp_path / result["chart"]["filename"]
         chart_path.write_bytes(png_bytes)
 
-        verdict = judge_chart(
+        verdict = judge_with_hard_retry(
+            "rpi_comparison_chart",
+            judge_chart,
             str(chart_path),
             expected_creative_count=expected_count,
             campaign_name=campaign_name,
@@ -220,7 +227,12 @@ class TestJudgeNegativeControls:
         overlay_path = tmp_path / "rendered_text_control.png"
         _make_text_overlay(source["path"], overlay_path, "MEGA SALE - 50% OFF TODAY")
 
-        verdict = judge_image(
+        # Route through the GATE-4 retry: a real violation must hard-fail BOTH
+        # the initial judge and the re-judge (fails twice), proving the retry
+        # does not let genuine violations slip through.
+        verdict = judge_with_hard_retry(
+            "neg-control:rendered_text_overlay",
+            judge_image,
             str(overlay_path),
             archetype=source["archetype"],
             request_context=source["request_context"],
@@ -241,7 +253,10 @@ class TestJudgeNegativeControls:
 
         # Judge the human-model image as if it were a product_only shot (no
         # humans allowed) — the human presence must fail subject_matches_archetype.
-        verdict = judge_image(
+        # Through the GATE-4 retry: a real mismatch must hard-fail twice.
+        verdict = judge_with_hard_retry(
+            "neg-control:wrong_subject",
+            judge_image,
             source["path"],
             archetype="product_only",
             request_context=(

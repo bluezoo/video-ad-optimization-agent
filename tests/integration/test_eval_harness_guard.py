@@ -112,3 +112,105 @@ def test_isolation_guard_allows_temp_db(monkeypatch, tmp_path):
 
     monkeypatch.setattr(config, "DB_PATH", str(tmp_path / "campaigns.db"))
     _assert_isolated_db()  # must not raise
+
+
+# --- GATE-4 bounded eval re-inference: selection predicate (pure, no live) ---
+
+
+def _dim(passed):
+    return DimensionOutcome(
+        score=1.0 if passed else 0.0, threshold=1.0, passed=passed
+    )
+
+
+def test_deterministic_only_failure_predicate():
+    """[ws16 OWNER GATE 4] Re-inference fires ONLY for deterministic-dim flakes.
+
+    A case failing on tools/trajectory (answer passing) is eligible; a case
+    whose answer dim fails is NOT (that is GATE-3's re-judge). Pure — no live.
+    """
+    from tests.integration.eval_harness import (
+        _DETERMINISTIC_DIMENSIONS,
+        _deterministic_only_failure,
+    )
+
+    assert _DETERMINISTIC_DIMENSIONS == frozenset({"tools", "trajectory"})
+    assert "answer" not in _DETERMINISTIC_DIMENSIONS
+
+    # trajectory-only failure -> eligible
+    assert _deterministic_only_failure(
+        {"tools": _dim(True), "trajectory": _dim(False), "answer": _dim(True)}
+    )
+    # tools + trajectory both fail -> eligible
+    assert _deterministic_only_failure(
+        {"tools": _dim(False), "trajectory": _dim(False), "answer": _dim(True)}
+    )
+    # answer-only failure -> NOT eligible (GATE-3 territory)
+    assert not _deterministic_only_failure(
+        {"tools": _dim(True), "trajectory": _dim(True), "answer": _dim(False)}
+    )
+    # trajectory AND answer fail -> NOT eligible (answer is failing)
+    assert not _deterministic_only_failure(
+        {"tools": _dim(True), "trajectory": _dim(False), "answer": _dim(False)}
+    )
+    # all pass -> not eligible
+    assert not _deterministic_only_failure(
+        {"tools": _dim(True), "trajectory": _dim(True), "answer": _dim(True)}
+    )
+
+
+# --- GATE-4 bounded media re-judge: retry logic (pure, fake judge, no live) ---
+
+
+def _verdict(check, verdict_str, severity, evidence="e"):
+    return {check: {"verdict": verdict_str, "severity": severity, "evidence": evidence}}
+
+
+def test_media_retry_recovers_on_second_pass():
+    """[ws16 OWNER GATE 4] A hard-fail that clears on re-judge yields a pass."""
+    from tests.live.judge import judge_with_hard_retry
+
+    calls = {"n": 0}
+
+    def fake_judge():
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return _verdict("no_rendered_text", "fail", "hard", "hallucinated")
+        return _verdict("no_rendered_text", "pass", "hard", "clean")
+
+    verdict = judge_with_hard_retry("label", fake_judge)
+    assert calls["n"] == 2  # re-judged exactly once
+    assert verdict["no_rendered_text"]["verdict"] == "pass"
+
+
+def test_media_retry_fails_twice_for_real_violation():
+    """A genuine hard violation must hard-fail BOTH times (negative-control shape)."""
+    from tests.live.judge import hard_failed_checks, judge_with_hard_retry
+
+    calls = {"n": 0}
+
+    def fake_judge():
+        calls["n"] += 1
+        return _verdict("no_rendered_text", "fail", "hard", "real banner")
+
+    verdict = judge_with_hard_retry("label", fake_judge)
+    assert calls["n"] == 2
+    assert hard_failed_checks(verdict) == ["no_rendered_text"]
+
+
+def test_media_retry_skips_when_only_warn_fails():
+    """A warn-only failure is not a hard failure — no re-judge, single call."""
+    from tests.live.judge import hard_failed_checks, judge_with_hard_retry
+
+    calls = {"n": 0}
+
+    def fake_judge():
+        calls["n"] += 1
+        return {
+            "no_rendered_text": {"verdict": "pass", "severity": "hard", "evidence": "clean"},
+            "setting_mood_plausible": {"verdict": "fail", "severity": "warn", "evidence": "meh"},
+        }
+
+    verdict = judge_with_hard_retry("label", fake_judge)
+    assert calls["n"] == 1  # no retry for a warn-only failure
+    assert hard_failed_checks(verdict) == []

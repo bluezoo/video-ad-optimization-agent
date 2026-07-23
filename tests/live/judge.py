@@ -344,3 +344,48 @@ def judge_media_entry(entry: dict) -> JudgeVerdict:
         archetype=entry["archetype"],
         request_context=entry["request_context"],
     )
+
+
+# ---------------------------------------------------------------------------
+# Bounded re-judge on a hard-check failure [ws16 OWNER GATE 4, 2026-07-23]
+# ---------------------------------------------------------------------------
+
+
+def hard_failed_checks(verdict: JudgeVerdict) -> list[str]:
+    """Names of the checks that FAILED at ``hard`` severity in ``verdict``."""
+    return [
+        check
+        for check, res in verdict.items()
+        if res["verdict"] == "fail" and res["severity"] == "hard"
+    ]
+
+
+def judge_with_hard_retry(label: str, judge_fn, *args, **kwargs) -> JudgeVerdict:
+    """Run ``judge_fn`` and re-judge ONCE if it hard-fails [ws16 OWNER GATE 4].
+
+    A multimodal judge occasionally hallucinates a hard-check violation (e.g.
+    inventing rendered text that is not actually in the frame — observed in
+    ws16: a "Softbox" label the judge reported on a plain studio wall). A
+    single re-judge against the SAME media file (no regeneration) filters those
+    out: a hallucination will not reliably reproduce, but a real violation
+    hard-fails both times. The retry's verdict is authoritative — the caller
+    fails only when the re-judge ALSO hard-fails (i.e. it fails twice).
+
+    Negative controls (deliberately-violating media) fail consistently, so they
+    still hard-fail on the retry and the test still catches them.
+    """
+    verdict = judge_fn(*args, **kwargs)
+    hard = hard_failed_checks(verdict)
+    if not hard:
+        return verdict
+    print(
+        f"[judge] HARD-check failure on {label} ({', '.join(hard)}) — re-judging "
+        "ONCE against the same media, no regeneration [ws16 OWNER GATE 4, 2026-07-23]"
+    )
+    retry_verdict = judge_fn(*args, **kwargs)
+    retry_hard = hard_failed_checks(retry_verdict)
+    print(
+        f"[judge] re-judge {label}: "
+        + ("PASSED on retry" if not retry_hard else f"FAILED again ({', '.join(retry_hard)})")
+    )
+    return retry_verdict

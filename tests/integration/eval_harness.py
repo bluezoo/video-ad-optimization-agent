@@ -55,6 +55,7 @@ import importlib
 import json
 import shutil
 import sqlite3
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -129,6 +130,26 @@ _INFRA_MARKERS = (
 # Dimension name (matches live_eval_config.json "dimensions" key) eligible for
 # the bounded one-shot re-judge [ws16 OWNER GATE 3, 2026-07-23].
 _ANSWER_DIMENSION = "answer"
+
+# Deterministic (non-LLM) dimensions: exact tool-name and tool-trajectory string
+# matches. A failure here is AGENT nondeterminism (a different-but-not-wrong tool
+# path this run), not judge noise — so it is handled by the GATE-4 bounded
+# re-inference, never the GATE-3 answer re-judge. [ws16 OWNER GATE 4, 2026-07-23]
+_DETERMINISTIC_DIMENSIONS = frozenset({"tools", "trajectory"})
+
+
+def _deterministic_only_failure(dimensions: dict[str, "DimensionOutcome"]) -> bool:
+    """True iff the case has failures and EVERY failing dim is deterministic.
+
+    Gates the GATE-4 re-inference: a case failing only on tools/trajectory
+    (answer, if scored, is passing) is eligible for one end-to-end re-inference.
+    A case whose answer dim is failing is NOT — that is the GATE-3 re-judge's
+    job, and a fresh inference is not the right remedy for a borderline answer.
+    """
+    failed = [name for name, d in dimensions.items() if not d.passed]
+    return bool(failed) and all(
+        name in _DETERMINISTIC_DIMENSIONS for name in failed
+    )
 
 
 def load_dimension_metrics(
@@ -225,6 +246,106 @@ def _record_outcomes(
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
+def _outcome_from_result(result) -> CaseOutcome:
+    """Build a CaseOutcome (inference status + actual trajectory) from a result."""
+    tool_calls, final_text = _extract_actuals(result.inferences or [])
+    return CaseOutcome(
+        eval_id=result.eval_case_id,
+        inference_ok=result.status == InferenceStatus.SUCCESS,
+        error_message=result.error_message,
+        actual_tool_calls=tool_calls,
+        final_response_text=final_text,
+    )
+
+
+async def _infer_one_case(root_agent, eval_set_id: str, eval_case):
+    """Run inference for ONE eval case against a FRESH seeded DB copy.
+
+    [ws16 GATE-3 isolation fix] Resets config.DB_PATH to the seeded snapshot
+    before the run so the case never sees another case's writes. Returns the
+    single InferenceResult (or None if the stack yielded nothing).
+    """
+    shutil.copy2(MAIN_DB_PATH, config.DB_PATH)  # fresh seeded state per case
+    manager = InMemoryEvalSetsManager()
+    manager.create_eval_set(app_name=_APP_NAME, eval_set_id=eval_set_id)
+    manager.add_eval_case(
+        app_name=_APP_NAME, eval_set_id=eval_set_id, eval_case=eval_case
+    )
+    service = LocalEvalService(root_agent=root_agent, eval_sets_manager=manager)
+    result = None
+    async for inference_result in service.perform_inference(
+        inference_request=InferenceRequest(
+            app_name=_APP_NAME,
+            eval_set_id=eval_set_id,
+            inference_config=InferenceConfig(),
+        )
+    ):
+        result = inference_result
+    return result
+
+
+async def _eval_one_dim(eval_service, inference_result, metrics) -> DimensionOutcome:
+    """Score a single dimension for a single inference result (no re-inference)."""
+    request = EvaluateRequest(
+        inference_results=[inference_result],
+        evaluate_config=EvaluateConfig(eval_metrics=metrics),
+    )
+    outcome = DimensionOutcome(
+        score=None, threshold=metrics[0].threshold or 0.0, passed=False
+    )
+    async for case_result in eval_service.evaluate(evaluate_request=request):
+        metric_results = case_result.overall_eval_metric_results
+        metric_result = metric_results[0] if metric_results else None
+        outcome = DimensionOutcome(
+            score=metric_result.score if metric_result else None,
+            threshold=(
+                metric_result.threshold
+                if metric_result and metric_result.threshold is not None
+                else (metrics[0].threshold or 0.0)
+            ),
+            passed=bool(
+                metric_result and metric_result.eval_status == EvalStatus.PASSED
+            ),
+        )
+    return outcome
+
+
+async def _score_case(
+    eval_service, inference_result, dimension_metrics
+) -> dict[str, DimensionOutcome]:
+    """Score all dims for one inference; bounded answer re-judge [ws16 GATE 3].
+
+    final_response_match_v2 is an LLM judge and flakes on borderline-but-correct
+    answers, so a failing ANSWER dim is re-judged ONCE against the SAME inference
+    (no new agent run; the deterministic tools/trajectory dims are never
+    re-judged here). A case fails the answer dim only if the judge fails it
+    twice. Folding the re-judge in here means a GATE-4 re-inference's answer dim
+    gets the same one-shot protection, so a recovered trajectory flake cannot be
+    re-sunk by a fresh answer flake.
+    """
+    dims = {
+        name: await _eval_one_dim(eval_service, inference_result, metrics)
+        for name, metrics in dimension_metrics.items()
+    }
+    answer = dims.get(_ANSWER_DIMENSION)
+    if (
+        answer is not None
+        and not answer.passed
+        and dimension_metrics.get(_ANSWER_DIMENSION)
+    ):
+        eid = inference_result.eval_case_id
+        print(f"[eval-harness] answer-dimension retry (GATE 3) for: {eid}")
+        redo = await _eval_one_dim(
+            eval_service, inference_result, dimension_metrics[_ANSWER_DIMENSION]
+        )
+        print(
+            f"[eval-harness] answer-retry {eid}: "
+            + ("PASSED on retry" if redo.passed else "FAILED again")
+        )
+        dims[_ANSWER_DIMENSION] = redo
+    return dims
+
+
 async def run_eval_set(
     eval_set_path: str, *, record_to: str | None = None
 ) -> list[CaseOutcome]:
@@ -257,124 +378,66 @@ async def run_eval_set(
         root_agent=root_agent, eval_sets_manager=eval_sets_manager
     )
 
-    # 1. Inference — ONE case at a time, each against a FRESH seeded DB copy.
-    # [ws16 GATE-3 isolation fix] ADK's perform_inference runs a set's cases
-    # CONCURRENTLY (asyncio.Semaphore + as_completed) against the single shared
-    # config.DB_PATH; a mutating case (e.g. create-campaign) then races with and
-    # pollutes a read case (get-campaign-locations expects seeded-only state,
-    # its reference lists exactly the 4 seeded stores). Resetting the temp DB to
-    # the seeded snapshot before each case gives true per-case isolation — no
-    # case ever sees another case's writes.
-    inference_results = []
-    for eval_case in eval_set.eval_cases:
-        shutil.copy2(MAIN_DB_PATH, config.DB_PATH)  # fresh seeded state per case
-        case_manager = InMemoryEvalSetsManager()
-        case_manager.create_eval_set(
-            app_name=_APP_NAME, eval_set_id=eval_set.eval_set_id
-        )
-        case_manager.add_eval_case(
-            app_name=_APP_NAME,
-            eval_set_id=eval_set.eval_set_id,
-            eval_case=eval_case,
-        )
-        case_service = LocalEvalService(
-            root_agent=root_agent, eval_sets_manager=case_manager
-        )
-        async for inference_result in case_service.perform_inference(
-            inference_request=InferenceRequest(
-                app_name=_APP_NAME,
-                eval_set_id=eval_set.eval_set_id,
-                inference_config=InferenceConfig(),
-            )
-        ):
-            inference_results.append(inference_result)
-
-    outcomes_by_id: dict[str, CaseOutcome] = {}
-    for result in inference_results:
-        tool_calls, final_text = _extract_actuals(result.inferences or [])
-        outcomes_by_id[result.eval_case_id] = CaseOutcome(
-            eval_id=result.eval_case_id,
-            inference_ok=result.status == InferenceStatus.SUCCESS,
-            error_message=result.error_message,
-            actual_tool_calls=tool_calls,
-            final_response_text=final_text,
-        )
-
-    # 2. Metric passes — one per dimension, over the SAME inference results.
-    successful = [
-        r for r in inference_results if r.status == InferenceStatus.SUCCESS
-    ]
+    # 1. Inference + scoring — ONE case at a time, each against a FRESH seeded
+    # DB copy. [ws16 GATE-3 isolation fix] ADK's perform_inference runs a set's
+    # cases CONCURRENTLY (asyncio.Semaphore + as_completed) against the single
+    # shared config.DB_PATH; a mutating case (create-campaign) then races with
+    # and pollutes a read case (get-campaign-locations, whose reference lists
+    # exactly the 4 seeded stores). Per-case reset gives true isolation — no
+    # case ever sees another case's writes. Each successful inference is scored
+    # across all dims (with the GATE-3 bounded answer re-judge folded in).
     dimension_metrics = load_dimension_metrics()
-    if successful:
-        for name, metrics in dimension_metrics.items():
-            evaluate_request = EvaluateRequest(
-                inference_results=successful,
-                evaluate_config=EvaluateConfig(eval_metrics=metrics),
+    outcomes_by_id: dict[str, CaseOutcome] = {}
+    for eval_case in eval_set.eval_cases:
+        result = await _infer_one_case(root_agent, eval_set.eval_set_id, eval_case)
+        outcome = _outcome_from_result(result)
+        if result.status == InferenceStatus.SUCCESS:
+            outcome.dimensions = await _score_case(
+                eval_service, result, dimension_metrics
             )
-            async for case_result in eval_service.evaluate(
-                evaluate_request=evaluate_request
-            ):
-                metric_results = case_result.overall_eval_metric_results
-                metric_result = metric_results[0] if metric_results else None
-                outcomes_by_id[case_result.eval_id].dimensions[name] = (
-                    DimensionOutcome(
-                        score=metric_result.score if metric_result else None,
-                        threshold=(
-                            metric_result.threshold
-                            if metric_result and metric_result.threshold is not None
-                            else (metrics[0].threshold or 0.0)
-                        ),
-                        passed=bool(
-                            metric_result
-                            and metric_result.eval_status == EvalStatus.PASSED
-                        ),
-                    )
-                )
+        outcomes_by_id[result.eval_case_id] = outcome
 
-        # Bounded answer-dimension retry [ws16 OWNER GATE 3, 2026-07-23]:
-        # final_response_match_v2 is an LLM judge and flakes on
-        # borderline-but-correct answers. Re-judge the ANSWER dimension ONCE
-        # against the SAME already-recorded inference (no new agent inference;
-        # tools/trajectory are deterministic string checks and are NOT retried).
-        # A case fails the answer dimension only if the judge fails it TWICE.
-        # The retry is logged (case names) so flake frequency stays observable.
-        answer_metrics = dimension_metrics.get(_ANSWER_DIMENSION)
-        retry_ids = [
-            eid
-            for eid, o in outcomes_by_id.items()
-            if _ANSWER_DIMENSION in o.dimensions
-            and not o.dimensions[_ANSWER_DIMENSION].passed
-        ]
-        if answer_metrics and retry_ids:
-            print(
-                "[eval-harness] answer-dimension retry (GATE 3) for: "
-                + ", ".join(sorted(retry_ids))
+    # 2. Bounded re-inference for deterministic-dim flakes [ws16 OWNER GATE 4,
+    # 2026-07-23]. tools/trajectory are exact string matches, so a failure there
+    # is AGENT nondeterminism (a different-but-not-wrong tool path this run), not
+    # judge noise — the GATE-3 answer re-judge cannot address it. Re-run the
+    # single case's inference ONCE end-to-end (fresh seeded DB) and re-score
+    # every dim; the case fails only if it fails twice. Every trigger is logged
+    # AND warned (owner wants trajectory nondeterminism to stay observable).
+    cases_by_id = {c.eval_id: c for c in eval_set.eval_cases}
+    for eval_case in eval_set.eval_cases:
+        eid = eval_case.eval_id
+        outcome = outcomes_by_id.get(eid)
+        if (
+            outcome is None
+            or not outcome.inference_ok
+            or not _deterministic_only_failure(outcome.dimensions)
+        ):
+            continue
+        failed = ", ".join(
+            sorted(n for n, d in outcome.dimensions.items() if not d.passed)
+        )
+        msg = (
+            f"deterministic-dim failure on {eid} ({failed}) — re-running "
+            "inference ONCE [ws16 OWNER GATE 4, 2026-07-23]"
+        )
+        print(f"[eval-harness] WARNING: {msg}")
+        warnings.warn(msg, stacklevel=2)
+        result = await _infer_one_case(root_agent, eval_set.eval_set_id, cases_by_id[eid])
+        retry = _outcome_from_result(result)
+        if result.status == InferenceStatus.SUCCESS:
+            retry.dimensions = await _score_case(
+                eval_service, result, dimension_metrics
             )
-            retry_results = [r for r in successful if r.eval_case_id in retry_ids]
-            evaluate_request = EvaluateRequest(
-                inference_results=retry_results,
-                evaluate_config=EvaluateConfig(eval_metrics=answer_metrics),
-            )
-            async for case_result in eval_service.evaluate(
-                evaluate_request=evaluate_request
-            ):
-                metric_results = case_result.overall_eval_metric_results
-                metric_result = metric_results[0] if metric_results else None
-                passed = bool(
-                    metric_result and metric_result.eval_status == EvalStatus.PASSED
-                )
-                prev = outcomes_by_id[case_result.eval_id].dimensions[_ANSWER_DIMENSION]
-                outcomes_by_id[case_result.eval_id].dimensions[_ANSWER_DIMENSION] = (
-                    DimensionOutcome(
-                        score=metric_result.score if metric_result else prev.score,
-                        threshold=prev.threshold,
-                        passed=passed,
-                    )
-                )
-                print(
-                    f"[eval-harness] answer-retry {case_result.eval_id}: "
-                    + ("PASSED on retry" if passed else "FAILED again")
-                )
+        outcomes_by_id[eid] = retry
+        still_failed = sorted(
+            n for n, d in retry.dimensions.items() if not d.passed
+        )
+        if retry.inference_ok and not still_failed:
+            print(f"[eval-harness] re-inference {eid}: PASSED on retry")
+        else:
+            detail = ", ".join(still_failed) or (retry.error_message or "inference failed")
+            print(f"[eval-harness] re-inference {eid}: FAILED again ({detail})")
 
     # Stable order: as authored in the eval set.
     outcomes = [
