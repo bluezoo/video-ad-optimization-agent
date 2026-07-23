@@ -824,3 +824,6 @@ Makefile targets (`reset-db`, `test-live-report`) are syntactically valid
 Commits: see `.superpowers/sdd/task-16-report.md` for the final SHA(s) (this
 entry is written and committed alongside the docs changes, per the task's
 ledger contract).
+
+## 2026-07-23 — Task 16 review: APPROVED (mirrors .superpowers/sdd/progress.md)
+Range 6579d58..8561be0. Docs task reviewed for factual accuracy against shipped code: reviewer read AgentEvaluator source in the installed google-adk 2.5.0 to confirm the rewritten gotcha's mechanism (mean-score aggregation, final_eval_status never inspected), AST-counted product data (22 fashion + 6 retail = 28), and verified every DEMO_GUIDE ws16 journey against the actual eval-set JSON. 0 Critical, 0 Important, 1 Minor (provenance misattribution of make-help lines to Task 16 — they shipped in Tasks 3/15; fixed inline by controller in the phase doc). Task 15's two minors (M5 .venv fallback, M6 typo) confirmed fixed in this task.

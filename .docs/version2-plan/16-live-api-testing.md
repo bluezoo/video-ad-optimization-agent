@@ -254,11 +254,13 @@ benefits from a truthful live gate.
 
    > **Done (workstream 16, 2026-07-23, Task 16 — this cleanup pass):**
    > CLAUDE.md's gotcha rewritten with the refined mechanism (see the
-   > "Gotchas" section) and a tier map added to "Commands"; `make help`'s
-   > `test-integration`/`test-live`/`test-live-report` lines and
-   > `reset-db`'s echo text (now "28 products (22 fashion + 6 retail core),
-   > DEMO_DATASET-dependent" — verified against `app/database/products_data.py`
-   > (22) + `retail_products_data.py` (6)) updated in the `Makefile`.
+   > "Gotchas" section) and a tier map added to "Commands"; `reset-db`'s
+   > echo text updated in the `Makefile` (now "28 products (22 fashion +
+   > 6 retail core), DEMO_DATASET-dependent" — verified against
+   > `app/database/products_data.py` (22) + `retail_products_data.py` (6)).
+   > `make help`'s `test-integration`/`test-live`/`test-live-report` lines
+   > shipped earlier in this workstream (Tasks 3 and 15) and were verified
+   > current here.
 5. **Opportunistic evidence for Q14/Q15 while paying for the calls.** Live
    media runs should record actual image resolutions (Q14, Phase 14a) and
    qualitative video-output notes (Q15, Phase 14b) into the workstream's
