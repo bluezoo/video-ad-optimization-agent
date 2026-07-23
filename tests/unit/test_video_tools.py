@@ -283,6 +283,49 @@ class TestVariationValidationLoud:
         assert "with_model" in result.get("error", "")
 
 
+class TestVariationParamsStorage:
+    """ws16 Task 11 (ws14 candidate): the campaign_videos.variation_params
+    writer must drop model-only fields (model_ethnicity, activity) for
+    archetypes with no human model in the shot — those fields describe a
+    person and are a legacy artifact from the fashion-only era for
+    consumable-hero / staged-product / product-hero archetypes."""
+
+    def test_non_wearable_drops_model_only_fields(self):
+        from app.models.variation import CreativeVariation
+        from app.tools.video_tools import _variation_params_for_storage
+
+        variation = CreativeVariation(name="test", model_ethnicity="diverse", activity="posing")
+
+        stored = _variation_params_for_storage(variation, archetype="consumable-hero")
+
+        assert "model_ethnicity" not in stored
+        assert "activity" not in stored
+        # Other fields are unaffected.
+        assert stored["setting"] == "studio"
+
+    def test_staged_product_and_product_hero_also_drop_model_fields(self):
+        from app.models.variation import CreativeVariation
+        from app.tools.video_tools import _variation_params_for_storage
+
+        variation = CreativeVariation(name="test", model_ethnicity="asian", activity="walking")
+
+        for archetype in ("staged-product", "product-hero"):
+            stored = _variation_params_for_storage(variation, archetype=archetype)
+            assert "model_ethnicity" not in stored
+            assert "activity" not in stored
+
+    def test_wearable_keeps_model_fields(self):
+        from app.models.variation import CreativeVariation
+        from app.tools.video_tools import _variation_params_for_storage
+
+        variation = CreativeVariation(name="test", model_ethnicity="asian", activity="walking")
+
+        stored = _variation_params_for_storage(variation, archetype="wearable")
+
+        assert stored["model_ethnicity"] == "asian"
+        assert stored["activity"] == "walking"
+
+
 @pytest.mark.slow
 @pytest.mark.veo
 class TestVideoGenerationIntegration:

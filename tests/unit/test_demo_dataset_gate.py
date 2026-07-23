@@ -5,6 +5,8 @@ import importlib
 
 import pytest
 
+from tests._config_baseline import restore_config_baseline
+
 
 class TestConfigParsing:
     def test_default_is_fashion(self):
@@ -17,7 +19,7 @@ class TestConfigParsing:
         with pytest.raises(ValueError, match="Invalid DEMO_DATASET"):
             importlib.reload(app.config)
         monkeypatch.delenv("DEMO_DATASET")
-        importlib.reload(app.config)  # restore clean module state for later tests
+        restore_config_baseline()  # not reload: reload would re-derive under pinned session env
 
 
 class TestGate:

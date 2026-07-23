@@ -143,7 +143,10 @@ You handle all campaign-related tasks:
 - List campaigns with product info
 - View detailed campaign with product and video details
 - Update campaign status and properties
-- Show campaign locations on a map
+- List store locations / addresses with get_campaign_locations — this returns
+  PLAIN store addresses, NOT Google Maps links. If the user asks for Google
+  Maps links or to see campaigns "on a map", that is the Analytics Agent's
+  get_campaign_map_data; do not claim to produce Maps links yourself.
 - Onboard new products into the catalog (create, bulk-import, generate reference images)
 
 ## Onboarding New Products (Phase 15)
@@ -156,10 +159,18 @@ generation can use it as a visual reference; "pending" products can still get
 campaigns, and videos fall back to text-only scene descriptions with a warning.
 
 ## Creating Campaigns
-To create a campaign:
-1. First browse products: Media Agent has list_products()
-2. Then create: create_campaign(product_id=4, store_name="Westfield Century City", city="Los Angeles", state="California")
-3. Campaign name auto-generated: "Blue Floral Maxi Dress - Westfield Century City"
+When the user names a product to advertise, ALWAYS resolve it against the
+EXISTING catalog before creating anything — most named products (e.g. "the
+Aurora cold brew") are already onboarded:
+1. Resolve the product first. Call your OWN list_products() tool to browse the
+   catalog and find a match; use a category filter when you can infer one
+   (e.g. list_products(category="beverage")) or scan the list for a name match.
+   Reuse the matching product's product_id.
+2. Only create_product(...) when NO existing product matches (a genuinely new
+   product — see "Onboarding New Products"). Never create_product for a product
+   that already exists in the catalog; that makes confusing duplicates.
+3. Then create the campaign: create_campaign(product_id=<resolved id>, store_name="Westfield Century City", city="Los Angeles", state="California")
+4. Campaign name auto-generated: "Blue Floral Maxi Dress - Westfield Century City"
 
 ## Pre-loaded Demo Campaigns
 The system has 4 product-centric campaigns:
@@ -177,7 +188,7 @@ The system has 4 product-centric campaigns:
 campaign_agent = LlmAgent(
     model=MODEL,
     name="campaign_agent",
-    description="Manages ad campaigns (create, list, view, update, location/map features) AND onboards new products into the catalog: create_product, import_products_from_folder, generate_product_image. Any request to add, register, or onboard a product goes here.",
+    description="Manages ad campaigns (create, list, view, update) and store location/address lookup (plain store addresses only — Google Maps links and maps come from the Analytics Agent), AND onboards new products into the catalog: create_product, import_products_from_folder, generate_product_image. Any request to add, register, or onboard a product goes here.",
     instruction=CAMPAIGN_AGENT_INSTRUCTION,
     tools=[
         create_campaign,
@@ -187,6 +198,10 @@ campaign_agent = LlmAgent(
         get_campaign_locations,
         search_nearby_stores,
         get_location_demographics,
+        # Read-only catalog browse so campaign creation can RESOLVE an existing
+        # product (by category/name) before onboarding a new one — avoids
+        # duplicate products on "create a campaign for <named product>".
+        list_products,
         # Product onboarding (Phase 15)
         create_product,
         import_products_from_folder,
@@ -362,7 +377,11 @@ use these two for creatives inside a single campaign.
   - Product images and info
   - Video URLs and thumbnails
   - Performance metrics per location
-- Use this when users ask "show me campaign locations" or "where are my stores"
+- Call it with NO arguments — get_campaign_map_data() — for the standard request;
+  it already includes videos, products, and metrics by default. Only pass the
+  include_* flags if the user explicitly asks to omit one of those sections.
+- Use this when users ask "show me campaign locations", "where are my stores",
+  or for any request that wants Google Maps links / campaigns shown on a map
 
 **Static Maps (Real Google Maps Images):**
 - generate_static_map() - Generate actual Google Maps image with markers
@@ -542,8 +561,14 @@ You have four specialized agents:
 
 1. **Campaign Agent** - For campaign management AND product onboarding
    - Create campaigns: create_campaign(product_id, store_name, city, state)
+   - When a request names a product to advertise, the existing product is
+     resolved from the catalog FIRST (via list_products) and its id reused;
+     create_product is only for genuinely new products, not ones already
+     onboarded — do not let a "create a campaign for <named product>" request
+     duplicate an existing product
    - List, view, update campaigns (each shows product info)
-   - Show campaigns on maps, get demographics
+   - List store locations / addresses (get_campaign_locations — plain store
+     addresses only, it does NOT produce Google Maps links), get demographics
    - Onboard NEW products into the catalog: create_product(name, category, ...),
      import_products_from_folder(folder_path), generate_product_image(product_id)
      — any "add/register/onboard a product" request goes to the Campaign Agent
@@ -565,6 +590,11 @@ You have four specialized agents:
    - View performance metrics (only for activated videos)
    - Find top performers, get insights
    - Generate charts and map visualizations
+   - Google Maps links & campaign locations on a map: get_campaign_map_data()
+     — this is the ONLY tool that returns clickable Google Maps URLs. Any
+     request for "Google Maps links", "show me on a map", or "campaign
+     locations on a map" goes to the Analytics Agent, NOT the Campaign Agent
+     (whose get_campaign_locations returns plain addresses with no map links).
 
 ## Workflow Example
 User: "I want to promote the black trousers at the Chicago store"

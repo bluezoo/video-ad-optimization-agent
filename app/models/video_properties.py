@@ -14,13 +14,12 @@
 
 """Pydantic models for video properties extracted from AI-generated video ads."""
 
-from enum import Enum
-from typing import List, Optional
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
 
-class MoodType(str, Enum):
+class MoodType(StrEnum):
     """Primary emotional tone of the video."""
     QUIRKY = "quirky"
     WARM = "warm"
@@ -34,7 +33,7 @@ class MoodType(str, Enum):
     ROMANTIC = "romantic"
 
 
-class VisualStyle(str, Enum):
+class VisualStyle(StrEnum):
     """Overall visual treatment style of the video."""
     CINEMATIC = "cinematic"
     DOCUMENTARY = "documentary"
@@ -46,7 +45,7 @@ class VisualStyle(str, Enum):
     MODERN = "modern"
 
 
-class EnergyLevel(str, Enum):
+class EnergyLevel(StrEnum):
     """Pace and movement intensity of the video."""
     CALM = "calm"
     MODERATE = "moderate"
@@ -54,14 +53,14 @@ class EnergyLevel(str, Enum):
     HIGH_ENERGY = "high_energy"
 
 
-class ColorTemperature(str, Enum):
+class ColorTemperature(StrEnum):
     """Overall color grading temperature."""
     WARM = "warm"
     NEUTRAL = "neutral"
     COOL = "cool"
 
 
-class AudioType(str, Enum):
+class AudioType(StrEnum):
     """Type of audio in the video (for future Veo audio support)."""
     NONE = "none"
     AMBIENT = "ambient"
@@ -72,7 +71,7 @@ class AudioType(str, Enum):
     VOICEOVER = "voiceover"
 
 
-class CameraMovement(str, Enum):
+class CameraMovement(StrEnum):
     """Primary camera movement in the video."""
     STATIC = "static"
     PAN = "pan"
@@ -84,7 +83,7 @@ class CameraMovement(str, Enum):
     SLOW_ZOOM = "slow_zoom"
 
 
-class LightingStyle(str, Enum):
+class LightingStyle(StrEnum):
     """Lighting approach in the video."""
     NATURAL = "natural"
     STUDIO = "studio"
@@ -153,7 +152,7 @@ class VideoProperties(BaseModel):
         default=ColorTemperature.NEUTRAL,
         description="Overall color grading"
     )
-    dominant_colors: List[str] = Field(
+    dominant_colors: list[str] = Field(
         default_factory=lambda: ["neutral"],
         description="Primary colors in the video"
     )
@@ -190,21 +189,21 @@ class VideoProperties(BaseModel):
         default=False,
         description="Whether video has dialogue"
     )
-    music_tempo: Optional[str] = Field(
+    music_tempo: str | None = Field(
         default=None,
         description="Music tempo if applicable (slow, medium, fast)"
     )
-    audio_mood: Optional[str] = Field(
+    audio_mood: str | None = Field(
         default=None,
         description="Mood of the audio (uplifting, dramatic, calm, etc.)"
     )
 
     # Quality/Style Tags
-    style_tags: List[str] = Field(
+    style_tags: list[str] = Field(
         default_factory=list,
         description="Descriptive style tags"
     )
-    quality_score: Optional[float] = Field(
+    quality_score: float | None = Field(
         default=None,
         ge=0,
         le=1,

@@ -31,7 +31,7 @@ import shutil
 import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -43,6 +43,10 @@ sys.path.insert(0, str(APP_DIR.parent))
 # local dev), otherwise _ensure_main_db_exists() populates one file and
 # _copy_main_db_to_temp() copies a different, nonexistent one.
 from app.config import DB_PATH as _CONFIG_DB_PATH  # noqa: E402
+
+# Snapshot app.config's import-time state BEFORE any env fixture runs — see
+# tests/_config_baseline.py (Phase 16 open item 6).
+from tests._config_baseline import restore_config_baseline  # noqa: E402, F401
 
 MAIN_DB_PATH = Path(_CONFIG_DB_PATH)
 

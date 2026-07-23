@@ -5,14 +5,15 @@ import importlib
 import pytest
 
 import app.config as config_module
+from tests._config_baseline import restore_config_baseline
 
 
 @pytest.fixture(autouse=True)
 def _reload_config_after_test(monkeypatch):
-    """Each test reloads app.config; re-reload under the restored env afterwards."""
+    """Each test may reload app.config; restore the import-time baseline afterwards."""
     yield
     monkeypatch.undo()
-    importlib.reload(config_module)
+    restore_config_baseline()
 
 
 def test_media_model_defaults_are_ga_ids(monkeypatch):

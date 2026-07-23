@@ -30,9 +30,9 @@ Each product has:
 - local_path: Path to the image file
 """
 
-from typing import List, Dict, Any
+from typing import Any
 
-PRODUCTS: List[Dict[str, Any]] = [
+PRODUCTS: list[dict[str, Any]] = [
     {
         "name": "black-high-waist-trousers",
         "category": "pants",

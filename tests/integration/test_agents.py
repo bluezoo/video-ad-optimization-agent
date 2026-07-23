@@ -12,173 +12,75 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Integration tests for agents using ADK's AgentEvaluator.
+"""Live integration tests: 3-dimension eval scoring via the local harness.
 
-These tests use EvalSet JSON files to validate agent behavior with real LLM calls.
-Tests are marked with @pytest.mark.integration to allow selective execution.
+Each test runs its EvalSet through tests.integration.eval_harness —
+inference ONCE per case against the real agent (Task 4's conftest supplies
+the real Vertex env + isolated DB), then tools / trajectory / answer
+dimensions scored from live_eval_config.json. assert_eval_outcomes is the
+vacuity guard (Q19): zero or partial inference runs can never PASS.
 
-Run with: pytest tests/integration -v -m "not slow"
+All five eval sets were repaired in Phase 16 stage 4 to the real
+transfer_to_agent-wrapped trajectories (ws09 discovery) and owner-approved
+reference answers, so they run live and are expected to PASS — no xfail
+markers remain.
 """
-
-from pathlib import Path
 
 import pytest
 
-try:
-    from google.adk.evaluation import AgentEvaluator
-except ImportError as e:
-    # Fail loudly. A broad per-test `except ImportError: pytest.skip` used to
-    # swallow this, silently reporting the whole suite as 6 skips when the
-    # eval extra was missing (discovered in workstream 01).
-    raise ImportError(
-        "google.adk.evaluation is unavailable. Install the eval extra: "
-        "pip install 'google-adk[eval]' — see SETUP_INSTRUCTIONS.md (Tests)."
-    ) from e
-
-# Skip these tests if not configured for integration testing
-pytestmark = pytest.mark.integration
-
-
-def get_eval_set_path(filename: str) -> str:
-    """Get the absolute path to an eval_set JSON file."""
-    return str(Path(__file__).parent / "eval_sets" / filename)
-
-
-def eval_sets_exist() -> bool:
-    """Check if eval_sets directory has JSON files."""
-    eval_dir = Path(__file__).parent / "eval_sets"
-    if not eval_dir.exists():
-        return False
-    json_files = list(eval_dir.glob("*.test.json"))
-    return len(json_files) > 0
-
-
-# Skip all tests if eval_sets don't exist
-if not eval_sets_exist():
-    pytestmark = [pytest.mark.integration, pytest.mark.skip(reason="No eval_sets found")]
-
-
-_INFRA_MARKERS = (
-    "credential", "permission denied", "permission_denied", "403", "quota",
-    "resource_exhausted", "429",
-    "unavailable", "503", "deadline", "connection", "getaddrinfo",
+from tests.integration.eval_harness import (
+    assert_eval_outcomes,
+    get_eval_set_path,
+    run_eval_set,
 )
 
-
-def _xfail_if_infrastructure(e: Exception):
-    """xfail ONLY on infrastructure errors; real eval failures must fail the test."""
-    msg = str(e).lower()
-    if isinstance(e, (ConnectionError, TimeoutError)) or any(m in msg for m in _INFRA_MARKERS):
-        pytest.xfail(f"Integration infrastructure unavailable: {e}")
-    raise e
+pytestmark = pytest.mark.integration
 
 
 class TestCoordinatorAgentRouting:
     """Test that the coordinator routes queries to correct sub-agents."""
 
-    @pytest.mark.asyncio
     async def test_coordinator_routes_to_campaign_agent(self):
-        """Coordinator should route campaign queries to campaign_agent."""
-        try:
-            await AgentEvaluator.evaluate(
-                agent_module="app.agent",
-                eval_dataset_file_path_or_dir=get_eval_set_path("coordinator.test.json"),
-                num_runs=1,  # Single run for faster tests
-            )
-        except AssertionError:
-            raise
-        except Exception as e:
-            _xfail_if_infrastructure(e)
+        """Coordinator should route queries to the right sub-agent + tool."""
+        outcomes = await run_eval_set(get_eval_set_path("coordinator.test.json"))
+        assert_eval_outcomes(outcomes, expect_cases=4)
 
 
 class TestCampaignAgent:
     """Test Campaign Agent tool execution."""
 
-    @pytest.mark.asyncio
     async def test_campaign_agent_tools(self):
         """Campaign agent should correctly execute campaign tools."""
-        try:
-            await AgentEvaluator.evaluate(
-                agent_module="app.agent",
-                eval_dataset_file_path_or_dir=get_eval_set_path("campaign_agent.test.json"),
-                num_runs=1,
-            )
-        except AssertionError:
-            raise
-        except Exception as e:
-            _xfail_if_infrastructure(e)
+        outcomes = await run_eval_set(
+            get_eval_set_path("campaign_agent.test.json")
+        )
+        assert_eval_outcomes(outcomes, expect_cases=5)
 
 
 class TestMediaAgent:
     """Test Media Agent tool execution."""
 
-    @pytest.mark.asyncio
     async def test_media_agent_tools(self):
         """Media agent should correctly execute media tools."""
-        try:
-            await AgentEvaluator.evaluate(
-                agent_module="app.agent",
-                eval_dataset_file_path_or_dir=get_eval_set_path("media_agent.test.json"),
-                num_runs=1,
-            )
-        except AssertionError:
-            raise
-        except Exception as e:
-            _xfail_if_infrastructure(e)
+        outcomes = await run_eval_set(get_eval_set_path("media_agent.test.json"))
+        assert_eval_outcomes(outcomes, expect_cases=5)
 
 
 class TestReviewAgent:
     """Test Review Agent tool execution."""
 
-    @pytest.mark.asyncio
     async def test_review_agent_tools(self):
         """Review agent should correctly execute review tools."""
-        try:
-            await AgentEvaluator.evaluate(
-                agent_module="app.agent",
-                eval_dataset_file_path_or_dir=get_eval_set_path("review_agent.test.json"),
-                num_runs=1,
-            )
-        except AssertionError:
-            raise
-        except Exception as e:
-            _xfail_if_infrastructure(e)
+        outcomes = await run_eval_set(get_eval_set_path("review_agent.test.json"))
+        assert_eval_outcomes(outcomes, expect_cases=3)
 
 
 class TestAnalyticsAgent:
     """Test Analytics Agent tool execution."""
 
-    @pytest.mark.asyncio
     async def test_analytics_agent_tools(self):
         """Analytics agent should correctly execute analytics tools."""
-        try:
-            await AgentEvaluator.evaluate(
-                agent_module="app.agent",
-                eval_dataset_file_path_or_dir=get_eval_set_path("analytics_agent.test.json"),
-                num_runs=1,
-            )
-        except AssertionError:
-            raise
-        except Exception as e:
-            _xfail_if_infrastructure(e)
-
-
-class TestAllEvalSets:
-    """Run all eval sets in the eval_sets directory."""
-
-    @pytest.mark.slow
-    @pytest.mark.asyncio
-    async def test_all_eval_sets_multi_run(self):
-        """Run all eval sets with multiple runs for variance testing."""
-        try:
-            eval_dir = Path(__file__).parent / "eval_sets"
-            for eval_file in eval_dir.glob("*.test.json"):
-                await AgentEvaluator.evaluate(
-                    agent_module="app.agent",
-                    eval_dataset_file_path_or_dir=str(eval_file),
-                    num_runs=2,  # Multiple runs for variance
-                )
-        except AssertionError:
-            raise
-        except Exception as e:
-            _xfail_if_infrastructure(e)
+        outcomes = await run_eval_set(
+            get_eval_set_path("analytics_agent.test.json")
+        )
+        assert_eval_outcomes(outcomes, expect_cases=4)

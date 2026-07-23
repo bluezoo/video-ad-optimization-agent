@@ -16,12 +16,12 @@
 
 from .attribution import AdPlayRecord, BlueZooVisitInterval
 from .video_properties import (
-    VideoProperties,
-    MoodType,
-    VisualStyle,
-    EnergyLevel,
-    ColorTemperature,
     AudioType,
+    ColorTemperature,
+    EnergyLevel,
+    MoodType,
+    VideoProperties,
+    VisualStyle,
 )
 
 __all__ = [

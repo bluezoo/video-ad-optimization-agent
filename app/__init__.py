@@ -14,4 +14,4 @@
 
 """Ad Campaign Agent - Fashion retail campaign management with Veo 3.1 video generation."""
 
-from . import agent
+from . import agent as agent

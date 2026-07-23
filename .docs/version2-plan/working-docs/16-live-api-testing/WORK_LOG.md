@@ -1,0 +1,849 @@
+# Workstream 16 — live-api-testing — WORK_LOG
+
+Append-only running log. Per the owner's execution directive 7 (phase doc
+§"Execution directives"), this log is kept **continuously current** — every
+step, every fix, and every owner decision/input (verbatim where short) is
+recorded at the moment it happens. It is the reference of record; nothing
+rests on conversation memory.
+
+## 2026-07-23 — checkpoint 1: kickoff — worktree created
+
+- Branch `version_2_live-api-testing` off `version_2` @ f8df319 (verified:
+  merge-base == version_2 HEAD). Worktree `.claude/worktrees/version_2_live-api-testing`.
+- STATUS.md row 16 → `kickoff in progress` (main checkout, commit 3fc55d0).
+- Phase doc read in full — three layers noted: original steps 1–6 (step 3
+  already done in ws14, kept as no-op re-verification), 6 carried-in open
+  items, and the **binding** "Execution directives (owner, 2026-07-23)"
+  section (coverage bar = output-validated everything; 3-dimension evals;
+  agents-cli as the eval-building toolchain; July-2026-current doc sources
+  only; incremental commits; ask-don't-assume on expected behavior; this
+  running-log discipline).
+- Owner kickoff message (2026-07-23, verbatim constraints beyond the doc):
+  upgrade agents-cli to latest + `agents-cli setup` + study its eval
+  architecture and report what it can create BEFORE any working doc; fetch
+  current ADK eval docs via context7 + google-dev-knowledge MCP only; plan
+  as small incremental stages each committed when green; at the working-doc
+  gate also propose whether the repo-wide lint cleanup (ws10 carried item 4)
+  folds in; ws14 WORK_LOG has two candidate eval cases (cold-start duplicate
+  create_product; legacy variation fields in saved JSON).
+- Next: agents-cli upgrade/setup/study + doc fetch + phase-claim
+  re-verification (kickoff research), then working doc.
+
+## 2026-07-23 — kickoff research done (checkpoint 1 amendment)
+
+- **agents-cli:** verified 1.1.0 IS the latest on PyPI (`uv tool upgrade` refreshed
+  deps only); `agents-cli setup --workspace --skip-auth --agent claude-code` installed
+  7 ADK skills into this worktree's `.claude/skills/` (committed 3fd4879):
+  adk-code, deploy, **eval**, observability, publish, scaffold, workflow.
+- **Research fan-out (4 parallel agents, ~720k tokens), reports committed under
+  `research/`:**
+  - `agents-cli-architecture.md` — full eval surface (generate/grade/run/compare/
+    metric + experimental dataset synthesize/analyze/optimize/submit/results);
+    17 built-in server-side LLM-judged metrics incl. separate tool-use /
+    trajectory / task-success / final-response dimensions; **`eval generate`
+    cannot run here today** (requires agents-cli-manifest.yaml + uv sync, repo
+    has neither; hard 600s whole-dataset timeout would also break Veo cases;
+    no DB isolation); **`eval grade` works project-free** (--traces --output
+    --config) → hybrid recommended: our pytest live harness emits traces,
+    agents-cli grades/compares. Custom LLMMetric (configurable judge model,
+    multimodal per its skill's multimodal-eval.md) + CodeExecutionMetric
+    available; GECKO_TEXT2IMAGE/TEXT2VIDEO exist but undocumented (spike-only).
+  - `adk-eval-docs-context7.md` — current EvalSet/EvalCase schema (.test.json ≡
+    .evalset.json); `tool_trajectory_avg_score` now supports
+    `{threshold, match_type: EXACT|IN_ORDER|ANY_ORDER}`; `criteria` dict param
+    DEPRECATED in favor of `eval_config=EvalConfig`; new judge-metric family
+    (final_response_match_v2, rubric_based_{final_response,tool_use,
+    multi_turn_trajectory}_quality_v1, hallucinations_v1, safety_v1, …).
+    **Vacuity root cause refined from source:** LocalEvalService does NOT
+    swallow failures — it sets InferenceStatus.FAILURE and
+    final_eval_status=FAILED per case; the gap is AgentEvaluator's pytest
+    aggregation, which only compares mean metric scores (empty when all
+    inference failed) and never inspects final_eval_status → vacuity guard
+    should assert on final_eval_status, not capture loggers (better than the
+    phase doc's step-1 sketch). **transfer_to_agent confirmed via current
+    upstream fixture as an ordinary tool_uses entry**
+    `{"name": "transfer_to_agent", "args": {"agent_name": …}}`.
+  - `adk-eval-docs-gdk.md` — adk.dev current: 4 eval run modes (web UI, pytest,
+    `adk eval`, new `adk conformance` deterministic replay); 12-criterion table
+    (criteria page authoritative; overview list stale); GCP-project-required
+    subset (safety_v1, multi_turn_*) — we have ADC; per-case rubrics additive.
+  - `repo-claim-verification.md` — **all 13 phase-doc claims CONFIRMED, none
+    stale.** Open item 6 leak REPRODUCED live (1 failed, real 403 to
+    test-bucket, tests/e2e test_video_review_table). `make lint`: 42 errors,
+    30 auto-fixable (ws10 item 4). No tests/integration/conftest.py, no
+    test_config.json, no test-live target anywhere. Existing slow/veo tests
+    MOCK Veo — no genuinely-live media test exists today. Judge inputs:
+    archetypes app/tools/prompt_archetypes.py:16-24, no-text policy
+    prompt_builders.py:32-40. ws14 eval candidates verbatim at
+    14-model-upgrades/WORK_LOG.md:147-151. reset-db echo says "22 fashion
+    products", actual 28. Root conftest: app.config imported line 45 BEFORE
+    session env fixture (54-77) — ws15 mechanism confirmed. Worktree .venv
+    Python 3.14 + google-adk 2.5.0; app/.env copied from main checkout
+    (gitignored).
+- Next: working doc draft → owner gate (incl. lint fold-in proposal, agents-cli
+  hybrid architecture decision, skills-vendor-on-branch flag).
+
+## 2026-07-23 — checkpoint 2: working doc approved (owner)
+
+Owner gate answers (verbatim):
+1. Working doc: "Yes — approved, write the plan" (hybrid pytest+agents-cli
+   architecture, 10-stage incremental plan, coverage matrix approved).
+2. Lint fold-in (ws10 item 4): "Yes — fold in as stage 0 (Recommended)".
+3. agents-cli skills vendor: "Keep on branch (Recommended)" — commit 3fd4879
+   stands, ships to client with the PR.
+Next: writing-plans → plan.md alongside this doc, then plan-approval gate.
+
+## 2026-07-23 — checkpoint 3: plan approved (owner)
+
+Owner answer (verbatim): "Yes — approved, execute" — plan.md (18 tasks / 10
+stages, owner-gate protocol) committed eb86949. Execution via
+subagent-driven-development, ultracode workflow loop (implementer → reviewer →
+fix cap 2 per task), Tasks 1–5 first (no owner gates); Tasks 6+ pause at each
+OWNER GATE per the plan's execution protocol.
+Task 1 implemented (commits 9023e93..295fc3e; ruff 42 errors -> 0, make lint green, make test-unit 314 passed/1 skipped, make test-e2e 25 passed/1 skipped, golden prompt tests 4 passed)
+Task 1 review: approved (9023e93..41ac6eb)
+Task 2 implemented (commits f5c26fc..3aa9c7e; combined tests/unit + tests/e2e 341 passed/2 skipped, was 3 failed/1 skipped before fix; make lint green)
+Task 2 review: approved (f5c26fc..4c16ebc)
+Task 3 implemented (commits 67da5ee..6921bda; make test = 316 passed/1 skipped (unit) + 25 passed/1 skipped (e2e), no integration output; make lint clean; make test-live invokes pytest tests/integration tests/live — tests/live collects 0 items cleanly, tests/integration pre-existing ModuleNotFoundError: pandas/google-adk[eval] unrelated to this task, out of scope, Task 4+ owns it)
+Task 3 review: approved (67da5ee..a65f3ad)
+Task 4 implemented (commits 12ebc02..1381958; tests/integration/test_live_env_smoke.py 2 passed; make test 316 passed/1 skipped (unit) + 25 passed/1 skipped (e2e); combined tests/unit+e2e+smoke 343 passed/2 skipped; make lint clean on touched files)
+Task 4 review: approved (12ebc02..f3ed7d3)
+Task 5 implemented (commits a02141f..cad2c54; tests/integration 7 passed/5 xfailed in 168.54s — evals genuinely run live (was vacuous ~5s), guard+smoke 7 passed; make test 316 passed/1 skipped (unit) + 25 passed/1 skipped (e2e); make lint green; installed google-adk[eval]==2.5.0 extras into worktree .venv — resolves Task 3's carried pandas ModuleNotFoundError)
+Task 5 review: approved (a02141f..73d9f1d)
+
+## 2026-07-23 — Tasks 1–5 complete (stage 0–3), all review-approved, 0 fix rounds
+
+- Per-task ledger lines above (mirrored from .superpowers/sdd/progress.md by the
+  agents themselves). Highlights: lint 42→0 (UP042 via StrEnum, py311 target);
+  item-6 leak reproduced as 3 failures (not 1 — brief's own mechanism paragraph
+  was right), combined tests/unit+e2e now 341 passed; tier split landed; live
+  smoke proves real project + GCS_BUCKET=None reach the process; eval harness
+  live run: 7 passed + 5 xfailed in 168.5s — the five eval sets genuinely
+  execute inference + FinalResponseMatchV2 judge scoring now (old vacuous run
+  ~5s), xfail-as-authored pending stage-4 repair.
+- Carried to Task 16 (docs): worktree needed `pip install 'google-adk[eval]==2.5.0'`
+  (pandas chain) — SETUP_INSTRUCTIONS must document the eval extra for test-live;
+  eval_harness raises loud ImportError with instructions if absent.
+- Task 5 sanctioned deviations (implementer, reviewer-approved): removed
+  known-vacuous TestAllEvalSets; factored conftest env bootstrap into
+  resolve_live_env()/apply_live_env_to_process() for the recorder CLI.
+- skills-lock.json (npx skills integrity hashes) committed alongside the
+  vendored skills.
+- Next: Tasks 6-10 — record actuals for all five eval sets, then OWNER GATES.
+
+## 2026-07-23 — OWNER GATE 1 (stage 4 calibration): decisions (verbatim)
+
+Presented: calibration/OWNER_REVIEW.md (16 cases, live actuals + proposals;
+two reproducible product bugs). Owner answers:
+1. Dup-product bug (create-campaign-beverage; settles Task 11 cold-start case
+   the same way): "Fix agent now (Recommended)" — amend instructions to
+   resolve existing products before creating; pin correct 3-call trajectory
+   (list_products → create_campaign product_id=23).
+2. Maps misrouting bug (get-map-data): "Fix routing now (Recommended)" —
+   Maps-link queries must reach analytics_agent's get_campaign_map_data; pin
+   correct 2-call trajectory. Noted: answer text fabricated link-looking text.
+3. Pinning policy (other 14 cases): "Yes — minimal refs + proposed bullets
+   (Recommended)" — minimal meaningful trajectories (subsequence tolerance),
+   OWNER_REVIEW.md's proposed must-contain bullets become the references.
+4. review_agent pending-videos verbosity: "Minimal ref, leave agent as-is
+   (Recommended)" — drop legacy list_pending_videos from the reference, no
+   instruction tightening.
+
+DISCOVERY (bug 2 is new knowledge): Coordinator misroutes Maps-link queries
+to campaign_agent; answer text claims Google Maps links that no called tool
+produced. Blast radius: app/agent.py routing instructions (fixed this
+workstream per decision 2); eval set analytics_agent/get-map-data. Bug 1 was
+already flagged by ws14's WORK_LOG (candidate case) — now reproduced live and
+being fixed here, which resolves Task 11's open fix-vs-xfail question as FIX.
+
+## 2026-07-23 — checkpoint 4: stage 4 implemented (Tasks 6-10 + owner gate 1 agent fixes)
+
+Post-OWNER-GATE-1 execution (implementer). Base dc289e4.
+
+**Two owner-mandated agent fixes (app/agent.py):**
+- **Dup-product fix** (decision 1): commits e69f0b2 (campaign_agent "Creating
+  Campaigns" + coordinator Campaign-Agent bullet now require resolving an
+  existing product before create_product) + 24754e0 (gave campaign_agent its
+  OWN list_products tool — instruction-only was insufficient: the model
+  bounced campaign_agent->media_agent->campaign_agent and still created a
+  duplicate product id 585 because no list_products call ever fired; giving
+  campaign_agent list_products makes the owner-pinned 3-call trajectory real).
+  Confirmed live: create-campaign-beverage now runs [transfer(campaign_agent),
+  list_products(beverage), create_campaign(product_id=23)], NO create_product,
+  all 3 dims 1.0.
+- **Maps-routing fix** (decision 2): commits 1f50278 (coordinator Analytics-
+  Agent bullet + campaign_agent responsibilities: Google-Maps-link / "on a map"
+  queries go to analytics_agent.get_campaign_map_data; campaign_agent's
+  get_campaign_locations returns plain addresses only, no Maps links) + 8054c3a
+  (analytics instruction nudges get_campaign_map_data() to a no-argument call
+  for stable trajectory args — the model was flapping between {} and the three
+  explicit include_* default flags; the ADK trajectory evaluator does EXACT
+  args equality per pinned call, so an unstable arg set fails tools/trajectory
+  intermittently; the nudge stabilized it to {} across repeated runs).
+  Confirmed live: get-map-data now routes [transfer(analytics_agent),
+  get_campaign_map_data({})], all 3 dims pass.
+
+**Five eval sets repaired** (one commit each): coordinator 696e4ba, campaign
+cd6051a, media ee02c87, analytics f0e8a74, review 12fa6aa. Each: pinned the
+real transfer_to_agent-wrapped trajectory with minimal-but-meaningful args
+(exact-match per OWNER_REVIEW proposals; Option A for create-campaign-beverage
+product_id=23 and get-map-data; minimal refs for get-campaign-locations and
+list-pending-videos, dropping legacy list_pending_videos); replaced every
+empty/stale final_response with a compact factual reference embedding the
+owner-approved must-contain bullets (seeds FinalResponseMatchV2). xfail markers
+removed per set; the shared _AUTHORED_PRE_TRANSFER marker definition removed
+with the last (review) commit. expect_cases set to real counts (4/4/5/4/3).
+
+**Green loop:** full `tests/integration` = **12 passed / 0 failed / 0 xfailed**
+in 112.98s (16 eval cases x 3 dims + guard 3 + smoke 2). Two owner-flagged bug
+cases both pass all three dimensions. make test (unit+e2e) 341 passed/2
+skipped; make lint green on all touched files.
+
+**Deliberate-break (plan Task 6 Step 5):** corrupted coordinator.test.json
+list_campaigns -> list_campaignsX; coordinator test FAILED with
+`route-to-campaign-agent-list[tools]: score=0.0 < 1.0` and
+`route-to-campaign-agent-list[trajectory]: score=0.0 < 1.0`; reverted -> 1
+passed. Confirms the tools/trajectory dimensions genuinely gate on tool names.
+
+Calibration nuance worth noting for downstream tasks: exact-arg trajectory
+matching + LLM non-determinism means tools with several optional/default args
+(e.g. get_campaign_map_data's include_* flags) can flap; the mitigation used
+here is an instruction nudge toward a canonical call shape plus pinning that
+shape, NOT loosening the eval.
+
+## 2026-07-23 — checkpoint 4b: stage-4 review fix (Important finding)
+
+Review returned one Important finding (all else approved): campaign_agent's
+`description=` (app/agent.py:191) still said "location/map features". ADK
+injects each sub-agent's description verbatim into the coordinator's
+transfer-decision prompt (google/adk/flows/llm_flows/agent_transfer.py), so the
+description contradicted the new instruction text and risked reintroducing the
+Maps misroute (owner decision 2).
+
+Fix (commit b5be5a7): campaign_agent description now reads "Manages ad
+campaigns (create, list, view, update) and store location/address lookup (plain
+store addresses only — Google Maps links and maps come from the Analytics
+Agent), AND onboards new products into the catalog...". Checked the other three
+sub-agent descriptions: analytics_agent (line 425) correctly OWNS the Maps
+claim ("provides Google Maps integration with store locations, static maps..."),
+media_agent and review_agent carry no map language — no other contradiction.
+
+Verification: make test-unit 316 passed/1 skipped; make lint green. Live
+re-run `pytest tests/integration/test_agents.py -k "analytics or campaign"`
+(the -k filter also pulls in the coordinator test via its method name):
+campaign_agent PASS, analytics_agent PASS; coordinator hit a TRANSIENT Vertex
+`400 INVALID_ARGUMENT` on route-to-media-agent-products during inference (the
+vacuity guard correctly FAILED rather than passed it — 400 INVALID_ARGUMENT is
+not in the infra-marker xfail list), and passed clean on immediate re-run (1
+passed in 53s). Not a regression from the description edit (that touched only
+campaign_agent; the error was on the media-routing turn).
+
+Stage 4 review: approved (dc289e4..f1b2ac3)
+Task 11 implemented (commits 526779e..8717b12; campaign_agent.test.json +create-campaign-cold-start-outerwear case [transfer(campaign_agent), list_products({}), create_campaign(product_id=8)] NO create_product, stable across 6 live runs, all 3 dims pass — OWNER GATE 1's dup-product fix confirmed live for a fresh product; fixed video_tools._variation_params_for_storage to drop model_ethnicity/activity for non-wearable archetypes, 3 new fast unit tests; full tests/integration 12 passed/0 failed in 124s, tests/unit+e2e 344 passed/2 skipped, make lint green)
+Task 11 implemented (commits 526779e..98b04c8; fixed review finding — dropped hardcoded live "(Campaign ID 5)" from create-campaign-cold-start-outerwear eval reference [race-condition flakiness risk]; tests/unit/test_video_tools.py::TestVariationParamsStorage 3 passed; tests/integration/test_agents.py::TestCampaignAgent 1 passed (live); tests/unit 319 passed/1 skipped; make lint green)
+Task 11 review: approved (526779e..2d47ca3)
+Task 12 implemented (commits e411976..4d61789; tests/live/test_media_pipeline.py 2 passed in 187.5s live — wearable [blue-floral-maxi-dress, gen 90s, reference_image_used=false honest] + non-wearable [aurora-cold-brew-330ml, gen 96s, reference_image_used=true, variation renamed beverage-cafe-vibrant, model fields dropped from stored params]; scene images 768x1376 PNG, videos 720x1280@24fps 4.01s ~1.2-2.1MB, no storage.googleapis.com in results; Q14/Q15 evidence in calibration/media-metadata.json; make lint green; unit 319 passed/1 skipped, e2e 25 passed/1 skipped)
+Task 12 review: approved (e411976..492c49f)
+Task 13 implemented (commits e3006e2..9c0583a; tests/live/test_onboarding_from_scratch.py 1 passed in 32.00s live — non-fashion product [Artisan Coffee Beans] on schema-only empty DB: create_product (pending) -> generate_product_image via real image model (available, product-images/artisan-coffee-beans.png, verified coherent labeled coffee-bag photo) -> create_campaign attach, no storage.googleapis.com anywhere; image registered in generated_media for Task 14's judge; make lint green; unit+e2e 340 passed/2 skipped, golden prompt tests 4 passed)
+Task 13 review: approved (e3006e2..9b2a07f)
+
+## 2026-07-23 — controller notes after Tasks 11–13 (all approved)
+
+- Task 11 note: the legacy variation-fields writer fix (video_tools
+  _variation_params_for_storage) was executed under OWNER GATE 1 decision 1's
+  "fix, don't xfail" precedent (controller dispatch instruction), not a
+  separate owner gate — flagged to the owner at the next gate for
+  ratification. Cold-start phrasing lesson: "New York, NY" produced unstable
+  state args; pinned query uses "Manhattan, New York" (stable across 6 runs).
+- Live-flakiness watchlist (for Task 16 docs + Task 18 verification):
+  transient Vertex 400 INVALID_ARGUMENT (not in _INFRA_MARKERS — correctly
+  FAILS, passes on rerun) seen twice; answer-dimension judge flap seen once
+  on get-campaign-locations. Frequency so far ≈1 case per full-suite run,
+  always clean on immediate rerun.
+- Q14 evidence (Phase 14a): Stage-1 scene images 768x1376 PNG (~1.4MB).
+  Q15 evidence (Phase 14b): Veo 3.1 output 720x1280 @ 24fps, 4.01s for a
+  requested 4s (6s/8s unmeasured). In calibration/media-metadata.json.
+- Generated media on disk for Task 14's judge: generated/ videos (wearable
+  blue-floral-maxi-dress 2.1MB; non-wearable aurora-cold-brew 1.2MB),
+  product-images/artisan-coffee-beans.png (1408x768).
+
+## 2026-07-23 — checkpoint 5: Task 14 pre-gate (Gemini judge + calibration)
+
+Implementer, pre-OWNER-GATE-2 only (the gate is the controller's). Base
+e47c541; code+calibration commit ad5671f.
+
+**judge.py** (`tests/live/judge.py`): gemini-3.6-flash multimodal reviewer
+(Vertex, global) via `google.genai`, structured JSON verdicts through
+`response_schema` (Pydantic `_Check{verdict,evidence}` per named check).
+Public API `judge_image` / `judge_video` / `judge_chart` (+ `judge_media_entry`
+dispatch); `JudgeVerdict` = `{check: {verdict, severity, evidence}}`. Severity
+is module-owned policy (`_IMAGE/_VIDEO/_CHART_SEVERITY`), NOT model-decided.
+Rubric derived from source so judge/generator can't drift: subject rule from
+`prompt_archetypes.WEARABLE` (wearable=human model; else product-hero no
+humans), no-text policy from `prompt_builders._NO_TEXT_BLOCK`/`_AUDIO_BLOCK`.
+Video judged via **direct mp4 bytes** (proven pattern from
+`video_tools.analyze_video`), with a 4-evenly-spaced-frames ffmpeg fallback
+(`_sample_frames`) if the API refuses on size/format. Honesty bound: pixels
+only — videos check burned-in captions per visible frame, audio NOT verified
+(rubric text says so).
+
+**test_media_judge.py**: `test_generated_media_obey_rubric` judges every
+`generated_media` entry (registry-or-disk resolver `_resolve_media` — works
+in-session AND standalone off disk, skip-with-reason if absent), FAILS on any
+hard-check fail, `warnings.warn` on warn checks. `test_rpi_chart_obeys_inverted_rubric`
+renders one chart via the REAL `metrics_tools.generate_creative_comparison_chart`
+(seeded campaign 1, MagicMock ToolContext to capture PNG bytes, tmp_path) and
+judges it with the INVERTED rubric: axis/label/value text REQUIRED + bar count
+== seeded activated-creative count (3). Marks `[live, slow]`.
+
+**Calibration live run** (once, over EXISTING disk media + fresh chart):
+5 media (2 videos, 2 scene images, 1 onboarding product image) + 1 RPI chart,
+6 multimodal judge calls in one pass → **ALL hard checks pass, all 3 warn
+checks pass, zero failures**. Both videos used direct-mp4 (fallback NOT
+exercised). Chart: 3 bars confirmed, axes/labels/value tags legible.
+Verdicts + evidence sentences + proposed hard/warn split written to
+`calibration/judge-calibration.md`; the rendered chart saved to
+`calibration/rpi-chart-campaign1.png` (owner opens both at the gate).
+
+**Proposed severities (NOT owner-pinned — decided at OWNER GATE 2):**
+subject_matches_archetype=hard, no_rendered_text=hard, no_captions_any_frame
+(video)=hard, setting_mood_plausible=warn; chart axes_and_labels_legible=hard,
+correct_creative_count=hard. Open for the owner: keep setting_mood as warn or
+promote; confirm chart checks hard; want a product-identity check?
+
+**Limitations flagged:** no negative controls this run (all media is
+policy-conformant, so this proves no-false-positive, NOT catch-violations —
+a text-injected image / human-in-product-hero would be the negative control,
+deferred to owner/Task 16). Ordering nuance: in a full `make test-live` the
+judge file sorts before the pipeline file alphabetically, so in-session the
+judge falls back to on-disk media from a prior run unless reordered — the
+resolver is order-independent by design; flag for Task 14 Step 4 (controller).
+
+**Verify (pre-gate):** make lint green (all touched); make test-unit 319
+passed/1 skipped. NOT run: full `make test-live` (Step 4, controller);
+regeneration of existing videos/images (expensive, reused on disk).
+
+## 2026-07-23 — OWNER GATE 2 (judge calibration): decisions (verbatim)
+
+Presented: calibration/judge-calibration.md (5 media + chart, all checks pass,
+per-check evidence; media paths listed for owner viewing). Owner answers:
+1. Severity mapping: "Approve as proposed (Recommended)" — hard:
+   subject_matches_archetype, no_rendered_text, no_captions_any_frame, both
+   chart checks; warn: setting_mood_plausible. (Resolves phase-doc open
+   question 1; Task 16 amends 99-open-questions.)
+2. Judge negative controls: "Yes — add now (Recommended)" — corrupted-media
+   fixtures the judge must FAIL become part of test-live.
+3. Task 11 legacy variation-fields fix: "Ratified (Recommended)".
+
+## 2026-07-23 — checkpoint 6: Task 14 post-gate (OWNER GATE 2 applied) — NOT green, two findings
+
+Post-OWNER-GATE-2 (severities APPROVED as proposed; add negative controls;
+run full test-live). Implementer. Code commit 1a24307.
+
+**Done + verified:**
+- Severities marked OWNER-APPROVED in `judge.py` (`_IMAGE/_VIDEO/_CHART_SEVERITY`
+  comment refs "ws16 OWNER GATE 2, 2026-07-23").
+- Negative controls added to `test_media_judge.py` (`TestJudgeNegativeControls`):
+  (a) rendered-text banner painted onto a copy of a clean image (PIL, built on
+  the fly under tmp_path) → `no_rendered_text` must FAIL; (b) wearable scene
+  image (human model) judged as `product_only` → `subject_matches_archetype`
+  must FAIL. Ran live once: BOTH correctly FAIL → tests PASS (15.4s). Judge
+  evidence: "large black banner with bright yellow text reading 'SALE...'" and
+  "A human female model is present in the center of the frame". No corrupted
+  binaries committed.
+- **Onboarding isolation fix** (`test_onboarding_from_scratch.py::empty_live_db`;
+  in-scope per Task 14 brief "modify ... if fixture plumbing needs it"): the
+  live tier writes to the persistent repo `product-images/`, so a reference
+  image left by a prior run made `create_product` report `image_status=
+  'available'` not `'pending'` (create_product derives status from
+  `storage.product_image_exists` at call time). Fix isolates PRODUCT_IMAGES_DIR
+  + GENERATED_DIR to a temp sandbox (temp `product-images` keeps that basename
+  for the dir-name assertion). Onboarding test now PASSES on reruns (24s).
+
+**Full `make test-live` (evals+media+judge) — TWO runs, both 2 failed / 17
+passed:**
+- Run 1 (pre-onboarding-fix): 426s wall. Failures: campaign-agent
+  get-campaign-locations[answer] flake; onboarding pending assertion (the
+  isolation bug, now fixed).
+- Run 2 (post-fix): 531s wall. Onboarding PASSES. Remaining failures:
+  campaign-agent get-campaign-locations[answer] flake AGAIN; **judge test
+  `test_generated_media_obey_rubric` FAILED** — see DISCOVERY below.
+- Per-stage (run 2, --durations): media pipeline dominates (2 Veo videos +
+  scene images ~90-100s each); evals ~110-120s for the set; judge calls
+  ~5-15s each. Full-run wall 8-9 min.
+
+**FLAKE (pre-existing, NOT Task 14):** get-campaign-locations[answer] scored
+0.0 in run1, run2, and a standalone rerun — then a 4th (record_to) run scored
+tools/trajectory/answer ALL 1.0 with a complete, correct answer (all 4 stores,
+city/state, product). So it is LLM answer-judge (FinalResponseMatchV2)
+non-determinism on this case, NOT a content regression — content is correct.
+Worse streak than the ws16 watchlist's "once". Owner/controller may want to
+stabilize (widen the reference, or move answer to warn for this case) — Task 8
+territory, not Task 14.
+
+**DISCOVERY (judge strictness vs generator intent — OWNER DECISION NEEDED):**
+In run 2 the judge HARD-failed the freshly-regenerated product-hero cold-brew
+media on `subject_matches_archetype`:
+- non_wearable_scene_image: "visible blurred figures of people sitting in the
+  background of the cafe setting"
+- non_wearable_video: "Multiple humans visible in the background sitting and
+  walking through the cafe frame"
+The rubric's product-hero subject rule (`judge._subject_rule`) says "NO humans
+anywhere ... no people in the background" — so the judge enforced exactly what
+was written. BUT: (1) I inspected the on-disk scene image — it shows the bottle
+as a clear hero with a BLURRED botanical/cafe background (dried flowers, a
+plant, a window); no clearly-identifiable people — likely a judge false-positive
+reading ambient blur as "figures"; (2) the SAME media type passed cleanly in
+the calibration run and run 1; (3) the generator's product/staged prompts
+intentionally allow "soft ambient depth"/background — they do NOT forbid
+incidental background figures. So the "no people in the background" clause is
+STRICTER than generator intent and is non-deterministically tripping on ambient
+blur. This is exactly the judge catching-vs-over-catching boundary the owner
+must rule on — the GATE-2 approval was over calibration media that had no
+background ambiguity.
+
+**PROPOSED (for OWNER GATE, NOT applied):** relax the product-hero subject rule
+to "no human is FEATURED as a model/subject; the product must be the clear hero
+— incidental/blurred background figures in a public setting are acceptable."
+Keeps the negative control passing (a human MODEL in a product-only shot still
+fails), matches generator intent, removes the ambient-blur false positives.
+Alternative: keep strict + tighten the generator prompt to forbid background
+people. Owner decides.
+
+**State:** code committed (1a24307); severities owner-approved + negative
+controls + onboarding fix all verified. Full test-live NOT green — held for the
+owner rubric decision above before the final "test-live green" commit. make
+lint green; make test-unit 319 passed/1 skipped.
+
+## 2026-07-23 01:39 — OWNER GATE 3: judge subject strictness + answer-dimension flake policy
+Presented to owner (AskUserQuestion, with the Task 14 post-gate evidence: full `make test-live` x2 = 17 passed/2 failed; failure A = get-campaign-locations[answer] LLM-judge flake, content correct and 3-dims-1.0 on clean rerun; failure B = judge HARD-failed the regenerated product-hero cold-brew video on subject_matches_archetype because of blurred background people in the cafe scene — the rubric's "no humans in product_only output" is stricter than what the ws09 generator prompts actually enforce).
+
+**Q1 — Judge subject rubric for product-hero (non-wearable) media: how strict on humans in frame?**
+Owner answer (verbatim): "Relax: no FEATURED human (Recommended)" — product must be the hero; incidental blurred background people allowed (normal ad composition, matches what ws09 prompts actually generate). Negative control (featured full human model) must still fail.
+
+**Q2 — Policy for the ~1-per-run LLM-judge answer-dimension flake (content correct, clean on rerun)?**
+Owner answer (verbatim): "One bounded answer-retry (Recommended)" — on answer-dimension failure only, re-judge once against the same recorded response (no new inference); fail if it fails twice. Deterministic dimensions (tools/trajectory) stay single-shot.
+
+Dispatch: relayed to judge-impl to (a) relax subject_matches_archetype for product-hero archetypes to "no featured human model" (marked owner-approved ws16 GATE 3), (b) add the bounded single re-judge of the answer dimension in tests/integration/eval_harness.py (same recorded response, no new inference, logged when it triggers), then re-run full `make test-live` to green and commit.
+
+## 2026-07-23 — checkpoint 7: Task 14 post-GATE-3 — items 1&2 DONE; test-live blocked by pre-existing eval DB-isolation bug
+
+Post-OWNER-GATE-3. Implementer. Code commit 9b8efdb.
+
+**GATE 3 item 1 (subject rubric relaxation) — DONE, owner-approved.** `judge.py
+_subject_rule` product-hero branch relaxed from "no humans in frame" to "no
+FEATURED human model; incidental/blurred background people (ambient cafe
+patrons) allowed" (marker `[ws16 OWNER GATE 3, 2026-07-23]` on the rule +
+module docstring). Re-proved live: the previously-failing cold-brew scene
+image + video now PASS subject_matches_archetype ("no human models present"),
+and BOTH negative controls still FAIL correctly — the wrong-subject control
+evidence updated to "A human model is prominently featured and posed modeling
+the floral dress", confirming a FEATURED model still trips the check. All 5
+disk media pass the relaxed rubric standalone.
+
+**GATE 3 item 2 (bounded answer-dim retry) — DONE, owner-approved.**
+`eval_harness.py`: after the per-dimension metric passes, if the ANSWER
+dimension (`_ANSWER_DIMENSION="answer"`) failed for any case, re-judge THAT
+dimension ONCE against the SAME recorded inference (no new agent inference; no
+retry for tools/trajectory). Fails only if it fails twice. Visible logging:
+"[eval-harness] answer-dimension retry (GATE 3) for: <ids>" + per-case
+"PASSED on retry" / "FAILED again". Marker in comment. Added fast guard
+`test_eval_harness_guard.py::test_answer_retry_targets_only_the_answer_dimension`
+(no live calls) locking the constant against config drift. Verified live: the
+retry FIRED for get-campaign-locations and logged "FAILED again".
+
+**Full `make test-live` (GATE 3 run) = 19 passed / 1 FAILED, 470s.** ALL Task
+14 deliverables green (relaxed judge rubric incl. cold-brew, chart, both
+negative controls, media pipeline x2, onboarding). Only failure:
+get-campaign-locations[answer] — double-flaked (retry fired, failed twice).
+
+**DISCOVERY (supersedes the earlier "answer-judge flake" diagnosis — the GATE-3
+retry premise was WRONG):** get-campaign-locations is NOT a judge flake — it is
+a pre-existing **eval DB-isolation / intra-set ordering bug**. Captured the
+actual answer (record_to): the agent correctly returns **6 stores**, including
+"Target Downtown (Aurora Cold Brew 330mL)" and "Macy's Herald Square (Camel
+Wool Overcoat)" — the exact campaigns the sibling cases `create-campaign-beverage`
+and `create-campaign-cold-start-outerwear` create in the SAME eval set. The
+reference lists only the 4 seeded fashion stores, so final_response_match_v2
+(threshold 0.75) correctly scores 0.0. Two compounding causes:
+  1. **Intra-set pollution:** all cases in campaign_agent.test.json share ONE
+     DB (config.DB_PATH is one temp copy per test); the create-campaign cases
+     add 2 stores that get-campaign-locations then reports. Races with case
+     execution order → intermittent (why it passed ~1/6 times: those runs read
+     before the create cases wrote).
+  2. **Cross-run pollution to ROOT:** root `campaigns.db` now holds 8 campaigns
+     — ids 1-4 seeded fashion; 5,7 = Target Downtown/Austin; 6,8 = Macy's/New
+     York — i.e. TWO pairs of eval-created Target+Macy's campaigns persisted to
+     ROOT across test-live runs. So the create-campaign eval cases are NOT
+     isolated to the temp copy; they write to (and accumulate in) the real DB.
+Neither is fixable by the retry (content is correct-but-mismatched-reference,
+not judge noise) or by Task 14. This is Task 8/11/Q19 eval-isolation territory.
+`make reset-db` restores root to the seeded 4, but a full-set run still fails
+via cause #1 (sibling create cases pollute the shared copy) — so this needs an
+eval-design fix (per-case DB isolation, OR a store-count-tolerant
+get-campaign-locations reference, OR reordering create cases last), an OWNER/
+controller decision, not a Task 14 change.
+
+**State:** Task 14 code complete + committed (9b8efdb); GATE 3 items 1&2 done,
+verified. `make test-live` NOT green — blocked ONLY by the pre-existing
+get-campaign-locations eval-isolation bug above (root DB also left polluted by
+prior runs; not reset pending controller inspection). make lint green;
+make test-unit 319 passed/1 skipped.
+
+## 2026-07-23 — Controller adjudication: eval DB-isolation leak is a bug fix, not an owner gate
+judge-impl escalated the get-campaign-locations[answer] failure for an owner decision. Adjudicated by controller without a gate: directive 6 covers unclear expected responses / judge thresholds / quality bars — this is neither. DB isolation for eval runs was already the approved design (Task 4's `isolated_live_db`); eval-created campaigns leaking into the ROOT campaigns.db (polluted to 8) is a defect in implementing that approved design, and the expected behavior is unambiguous (eval runs never touch the real DB; analytics references assume seeded-only state). Dispatching judge-impl to root-cause the leak, fix it, reset the polluted root DB, and re-run full `make test-live` to green. The GATE 3 bounded answer-retry gets credit here: it fired, double-failed, and proved this was NOT a judge flake.
+
+## 2026-07-23 — Isolation fix implemented + verified; test-live surfaced 2 unrelated LLM flakes
+**Commit:** 570d9df (`fix(tests): per-case DB isolation for eval-set inference + guard`).
+
+**Root cause (corrected).** The get-campaign-locations[answer]=0.0 failure was an
+INTRA-SET concurrency race, not root-DB pollution: ADK's
+`LocalEvalService.perform_inference` runs a set's cases CONCURRENTLY (asyncio
+Semaphore + `as_completed`) against the single shared `config.DB_PATH` temp copy,
+so the create-campaign cases' commits raced ahead of get-campaign-locations's
+read — it saw 6 stores vs the 4-store seeded reference and was correctly scored
+0.0. The earlier ledger's claim that the TEST PATH polluted the ROOT
+campaigns.db was wrong: the test path uses `isolated_live_db` (root→temp copy),
+which never writes root. The root's campaigns 5–8 came from my throwaway
+diagnostic scripts (`_dbg_eval.py` etc.) that ran `run_eval_set` WITHOUT the
+fixture; those are deleted.
+
+**Fix.** `run_eval_set` now runs inference ONE case at a time, `shutil.copy2`-ing
+the seeded root DB onto `config.DB_PATH` before each case, so every case starts
+from clean seeded state and no case sees another's writes. Metric passes
+(evaluate + GATE-3 answer-retry) still run once over the recorded inferences.
+Structural guard added: `_assert_isolated_db()` refuses to run against the root
+DB, and `run_eval_set` asserts the root campaign count is unchanged across the
+run. Two fast unit guards (no live calls) cover it —
+`test_isolation_guard_refuses_root_db`, `test_isolation_guard_allows_temp_db`.
+
+**Verification.**
+- Isolated standalone re-run of the campaign set (real Vertex env via
+  `apply_live_env_to_process`, `isolated_live_db`-equivalent temp copy): all 4
+  cases pass 3/3 dims — get-campaign-locations answer=1.0 AND
+  create-campaign-cold-start-outerwear 1.0/1.0/1.0. Root campaign count 4→4.
+- 8/8 harness-guard tests pass (`tests/integration/test_eval_harness_guard.py`).
+- `make reset-db` + re-seed → root = exactly 4 campaigns.
+- `make lint` green; `make test-unit` 319 passed/1 skipped.
+
+**Full `make test-live` = 2 failed / 20 passed in 637s (10m37s). Root DB 4→4
+(isolation held — nothing leaked to root).** BOTH failures are confirmed LLM
+flakes, NOT the isolation bug and NOT a regression from this change:
+  1. `create-campaign-cold-start-outerwear[tools]=0.0 [trajectory]=0.0` — AGENT
+     trajectory nondeterminism (the agent produced a different tool path this
+     run). Passed standalone today, passed on the isolated re-run above (3/3),
+     and was "stable across 6 live runs" at Task 11. This is a DETERMINISTIC
+     dimension, so the GATE-3 answer-retry does not cover it (that retry is
+     answer-dimension only).
+  2. `wearable_scene_image/no_rendered_text` — the media judge HALLUCINATED text
+     ("'Softbox' on the studio softbox fixture on the right"). Visual inspection
+     of the exact image (regenerated by this run) shows a plain wall on the
+     right, NO softbox and NO text; the image passed no_rendered_text in
+     calibration + GATE-2 + GATE-3. This is a judge false-positive, NOT a media
+     defect — relaxing the rubric would be wrong (the media is clean).
+
+**DISCOVERY (plan-reality divergence).** We expected "fix isolation → 20 green".
+Isolation is fixed and verified, but the full suite is inherently probabilistic:
+two independent flaky surfaces remain uncovered by any retry — (a) agent
+trajectory nondeterminism on the deterministic eval dims, (b) media-judge
+hallucinated hard-fails. A single re-run would likely go green but is not a
+robustness fix. Proposed hardening (parallels the owner-approved GATE-3
+answer-retry, so escalated as an owner/controller decision, NOT done
+unilaterally): bounded one-shot re-JUDGE on a media-judge HARD fail (a
+hallucination won't reproduce; a real violation will), and a bounded one-shot
+re-INFERENCE for a deterministic eval dim (tools/trajectory) failure. Do NOT
+relax any rubric for the softbox case — the image is clean.
+
+**State:** isolation fix complete + committed (570d9df) + independently verified;
+root DB clean (4). `make test-live` NOT green — blocked only by the two
+LLM flakes above, pending a controller/owner decision on flake-hardening vs
+accept-and-re-run. Escalated to controller.
+
+## 2026-07-23 — OWNER GATE 4: flake-hardening for two newly uncovered flake surfaces
+Presented to owner (AskUserQuestion, with checkpoint-8 evidence: full `make test-live` = 20 passed/2 failed in 637s after the per-case DB-isolation fix; both failures confirmed LLM flakes outside GATE 3's answer-only retry scope — (1) media judge hallucinated rendered "Softbox" text on a visually clean wearable scene image [hard fail, false positive; image passed calibration + GATE 2 + GATE 3 runs]; (2) agent trajectory nondeterminism on create-campaign-cold-start-outerwear [tools/trajectory 0.0, clean on rerun, was stable across 6 runs at Task 11]).
+
+**Q1 — Bounded one-shot re-judge on media HARD-fail (same media file, no regeneration; fail if twice)?**
+Owner answer (verbatim): "Yes — one re-judge (Recommended)" — same media, one retry, logged when it triggers. Negative controls fail consistently, so they still fail twice.
+
+**Q2 — Bounded one-shot re-INFERENCE of an eval case when only tools/trajectory dims fail (amends GATE 3's deterministic-dims-single-shot), loudly logged?**
+Owner answer (verbatim): "One re-inference, loudly logged (Recommended)" — case re-runs once end-to-end; a WARNING with case name is printed/logged so trajectory nondeterminism stays observable. Fails if it fails twice.
+
+Dispatch: relayed to judge-impl to implement both retries (marked owner-approved ws16 OWNER GATE 4, 2026-07-23), re-prove negative controls still fail, then full `make test-live` to green.
+
+## 2026-07-23 — Task 14 complete (post-GATE-4): bounded media re-judge + eval re-inference; test-live GREEN
+**Commit:** 19ae727 (`feat(tests): bounded media re-judge + eval re-inference for LLM flakes (GATE 4)`).
+Builds on 570d9df (isolation fix) + d7a7bf1 (ledger).
+
+OWNER GATE 4 (2026-07-23) approved both hardenings I proposed; implemented, all
+one-shot, mirroring the GATE-3 answer re-judge:
+
+1. **Media-judge bounded re-judge** (`tests/live/judge.py`
+   `judge_with_hard_retry`): on ANY hard-check failure, re-judge ONCE against
+   the same media file (no regeneration). The retry verdict is authoritative —
+   fails only if it hard-fails twice. A multimodal judge occasionally
+   hallucinates a hard violation (the ws16 "Softbox" text on a plain studio
+   wall); a hallucination won't reproduce, a real violation fails twice. ALL
+   `tests/live` judging — per-media (`test_generated_media_obey_rubric`), the
+   RPI chart, AND both negative controls — now routes through it. Visible log
+   line names the media + failing check on every trigger.
+
+2. **Eval-case bounded re-inference** (`tests/integration/eval_harness.py`):
+   when a case fails ONLY on deterministic dims (tools/trajectory; the answer
+   dim stays under the GATE-3 re-judge, now folded into per-case `_score_case`),
+   re-run that ONE case's inference end-to-end ONCE against a fresh seeded DB
+   copy and re-score all dims. Fails only if it fails twice. Every trigger is
+   `print`ed AND `warnings.warn`'d (owner wants trajectory nondeterminism
+   observable). The scoring pipeline was refactored to per-case
+   inference+scoring (`_infer_one_case`, `_eval_one_dim`, `_score_case`,
+   `_outcome_from_result`) so both gates share one path and a re-inference's
+   answer dim gets the same one-shot protection.
+
+**Fast unit guards (no live):** extended `test_eval_harness_guard.py` to 12
+tests — `_deterministic_only_failure` selection predicate (trajectory-only /
+tools+trajectory eligible; answer-failing NOT eligible; all-pass not eligible)
+and the media retry (recover-on-second-pass / fail-twice-for-real-violation /
+skip-when-only-warn). All pure.
+
+**Verification.**
+- Full `make test-live` = **26 passed / 0 failed in 673.84s (11m13s), EXIT 0**;
+  ROOT campaigns 4→4 (isolation held — nothing leaked to root).
+- `make lint` green; `make test-unit` 319 passed / 1 skipped.
+- Negative controls re-proven live: rendered-text overlay + wrong-subject both
+  hard-FAIL twice → tests pass (the retry never masks a real violation).
+- Retries THIS green run: the eval re-inference did NOT fire (no deterministic
+  flake — its `warnings.warn` would have surfaced in the summary; none did).
+  Media re-judge triggers print on PASSED tests, which pytest `-v` captures/
+  hides — the paths are proven by the unit guards + the fail-twice negative
+  controls.
+
+**Transient (not a Task 14 defect).** The FIRST post-GATE-4 test-live run hit
+1 failure: `test_wearable_two_stage_pipeline` (Task 12, untouched by GATE-4) —
+a TRANSIENT Veo generation error ("operation completed after 20s, returned no
+result"; abnormally fast vs the usual ~90-106s, and the scene image generated
+fine). It passed clean on the immediate re-run. This is a THIRD flaky surface —
+live Veo generation in `app/tools/video_tools.py` — orthogonal to Task 14 and
+NOT covered by GATE-4's judge/eval retries. Flagged for a possible future
+generation-retry decision (owner/Task 12 territory); no fix in this task.
+
+**State:** Task 14 COMPLETE — judge + media/chart/onboarding tests + negative
+controls + GATE 2/3/4 hardening + eval DB isolation all done and committed;
+`make test-live` GREEN (26/0). Ready for stage-6 review / workstream finish.
+
+## 2026-07-23 — Task 14 review: APPROVED (mirrors .superpowers/sdd/progress.md)
+Range 9b2a07f..512a82b (16 commits). Spec ✅ — every brief requirement and every owner-gate amendment (GATE 2 severities+negative controls, GATE 3 subject relaxation+answer re-judge, GATE 4 media re-judge+case re-inference, controller DB-isolation adjudication) verified with file:line evidence, provenance markers confirmed, no attribution trailers, lint green, 12/12 unit guards pass under the reviewer's own run. 0 Critical, 0 Important. 4 Minor recorded for final-review triage — headline: media re-judge lowers borderline-violation detection (p→p², owner-approved GATE-4 tradeoff; negative controls prove unambiguous violations still fail twice) → carry to Task 16 flakiness-watchlist docs. Task 14 COMPLETE: full `make test-live` GREEN 26 passed/0 failed (673.84s), root DB 4→4.
+
+## 2026-07-23 — Task 15: agents-cli grade/compare reporting layer (stage 7)
+
+**Built.** `scripts/eval_grade_report.py` converts a `record_actuals.py`
+`record_to` JSON dump into a `vertexai._genai.types.common.EvaluationDataset`
+trace file (constructed with the real SDK models for schema fidelity, not
+hand-rolled dicts), writes a minimal `metrics_to_run:
+[tool_use_quality, final_response_quality]` config, and invokes
+`agents-cli eval grade --traces --output --config` in the confirmed
+project-free mode. `make test-live-report` chains `record_actuals.py`
+(default eval set `review_agent.test.json`) into the conversion+grade step;
+`SKIP_RECORD=1` + `RECORD_JSON=<path>` reuses an existing recorder dump to
+avoid re-paying for live inference. Output (`artifacts/traces/`,
+`artifacts/grade_results/`) is gitignored. This is an INFORMATIONAL layer
+only — it does not gate `make test`, `make test-unit`, or `make test-live`.
+
+**Live-run evidence** (real Vertex AI Eval Service calls, `review_agent.test.json`,
+3 cases, all `inference_ok`):
+- First run, `agent_data.agents` omitted: `tool_use_quality_v1` mean 0.11
+  (0.0/0.33/0.0) vs. the harness's `tools`=pass(1.0) on all 3 — sharp
+  disagreement. Reading `rubric_verdicts[].reasoning` in the results JSON
+  showed the server-side adaptive-rubric generator assumes "no declared
+  tools" means the agent shouldn't call any, and penalizes every observed
+  `function_call` as a violation of that assumption.
+- Fix (in the conversion script, not the harness): introspect
+  `app.agent.root_agent` + `sub_agents` via the SDK's own
+  `AgentConfig.from_agent()` (same helper agents-cli's local inference
+  runner uses) and attach the resulting `agent_data.agents` map to every
+  case. Re-grading the SAME recorded traces with `SKIP_RECORD=1` (no new
+  inference) flipped `tool_use_quality_v1` to **1.0/1.0/1.0 — full
+  agreement** with the harness's `tools`/`trajectory` dimensions.
+- `final_response_quality_v1` stayed low (0.0/0.0/0.6) vs. the harness's
+  `answer`=pass(1.0) on all 3, even with declarations attached. Root cause
+  (structural, not fixed): `record_actuals.py`'s `_extract_actuals()` only
+  records tool call names/args, never the tool's return value, so the
+  judge's grounding rubrics see every tool call as returning nothing and
+  fail the final answer for not matching a fabricated null result — verified
+  by reading the rubric reasoning text directly. Closing this needs a
+  recorder-format change to `eval_harness.py`, which Task 15's constraints
+  explicitly forbid touching.
+
+**Fit verdict** (full writeup: `research/agents-cli-architecture.md` §"Task
+15 addendum", 2026-07-23): **KEEP as an informational reporting layer.**
+Not promoted to a gate — `final_response_quality_v1` is unreliable on this
+repo's traces today for a real, documented reason, and a 3-case sample is
+too small to justify a promotion regardless. Not dropped —
+`tool_use_quality_v1` is genuinely usable and in full agreement with the
+harness once tool declarations are attached (now automatic in the script).
+Follow-up noted for a future task: extend the recorder to persist tool
+return values so `final_response_quality_v1` can be re-evaluated.
+
+**Verification.** `make lint` green on touched files; `make test-unit` 319
+passed / 1 skipped (untouched — no `app/**/*.py` edits in this task). Live
+run produced `artifacts/grade_results/results_<ts>.json` + `.html` and
+`artifacts/traces/traces_<ts>.json` (all gitignored, not committed).
+
+Commits: `1384d94` (script + Makefile target + `.gitignore`), `407d24f`
+(research addendum).
+
+## 2026-07-23 — Task 15 review: APPROVED (mirrors .superpowers/sdd/progress.md)
+Range 79c8168..8cdad4c. Spec ✅ — conversion honest (no fabricated tool returns; the one gap, no tool-response capture, documented in 3 places, never hidden); informational-only confirmed (no test chain depends on test-live-report); eval_harness.py untouched; fit verdict evidence-based and non-self-promoting. 0 Critical, 0 Important; 2 Minor (Makefile .venv fallback inconsistency, addendum typo) folded into Task 16's cleanup. Owner follow-ups noted by implementer: recorder-format change would be needed to make final_response_quality_v1 meaningful; broader all-5-set validation before any future gate-promotion decision.
+
+## 2026-07-23 — Q14/Q15 evidence block (Task 16, open item 5)
+
+Opportunistic evidence recorded during Tasks 12–13's real live pipeline runs
+(no extra API spend — the calls were already being paid for), promoted here
+per open item 5 and threaded into `99-open-questions.md` Q14/Q15 as amendments
+in this same task:
+
+- **Q14 (image resolution, Phase 14a):** both scene-image pipelines
+  (wearable `blue-floral-maxi-dress`, non-wearable `aurora-cold-brew-330ml`)
+  produced **768x1376 PNG, ~1.4MB** (`gemini-3-pro-image`, the standing
+  default) — matching Phase 14a's synthetic-benchmark finding for the same
+  model exactly (`working-docs/14-model-upgrades/image-model-comparison.md`).
+  Two independent measurements (a synthetic benchmark, now a live
+  product/demo pipeline) agree on the 1K resolution tier.
+- **Q15 (video backend, Phase 14b):** Veo 3.1 (`veo-3.1-generate-001`)
+  produced **720x1280 @ 24fps, 4.01s actual duration for a requested 4s**
+  (96 frames) on both pipelines. 6s/8s requested durations were **not**
+  exercised live this workstream — only the 4s case ran (Task 12's chosen
+  duration for the wearable/non-wearable pipeline pair) — so those remain
+  unmeasured.
+
+Full raw values: `calibration/media-metadata.json` (both pipelines, full
+scene-image + video metadata including byte sizes and recorded timestamps).
+
+## 2026-07-23 — Task 16 implemented (stage 8): docs/targets/open-question cleanup
+
+Docs-only task (no `app/` or `tests/` Python touched, per the task's binding
+constraint). Every claim below was verified against the shipped code/Makefile
+before being written, per the task's cardinal rule.
+
+**CLAUDE.md:** Commands tier map rewritten — `make test` documented as
+unit+e2e only (not "unit + integration"); `test-integration`, `test-live`,
+`test-live-report` added with accurate one-line descriptions; pytest markers
+line adds `live` and a pointer to the tier split. Gotchas' "integration eval
+suite passes vacuously" entry fully rewritten: the refined mechanism (ADK's
+`LocalEvalService` was never the bug — it correctly records per-case
+`InferenceStatus.FAILURE`/`final_eval_status`; the vacuity was
+`AgentEvaluator.evaluate_eval_set`'s pytest aggregation comparing only mean
+metric scores and never inspecting `final_eval_status`), the harness fix
+(`assert_eval_outcomes` asserts per-case status directly), and the owner cost
+note verbatim ("owner: cost accepted, correctness first") with the ~11min /
+26-passed runtime.
+
+**Makefile:** `reset-db` echo corrected to "28 products (22 fashion + 6
+retail core), DEMO_DATASET-dependent" — verified by counting `"name":` keys
+in `app/database/products_data.py` (22) and `retail_products_data.py` (6),
+and confirming `seed_demo_data()` calls both `populate_products()` and
+`populate_retail_test_products()` under the default `DemoDataset.FASHION`.
+Folded in Task 15 review's **M5**: `test-live-report`'s `record_actuals`/
+`eval_grade_report.py` invocations now have the same `if [ -d ".venv" ]`
+fallback style every other test/lint target uses (previously hardcoded
+`.venv/bin/python`). Verified with `make -n` dry-runs (tab/shell syntax
+intact) — not run for real (would spend live API calls / needs `agents-cli`).
+
+**SETUP_INSTRUCTIONS.md:** Test section's tier map rewritten to match
+CLAUDE.md; added a new "Live tier (`make test-live`) — workstream 16"
+subsection: setup (`app/.env`, `google-adk[eval]==2.5.0` extra — confirmed
+NOT in `app/requirements.txt`, install command given), local-first storage
+note (`GCS_BUCKET` force-unset by `tests/integration/conftest.py`'s
+`LIVE_ENV_UNSET`, verified in code), the cost/runtime line (26 passed/0
+failed, ~674s/11m13s, from Task 14's final `make test-live` run), and the
+4-item flakiness watchlist (transient Vertex 400; LLM-judge nondeterminism
+mitigated by the GATE-3/4 bounded retries; transient Veo generation error;
+the media re-judge p→p² tradeoff, owner-approved GATE 4). Added a Phase 16
+bullet to "Version 2 workstream setup notes" documenting the two
+owner-approved agent-behavior fixes (dup-product resolve-first,
+Maps-routing).
+
+**DEMO_GUIDE.md § "Workstream Testing Journeys":** new `### Workstream 16`
+section, 6 journeys — fast tier (`make test`), live tier (`make test-live`),
+a deliberate-break check (corrupt an eval set's expected tool name, prove
+`make test-live` catches it, revert), reading a `make test-live-report`
+grade report (explicitly flagged informational, not a gate), a Maps-link
+routing journey (verified against the live `get-map-data` eval case:
+"Show me all campaign locations with Google Maps links" → `transfer_to_agent`
++ `get_campaign_map_data`, contrasted with the plain "Show me all store
+locations" → `get_campaign_locations` split), and a dup-product-reuse journey
+(verified against the live `create-campaign-beverage` eval case: "Create a
+campaign for the Aurora cold brew..." → `list_products` then `create_campaign`
+directly, no `create_product`). **Checked the rest of the file for staleness
+from Tasks 6–14's agent-behavior changes** (dup-product fix, Maps-routing
+fix, non-wearable model-field drop): Act 5's Scene 5.1 query and the Quick
+Reference "Maps"/"Campaign Management" query lists don't assert which agent
+handles the query (routing is invisible to those sections' wording), and none
+of the pre-existing Workstream 11a/14/15 journeys reference the changed
+behavior — **nothing pruned, nothing else needed fixing.**
+
+**Phase doc (`.docs/version2-plan/16-live-api-testing.md`):** Steps 1, 2, 4,
+5, 6 and all four Validation checklist items marked done with
+`> **Amended (workstream 16, 2026-07-23):**` provenance notes, each citing
+the actual shipping commit/task and, where the phase doc's original sketch
+was superseded (step 1's logger-capture vacuity guard → structural
+`assert_eval_outcomes` per-case check), saying so explicitly. Open questions
+1–2 answered: Q1 (judge severity thresholds) cites OWNER GATE 2's approval +
+GATE 3's subject-rule revision; Q2 (audio verification) records that the
+shipped answer is "prompt-policy + frame-based judge only, no
+audio-understanding pass" — the rubric says so in `tests/live/judge.py`,
+matching one of the question's own proposed options, with no owner ask for
+more surfacing during the workstream. Open items 2 (storage policy —
+resolved local-first, force-unset `GCS_BUCKET`), 3 (from-scratch onboarding
+live test — done, Task 13), 4 (this docs cleanup — done, this task), 5
+(Q14/Q15 evidence — done, block above) marked done; item 6 (combined-run GCS
+state leak) marked done retroactively — it was actually fixed at Task 2
+(commit `3aa9c7e`, `tests/_config_baseline.py`), predating this task, and the
+phase doc had never been updated to say so. Item 1 (demo-asset bundle
+publish) is intentionally left open — that's Task 17, not this task.
+
+**99-open-questions.md:** Q19's header appended with "DELIVERED workstream
+16, 2026-07-23" and an amendment correcting the mechanism description (same
+`AgentEvaluator`-aggregation-gap correction as CLAUDE.md, cross-referenced
+rather than duplicated in full). Q14 and Q15 each got a workstream-16
+amendment citing `calibration/media-metadata.json`'s recorded values (see the
+evidence block above) — corroborating evidence, not a new final answer to
+either question (Q14 explicitly still open in the "no owner ratification
+yet" sense; Q15's backend decision is unaffected, this is output-spec
+evidence only).
+
+**research/agents-cli-architecture.md:** Task 15 review's **M6** typo fixed
+("opinon" → "opinion").
+
+**Verification:** `make lint` green (docs/Makefile-only change; no Python
+touched). `make test` (unit + e2e) = **319 passed / 1 skipped** (unit, 35s) +
+**25 passed / 1 skipped** (e2e, 2.7s) — unchanged from Task 15's baseline, as
+expected for a docs-only task. `make -n` dry-run confirms the two edited
+Makefile targets (`reset-db`, `test-live-report`) are syntactically valid
+(tabs intact, shell logic unchanged in behavior). No `README.md` edit; no
+`Co-Authored-By`/AI-attribution trailer in any commit.
+
+Commits: see `.superpowers/sdd/task-16-report.md` for the final SHA(s) (this
+entry is written and committed alongside the docs changes, per the task's
+ledger contract).
+
+## 2026-07-23 — Task 16 review: APPROVED (mirrors .superpowers/sdd/progress.md)
+Range 6579d58..8561be0. Docs task reviewed for factual accuracy against shipped code: reviewer read AgentEvaluator source in the installed google-adk 2.5.0 to confirm the rewritten gotcha's mechanism (mean-score aggregation, final_eval_status never inspected), AST-counted product data (22 fashion + 6 retail = 28), and verified every DEMO_GUIDE ws16 journey against the actual eval-set JSON. 0 Critical, 0 Important, 1 Minor (provenance misattribution of make-help lines to Task 16 — they shipped in Tasks 3/15; fixed inline by controller in the phase doc). Task 15's two minors (M5 .venv fallback, M6 typo) confirmed fixed in this task.
+
+## 2026-07-23 — OWNER GATE 5: Task 17 (demo-asset bundle publish) DEFERRED
+Presented to owner: Task 17 Step 1 needs the owner's asset source folder (`make demo-assets-build SRC=<folder>`); ws15 shipped only the build/verify/install code and left publishing as an owner follow-up — no asset folder exists in the repo (main checkout `product-images/` is empty; the worktree's 3 images are live-test output, not the demo bundle).
+Owner answer (verbatim): "Defer — keep as owner follow-up (Recommended)" — skip Task 17 in this workstream; it stays documented in SETUP_INSTRUCTIONS as the owner's publish step (build → Drive upload → DEMO_ASSETS_DRIVE_ID). The `make demo-assets` path remains covered by ws15's tests (test_demo_assets 6/6) and its graceful "bundle not configured" skip.
+
+## 2026-07-23 — Checkpoint 5: verification PASS (Task 18)
+**Primary evidence — fresh full `make test-live`: 26 passed / 0 failed in 708.04s (11m48s), exit 0** (after make reset-db; log /tmp/ws16-final-testlive.log). All 5 eval sets (17 cases x 3 dims), media pipeline, onboarding, judge + negative controls, chart, guards.
+**Demo regression — Scenario F1 (docs/demo-scenarios/fashion.md): 2/2 scenes PASS** via demo-scenario-verifier against this worktree's `make dev` (port 8501, cleared first). Scene 1: coordinator → campaign_agent → list_campaigns, 4 seeded campaigns. Scene 2: two-stage generation ran live twice — GCS mode (app/.env as-is) and local mode (GCS_BUCKET temporarily unset, restored byte-identical): both success, video rendered in UI, ZERO storage.googleapis.com occurrences in all session JSON. Evidence: /tmp/ws16-verify-f1/ (session JSONs, mp4s, frames, server logs).
+Verifier observations (recorded, not failures): (a) `make dev` honors app/.env's GCS_BUCKET → GCS mode with gs:// paths — ws16's local-first force-unset is deliberately test-tier-only; owner can unset GCS_BUCKET in app/.env for a local-first demo posture (documented in SETUP_INSTRUCTIONS modes). (b) PRE-EXISTING cost bug surface: same-day re-generation of an identical product/variation runs the full paid Stage1+Veo pipeline and only then fails on the campaign_videos.video_filename UNIQUE constraint (filename embeds only MMDDYY+variation); agent self-recovers with a new variation name, but a pre-generation uniqueness check would save a Veo call — candidate for a future phase, not a ws16 regression. (c) one transient Veo "returned no result" (~40s) self-recovered — already on the SETUP_INSTRUCTIONS flakiness watchlist.
+
+## 2026-07-23 — final-review fixes: I1 I2 N1 N2 (whole-branch review)
+**I1 (Important) — onboarding image dangling registry path.** `tests/live/test_onboarding_from_scratch.py` was registering `generated_media["onboarding_product_image"]` with a path inside `empty_live_db`'s per-test temp sandbox, rmtree'd at that test's own teardown — dangling by the time the session-scoped judge tests ran, and silently missed by the judge's disk fallback on a fresh clone (empty `product-images/`). FIX: new session-scoped `persisted_media_dir` fixture (`tmp_path_factory.mktemp`, tests/live/conftest.py) — the onboarding test now copies the generated image there and registers THAT path. Deleted the stale, untracked, gitignored `product-images/artisan-coffee-beans.png` (obsolete once the registry path is the one that's judged, not disk fallback). PROVEN live: `pytest tests/live/test_onboarding_from_scratch.py tests/live/test_media_judge.py -k "onboarding or test_generated_media_obey_rubric" -v` (2 passed, 39.68s) — the literal `-k "onboarding"` command from the finding only collects the onboarding test itself (verified via `--collect-only`: neither test/class/module name in test_media_judge.py contains "onboarding"), so the filter was widened to also select `test_generated_media_obey_rubric` to actually exercise the judge in the same session; `product-images/` confirmed to hold neither the stale file nor the fresh one at judge time (fresh image landed only in `persisted_media_dir`, verified on disk under pytest's session tmp dir), so the PASS is attributable only to the registry path.
+**I2 (Important) — dirty working tree.** Committed `.docs/version2-plan/working-docs/16-live-api-testing/calibration/media-metadata.json` (the evidence of the prior 26/0 `make test-live` run).
+**N1 (Minor) — retry could infra-mask a genuine deterministic-dim failure.** `tests/integration/eval_harness.py`'s GATE-4 re-inference block unconditionally replaced the original `CaseOutcome` with the retry's outcome even when the retry's OWN inference died — letting an infra-shaped retry error xfail the whole set and discard the original tools/trajectory failure evidence. FIX: extracted `_retry_outcome_or_keep_original(original, retry)` (keeps `original` unless `retry.inference_ok`); loop now uses it and only prints "PASSED/FAILED again on retry" when the retry actually ran, otherwise prints that the original is being kept. Added 2 fast unit guards in `tests/integration/test_eval_harness_guard.py` (retry-inference-failed keeps original + set still FAILS not xfails; retry-succeeded replaces original) — both pass with the existing 12.
+**N2 (Minor) — retry visibility over-promise.** SETUP_INSTRUCTIONS.md's watchlist claims every retry "prints/warnings.warn`s loudly ... always visible", but the GATE-3 answer re-judge (`eval_harness.py`) and the GATE-4 media re-judge (`tests/live/judge.py`) only printed. FIX: added `warnings.warn(msg, stacklevel=2)` alongside the existing print at both trigger points, naming the case/media + failing check(s) — matching the GATE-4 eval re-inference's existing pattern. No doc wording change needed; the claim is now true. Confirmed firing via `tests/integration/test_eval_harness_guard.py::test_media_retry_recovers_on_second_pass` / `test_media_retry_fails_twice_for_real_violation` (UserWarning captured in pytest's warnings summary).
+**Verification:** `pytest tests/integration/test_eval_harness_guard.py -v` = 14 passed (10 pre-existing + 4 new). `make test-unit` = 319 passed/1 skipped. `make test` (unit+e2e) = 319 passed/1 skipped + 25 passed/1 skipped. `make lint` = clean on all touched files (pre-existing `ruff format` diff on untouched `tests/live/test_media_judge.py` confirmed via `git stash` to predate this fix — not introduced here, and `make lint` only runs `ruff check`, not `ruff format --check`). Live ordered onboarding→judge proof above.
+
+## 2026-07-23 — Final whole-branch review: READY TO MERGE (after one fix wave)
+Review of f8df319..618750e (75 commits) on the most capable model: all binding constraints verified across the branch (no attribution trailers in any commit, README untouched, no secrets, golden prompts byte-identical, bounded+logged retries, gate provenance markers, amendment format). Verdict NEEDS FIXES → one fix wave (5754d9f, a9a2d05, 873c6aa): I1 onboarding image now copied to a session-persistent dir before registering (dangling-path crash + silent-never-judged both gone, live-proven with an ordered onboarding→judge run whose judged image existed only in the session tmp dir); I2 final-run media-metadata.json committed; N1 GATE-4 retry keeps the original failed outcome if the retry's own inference dies (no infra-xfail masking, 2 new guards, guard suite 14 passed); N2 warnings.warn added at GATE-3 answer re-judge + GATE-4 media re-judge triggers (SETUP_INSTRUCTIONS visibility claim now literally true). Re-review: all four RESOLVED, I1 residual (default-order runs judge prior-run disk media) adjudicated a recorded follow-up, not a merge gate; M1-M4 triaged acceptable-as-recorded. FINAL VERDICT: READY TO MERGE.
+Carried follow-ups for a future live-tier touch: (1) enumerate live files pipeline→onboarding→judge in make test-live so the judge consumes current-run media by default; (2) SETUP_INSTRUCTIONS judge-call count reads 5+1 but is 4+1 on default-order runs now the stale disk file is gone.

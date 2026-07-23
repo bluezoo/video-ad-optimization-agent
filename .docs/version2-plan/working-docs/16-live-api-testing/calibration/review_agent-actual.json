@@ -1,0 +1,120 @@
+[
+  {
+    "eval_id": "show-review-table",
+    "query": "Show me the video review table with public links",
+    "inference_ok": true,
+    "error_message": null,
+    "actual_tool_calls": [
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "review_agent"
+        }
+      },
+      {
+        "name": "get_video_review_table",
+        "args": {}
+      }
+    ],
+    "final_response_text": "Here is the video review table showing all existing videos and their current status:\n\n### **Summary:**\n- **Pending Activation:** 0\n- **Live / Activated:** 10\n- **Total Shown:** 10\n\n---\n\n## \ud83d\udfe2 Video Review Table\n\n| ID | Status | Product Name | Store Location | Variation | Duration | Created At |\n|---|---|---|---|---|---|---|\n| **1** | \ud83d\udfe2 LIVE | `blue-floral-maxi-dress` | Westfield Century City (Los Angeles, CA) | `asian-beach-romantic` | 8s | 2026-07-23 |\n| **2** | \ud83d\udfe2 LIVE | `blue-floral-maxi-dress` | Westfield Century City (Los Angeles, CA) | `european-urban-bold` | 8s | 2026-07-23 |\n| **3** | \ud83d\udfe2 LIVE | `blue-floral-maxi-dress` | Westfield Century City (Los Angeles, CA) | `latina-beach-romantic` | 8s | 2026-07-23 |\n| **4** | \ud83d\udfe2 LIVE | `elegant-black-cocktail-dress` | Bloomingdale's 59th Street (New York, NY) | `diverse-rooftop-sophisticated` | 8s | 2026-07-23 |\n| **5** | \ud83d\udfe2 LIVE | `black-high-waist-trousers` | Water Tower Place (Chicago, IL) | `african-studio-sophisticated` | 8s | 2026-07-23 |\n| **6** | \ud83d\udfe2 LIVE | `black-high-waist-trousers` | Water Tower Place (Chicago, IL) | `asian-cafe-sophisticated` | 8s | 2026-07-23 |\n| **7** | \ud83d\udfe2 LIVE | `black-high-waist-trousers` | Water Tower Place (Chicago, IL) | `latina-rooftop-bold` | 8s | 2026-07-23 |\n| **8** | \ud83d\udfe2 LIVE | `sage-satin-camisole` | The Grove (Los Angeles, CA) | `african-studio-bold` | 8s | 2026-07-23 |\n| **9** | \ud83d\udfe2 LIVE | `sage-satin-camisole` | The Grove (Los Angeles, CA) | `asian-cafe-sophisticated` | 8s | 2026-07-23 |\n| **10** | \ud83d\udfe2 LIVE | `sage-satin-camisole` | The Grove (Los Angeles, CA) | `european-urban-elegant` | 8s | 2026-07-23 |\n\n---\n\n### **Actions Available:**\n- **View Video Details:** Ask for detailed prompts, model info, and metadata for a specific ID (e.g., *\"Get details for video 1\"*).\n- **Pause or Archive:** Pause a live campaign video or archive it if no longer needed (e.g., *\"Pause video 4\"* or *\"Archive video 2\"*).\n- **Check Performance:** Request performance analytics for live videos.",
+    "dimensions": {
+      "tools": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "trajectory": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "answer": {
+        "score": 0.0,
+        "threshold": 0.75,
+        "passed": false
+      }
+    }
+  },
+  {
+    "eval_id": "get-activation-summary",
+    "query": "What's the activation summary?",
+    "inference_ok": true,
+    "error_message": null,
+    "actual_tool_calls": [
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "review_agent"
+        }
+      },
+      {
+        "name": "get_activation_summary",
+        "args": {}
+      }
+    ],
+    "final_response_text": "Here is the current activation summary across all campaigns:\n\n- **Total Videos:** 10\n- **Live / Activated:** 10\n- **Pending Review:** 0\n- **Paused:** 0\n- **Archived:** 0\n\nAll generated videos are currently live and active. If you need details on specific videos or want to check campaign performance metrics, let me know!",
+    "dimensions": {
+      "tools": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "trajectory": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "answer": {
+        "score": 0.0,
+        "threshold": 0.75,
+        "passed": false
+      }
+    }
+  },
+  {
+    "eval_id": "list-pending-videos",
+    "query": "Show me all pending videos",
+    "inference_ok": true,
+    "error_message": null,
+    "actual_tool_calls": [
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "review_agent"
+        }
+      },
+      {
+        "name": "get_video_review_table",
+        "args": {
+          "status": "generated"
+        }
+      },
+      {
+        "name": "get_activation_summary",
+        "args": {}
+      },
+      {
+        "name": "get_video_review_table",
+        "args": {}
+      }
+    ],
+    "final_response_text": "There are currently **0 pending videos** awaiting review or activation. \n\nAll 10 existing videos in the system are currently **LIVE** (activated):\n\n### Summary of Live Videos:\n- **Videos #1, #2, #3**: *Blue Floral Maxi Dress* (Westfield Century City, Los Angeles)\n- **Video #4**: *Elegant Black Cocktail Dress* (Bloomingdale's 59th Street, New York)\n- **Videos #5, #6, #7**: *Black High Waist Trousers* (Water Tower Place, Chicago)\n- **Videos #8, #9, #10**: *Sage Satin Camisole* (The Grove, Los Angeles)\n\n---\n\n### Next Steps:\n- If you'd like to **generate new videos**, let me know and I can transfer you to the **Media Agent**.\n- If you'd like to inspect performance metrics for any of the live videos, I can transfer you to the **Analytics Agent**.",
+    "dimensions": {
+      "tools": {
+        "score": 0.0,
+        "threshold": 1.0,
+        "passed": false
+      },
+      "trajectory": {
+        "score": 0.0,
+        "threshold": 1.0,
+        "passed": false
+      },
+      "answer": {
+        "score": 1.0,
+        "threshold": 0.75,
+        "passed": true
+      }
+    }
+  }
+]

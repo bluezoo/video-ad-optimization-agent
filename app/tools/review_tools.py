@@ -29,7 +29,6 @@ Video Lifecycle:
 import json
 import logging
 from datetime import date, datetime, timedelta
-from typing import List, Optional
 
 from ..database.db import get_db_cursor, get_demo_anchor_date, set_demo_anchor_date
 from ..demo_data.attribution import screens_for_campaign
@@ -261,7 +260,7 @@ def activate_video(
 
         return {
             "status": "success",
-            "message": f"Video activated successfully and is now live",
+            "message": "Video activated successfully and is now live",
             "video": {
                 "id": video_id,
                 "video_filename": video["video_filename"],
@@ -276,7 +275,7 @@ def activate_video(
 
 
 def activate_batch(
-    video_ids: List[int],
+    video_ids: list[int],
     activated_by: str = "user"
 ) -> dict:
     """Activate multiple videos at once.
@@ -358,7 +357,7 @@ def pause_video(video_id: int) -> dict:
 
         return {
             "status": "success",
-            "message": f"Video paused successfully",
+            "message": "Video paused successfully",
             "video": {
                 "id": video_id,
                 "video_filename": video["video_filename"],
@@ -418,7 +417,7 @@ def archive_video(
 
         return {
             "status": "success",
-            "message": f"Video archived" + (f": {reason}" if reason else ""),
+            "message": "Video archived" + (f": {reason}" if reason else ""),
             "video": {
                 "id": video_id,
                 "video_filename": video["video_filename"],

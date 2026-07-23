@@ -168,10 +168,10 @@ setup-ae-permissions:
 # TESTING
 # ============================================================================
 
-## Run all tests (unit + integration, skip slow)
-test: test-unit test-integration
+## Run fast tests (unit + e2e — seconds, zero LLM calls; the everyday loop)
+test: test-unit test-e2e
 	@echo ""
-	@echo "All tests passed!"
+	@echo "All fast tests passed!"
 
 ## Run unit tests only (fast, no LLM calls)
 test-unit:
@@ -182,7 +182,7 @@ test-unit:
 		pytest tests/unit -v --tb=short; \
 	fi
 
-## Run integration tests (with LLM, skip slow)
+## Run integration tests (with LLM, skip slow) — targeted subset of the live tier
 test-integration:
 	@echo "Running integration tests..."
 	@if [ -d ".venv" ]; then \
@@ -198,6 +198,44 @@ test-e2e:
 		.venv/bin/pytest tests/e2e -v --tb=short; \
 	else \
 		pytest tests/e2e -v --tb=short; \
+	fi
+
+## Run LIVE tier: routing evals + live media + judge (real Vertex APIs, costs money)
+test-live:
+	@echo "Running LIVE tier (real Vertex APIs — requires app/.env)..."
+	@test -f app/.env || { echo "ERROR: app/.env missing — the live tier needs real credentials (see SETUP_INSTRUCTIONS.md)"; exit 1; }
+	@if [ -d ".venv" ]; then \
+		.venv/bin/pytest tests/integration tests/live -v --tb=short; \
+	else \
+		pytest tests/integration tests/live -v --tb=short; \
+	fi
+
+## Run agents-cli grade/compare reporting layer over live eval traces (INFORMATIONAL — not a test gate)
+# Override EVAL_SET to point at a different tests/integration/eval_sets/*.test.json.
+# Override RECORD_JSON + set SKIP_RECORD=1 to grade an existing record_actuals.py
+# dump instead of re-running (real) inference.
+EVAL_SET ?= tests/integration/eval_sets/review_agent.test.json
+RECORD_JSON ?= artifacts/traces/record_$(notdir $(basename $(EVAL_SET))).json
+test-live-report:
+	@echo "Running agents-cli grade reporting layer (real Vertex APIs — requires app/.env + agents-cli on PATH)..."
+	@test -f app/.env || { echo "ERROR: app/.env missing — the live tier needs real credentials (see SETUP_INSTRUCTIONS.md)"; exit 1; }
+	@command -v agents-cli >/dev/null 2>&1 || { echo "ERROR: agents-cli not found on PATH (install: uv tool install google-agents-cli)"; exit 1; }
+	@if [ "$(SKIP_RECORD)" = "1" ] && [ -f "$(RECORD_JSON)" ]; then \
+		echo "Using existing record file: $(RECORD_JSON) (SKIP_RECORD=1)"; \
+	else \
+		echo "Recording actuals from $(EVAL_SET) -> $(RECORD_JSON)"; \
+		if [ -d ".venv" ]; then \
+			.venv/bin/python -m tests.integration.record_actuals $(EVAL_SET) $(RECORD_JSON) || \
+				echo "[test-live-report] recorder reported case failure(s) — grading whatever succeeded"; \
+		else \
+			python -m tests.integration.record_actuals $(EVAL_SET) $(RECORD_JSON) || \
+				echo "[test-live-report] recorder reported case failure(s) — grading whatever succeeded"; \
+		fi; \
+	fi
+	@if [ -d ".venv" ]; then \
+		.venv/bin/python scripts/eval_grade_report.py $(RECORD_JSON) --output artifacts/grade_results; \
+	else \
+		python scripts/eval_grade_report.py $(RECORD_JSON) --output artifacts/grade_results; \
 	fi
 
 ## Run all tests including slow (Veo) tests
@@ -253,14 +291,14 @@ clean:
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	@echo "Cleaned build artifacts"
 
-## Reset database to fresh demo state (4 campaigns, 22 products)
+## Reset database to fresh demo state (4 campaigns, 28 products with DEMO_DATASET=fashion)
 reset-db:
 	@echo "Resetting database to fresh demo state..."
 	rm -f campaigns.db
 	rm -f app/campaigns.db
-	@echo "Database deleted. Next 'make dev' will create fresh demo data:"
+	@echo "Database deleted. Next 'make dev' will create fresh demo data (DEMO_DATASET-dependent; default 'fashion'):"
 	@echo "  - 4 demo campaigns (LA, NYC, Chicago)"
-	@echo "  - 22 fashion products"
+	@echo "  - 28 products (22 fashion + 6 retail core)"
 	@echo "  - 1 activated video per campaign with 30 days of metrics"
 
 ## Show help
@@ -299,10 +337,12 @@ help:
 	@echo "  make setup-ae-permissions - Grant GCS write access to Agent Engine"
 	@echo ""
 	@echo "TESTING:"
-	@echo "  make test           - Run unit + integration tests (default)"
+	@echo "  make test           - Run fast tier: unit + e2e (seconds, zero LLM calls; default)"
 	@echo "  make test-unit      - Run unit tests only (fast, no LLM)"
-	@echo "  make test-integration - Run integration tests (with LLM)"
 	@echo "  make test-e2e       - Run end-to-end workflow tests"
+	@echo "  make test-integration - Run integration tests (with LLM) — targeted subset of the live tier"
+	@echo "  make test-live      - Run LIVE tier: integration + tests/live (real Vertex APIs, needs app/.env, costs money)"
+	@echo "  make test-live-report - agents-cli grade reporting layer over live eval traces (INFORMATIONAL, not a gate)"
 	@echo "  make test-all       - Run ALL tests including slow Veo tests"
 	@echo "  make test-coverage  - Run tests with coverage report"
 	@echo ""

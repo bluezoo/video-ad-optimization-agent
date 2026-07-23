@@ -1,0 +1,163 @@
+[
+  {
+    "eval_id": "get-campaign-metrics",
+    "query": "Get metrics for campaign 2 over the last 30 days",
+    "inference_ok": true,
+    "error_message": null,
+    "actual_tool_calls": [
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "analytics_agent"
+        }
+      },
+      {
+        "name": "get_campaign_metrics",
+        "args": {
+          "days": 30,
+          "campaign_id": 2
+        }
+      }
+    ],
+    "final_response_text": "Here are the performance metrics for **Campaign 2: Elegant Black Cocktail Dress - Bloomingdale's 59th Street** over the last 30 days:\n\n### \ud83d\udcca Performance Summary\n* **Primary KPI \u2014 Revenue Per Impression (RPI):** **$0.0461** ($46.10 per 1,000 impressions)\n* **Total Revenue Generated:** **$2,103.43**\n* **Total Impressions:** **45,627**\n* **Total Foot Traffic (Circulation):** **217,016**\n* **Impression Capture Rate:** **21.0%** (Impressions / Circulation)\n* **Average Dwell Time:** **8.2 seconds** *(Exceeds the 5-second benchmark for in-store engagement)*\n* **Active Creatives:** 1 video active\n\n---\n\n### \ud83d\udca1 Key Takeaways\n1. **Strong Engagement:** An average dwell time of **8.2 seconds** demonstrates high shopper interest as they pass the display in-store.\n2. **Consistent Conversion:** RPI remains stable across weekdays and weekends at **$0.0461**.\n3. **Traffic Spikes:** Foot traffic and impressions consistently peak on weekends (e.g., ~1,800+ impressions on Saturdays/Sundays vs. ~1,400 on weekdays).\n\n---\n\n### \ud83c\udfa8 Next Steps & Options\n* **Generate Visual Charts:** I can create a trendline, bar chart, or visual infographic dashboard using `generate_metrics_visualization`.\n* **Map & Store View:** I can generate a map view or direct Google Maps links for the campaign location.\n* **Creative Comparison:** If you activate additional creative variations for this campaign, we can compare their RPI to find the best performer.",
+    "dimensions": {
+      "tools": {
+        "score": 0.0,
+        "threshold": 1.0,
+        "passed": false
+      },
+      "trajectory": {
+        "score": 0.0,
+        "threshold": 1.0,
+        "passed": false
+      },
+      "answer": {
+        "score": 0.0,
+        "threshold": 0.75,
+        "passed": false
+      }
+    }
+  },
+  {
+    "eval_id": "get-top-performers",
+    "query": "Show me the top 5 performing videos by RPI",
+    "inference_ok": true,
+    "error_message": null,
+    "actual_tool_calls": [
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "analytics_agent"
+        }
+      },
+      {
+        "name": "get_top_performing_ads",
+        "args": {
+          "metric": "revenue_per_impression",
+          "limit": 5
+        }
+      }
+    ],
+    "final_response_text": "Here are the **top 5 performing ad videos** ranked by **Revenue Per Impression (RPI)**:\n\n---\n\n### **Top Performing Video Ads**\n\n| Rank | Video / Product | Campaign & Location | Variation Traits | RPI | Impressions | Total Revenue | Dwell Time |\n| :---: | :--- | :--- | :--- | :---: | :---: | :---: | :---: |\n| **1** | **Blue Floral Maxi Dress** <br> `video_id: 1` | Blue Floral Maxi Dress - Westfield Century City *(Los Angeles, CA)* | Asian model \u2022 Beach \u2022 Romantic | **$0.0605** | 47,257 | $2,859.03 | 8.5s |\n| **2** | **Blue Floral Maxi Dress** <br> `video_id: 3` | Blue Floral Maxi Dress - Westfield Century City *(Los Angeles, CA)* | Latina model \u2022 Beach \u2022 Romantic | **$0.0595** | 42,068 | $2,503.06 | 8.2s |\n| **3** | **Blue Floral Maxi Dress** <br> `video_id: 2` | Blue Floral Maxi Dress - Westfield Century City *(Los Angeles, CA)* | European model \u2022 Urban \u2022 Bold | **$0.0589** | 47,403 | $2,792.06 | 7.7s |\n| **4** | **Sage Satin Camisole** <br> `video_id: 9` | Sage Satin Camisole - The Grove *(Los Angeles, CA)* | Asian model \u2022 Cafe \u2022 Sophisticated | **$0.0546** | 47,873 | $2,613.86 | 8.4s |\n| **5** | **Black High Waist Trousers** <br> `video_id: 5` | Black High Waist Trousers - Water Tower Place *(Chicago, IL)* | African model \u2022 Studio \u2022 Sophisticated | **$0.0524** | 56,118 | $2,940.61 | 8.2s |\n\n---\n\n### **Key Insights & Performance Patterns**\n* **Top Creative Traits:** Ads featuring **beach settings** and a **romantic mood** generated the highest RPI ($0.0595 \u2013 $0.0605).\n* **High Engagement:** Average dwell time across all top 5 videos exceeded **7.7 seconds** (with the top ad hitting **8.5s**), indicating strong shopper attention on in-store displays.\n* **Standout Campaign:** The *Blue Floral Maxi Dress* campaign holds the top 3 spots, showing high effectiveness for summer apparel visuals in high-traffic retail locations like Westfield Century City.\n\n---\n*Would you like me to generate a chart/visualization for any of these campaigns or analyze a specific creative in more detail?*",
+    "dimensions": {
+      "tools": {
+        "score": 0.0,
+        "threshold": 1.0,
+        "passed": false
+      },
+      "trajectory": {
+        "score": 0.0,
+        "threshold": 1.0,
+        "passed": false
+      },
+      "answer": {
+        "score": 1.0,
+        "threshold": 0.75,
+        "passed": true
+      }
+    }
+  },
+  {
+    "eval_id": "compare-campaigns",
+    "query": "Compare campaigns 1, 2, 3, and 4",
+    "inference_ok": true,
+    "error_message": null,
+    "actual_tool_calls": [
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "analytics_agent"
+        }
+      },
+      {
+        "name": "compare_campaigns",
+        "args": {
+          "campaign_ids": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      }
+    ],
+    "final_response_text": "Here is the performance comparison across **Campaigns 1, 2, 3, and 4**, ranked by **Revenue Per Impression (RPI)**\u2014the primary success KPI for our in-store retail media network:\n\n---\n\n### \ud83d\udcca Campaign Performance Summary\n\n| Rank | Campaign ID | Campaign Name | Location | Category | RPI | Total Revenue | Impressions | Dwell Time | Circulation |\n| :---: | :---: | :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: |\n| **#1** | **1** | **Blue Floral Maxi Dress** | Westfield Century City (LA) | Summer | **$0.0596** | $8,154.15 | 136,728 | 8.1s | 648,463 |\n| **#2** | **4** | **Sage Satin Camisole** | The Grove (LA) | Essentials | **$0.0484** | $8,163.49 | 168,502 | 8.4s | 803,769 |\n| **#3** | **2** | **Elegant Black Cocktail Dress** | Bloomingdale's 59th St (NYC) | Formal | **$0.0461** | $2,103.43 | 45,627 | 8.2s | 217,016 |\n| **#4** | **3** | **Black High Waist Trousers** | Water Tower Place (Chicago) | Professional | **$0.0426** | $7,599.05 | 178,515 | 7.8s | 845,600 |\n\n---\n\n### \ud83d\udca1 Key Takeaways\n\n1. **Top Performer by RPI:** **Campaign 1 (Blue Floral Maxi Dress)** leads efficiency with an **RPI of $0.0596** ($59.60 per 1,000 impressions), generating $8,154.15 on lower overall traffic/impressions compared to Campaign 3 and 4.\n2. **Top Performer by Revenue & Engagement:** **Campaign 4 (Sage Satin Camisole)** achieved the highest total revenue ($8,163.49) and best average shopper dwell time (**8.4s**).\n3. **Volume vs. Efficiency:** **Campaign 3 (Trousers)** saw the highest foot traffic circulation (845,600) and impressions (178,515), but has the lowest RPI ($0.0426) and shortest dwell time (7.8s).\n\n---\n\n### \ud83d\udee0\ufe0f Next Actions You Can Take:\n- **Visual Chart:** Would you like me to generate a comparison chart or visual dashboard infographic for these metrics?\n- **Map Visualization:** Would you like to view store locations on a static or AI-generated map dashboard?\n- **Creative Breakdown:** I can analyze winning creative/video variations within any specific campaign (e.g., Campaign 1 or Campaign 4).",
+    "dimensions": {
+      "tools": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "trajectory": {
+        "score": 1.0,
+        "threshold": 1.0,
+        "passed": true
+      },
+      "answer": {
+        "score": 1.0,
+        "threshold": 0.75,
+        "passed": true
+      }
+    }
+  },
+  {
+    "eval_id": "get-map-data",
+    "query": "Show me all campaign locations with Google Maps links",
+    "inference_ok": true,
+    "error_message": null,
+    "actual_tool_calls": [
+      {
+        "name": "transfer_to_agent",
+        "args": {
+          "agent_name": "campaign_agent"
+        }
+      },
+      {
+        "name": "get_campaign_locations",
+        "args": {}
+      },
+      {
+        "name": "list_campaigns",
+        "args": {}
+      }
+    ],
+    "final_response_text": "Here are all the current campaign locations along with direct Google Maps links:\n\n1. **Blue Floral Maxi Dress - Westfield Century City**\n   * **Store Location:** Westfield Century City\n   * **City/State:** Los Angeles, CA\n   * **Category:** Summer\n   * **Google Maps Link:** [Westfield Century City on Google Maps](https://www.google.com/maps/search/?api=1&query=Westfield+Century+City+Los+Angeles+CA)\n\n2. **Elegant Black Cocktail Dress - Bloomingdale's 59th Street**\n   * **Store Location:** Bloomingdale's 59th Street\n   * **City/State:** New York, NY\n   * **Category:** Formal\n   * **Google Maps Link:** [Bloomingdale's 59th Street on Google Maps](https://www.google.com/maps/search/?api=1&query=Bloomingdale%27s+59th+Street+New+York+NY)\n\n3. **Black High Waist Trousers - Water Tower Place**\n   * **Store Location:** Water Tower Place\n   * **City/State:** Chicago, IL\n   * **Category:** Professional\n   * **Google Maps Link:** [Water Tower Place on Google Maps](https://www.google.com/maps/search/?api=1&query=Water+Tower+Place+Chicago+IL)\n\n4. **Sage Satin Camisole - The Grove**\n   * **Store Location:** The Grove\n   * **City/State:** Los Angeles, CA\n   * **Category:** Essentials\n   * **Google Maps Link:** [The Grove on Google Maps](https://www.google.com/maps/search/?api=1&query=The+Grove+Los+Angeles+CA)",
+    "dimensions": {
+      "tools": {
+        "score": 0.0,
+        "threshold": 1.0,
+        "passed": false
+      },
+      "trajectory": {
+        "score": 0.0,
+        "threshold": 1.0,
+        "passed": false
+      },
+      "answer": {
+        "score": 0.0,
+        "threshold": 0.75,
+        "passed": false
+      }
+    }
+  }
+]

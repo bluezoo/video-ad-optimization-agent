@@ -593,3 +593,103 @@ the bundle (`make demo-assets-build SRC=<folder>`) is documented in
 Then in the web UI ask: **"Show me all my campaigns"** — expect routing to the
 Campaign Agent's `list_campaigns` exactly as before (the flip changes the
 model, not the routing contract; F1 Scene 1 is the full check).
+
+### Workstream 16 — live-API test tier, dup-product fix, Maps-routing fix
+
+Phase 16 added a second, real-money test tier (`make test-live`: agent-routing
+evals + live Veo/image-gen media + a Gemini multimodal judge) alongside two
+agent-behavior fixes it surfaced and fixed along the way: campaign creation no
+longer onboards a duplicate product when the requested product already exists
+in the catalog, and Google-Maps-link queries now route to the Analytics Agent
+instead of the Campaign Agent. See `CLAUDE.md`'s Commands tier map and
+`SETUP_INSTRUCTIONS.md`'s "Live tier" section for setup/cost/flakiness notes.
+
+#### Journey 16.1 — fast tier still seconds, zero LLM calls
+
+```bash
+make test
+```
+
+**Expect:** unit + e2e only (integration moved out of the default target this
+workstream) — hundreds of tests, seconds, zero network/LLM calls. This is the
+loop that runs after every edit (the `PostToolUse` hook runs `make test-unit`
+specifically).
+
+#### Journey 16.2 — live tier, real APIs, ~11 minutes
+
+```bash
+make test-live
+```
+
+**Expect:** requires `app/.env` with working Vertex credentials (the target
+exits with an error if the file is missing) and `google-adk[eval]==2.5.0`
+installed into `.venv` (`SETUP_INSTRUCTIONS.md` has the install command — this
+extra is not in `app/requirements.txt`). A clean run is **26 passed / 0
+failed** in roughly **11 minutes**, and makes real Vertex/Veo/image-model
+calls the whole way — expect real billing. If a case fails, rerun once before
+treating it as a regression: the "Live tier" section in
+`SETUP_INSTRUCTIONS.md` documents three known flaky (not broken) surfaces —
+a transient Vertex `400`, LLM-judge nondeterminism, and a transient Veo
+generation error.
+
+#### Journey 16.3 — deliberate-break check (proves the live tier actually catches regressions)
+
+```bash
+# Corrupt an eval set's expected tool name, e.g. in
+# tests/integration/eval_sets/coordinator.test.json change
+# "list_campaigns" to "list_campaignsX" in one case's tool_uses, then:
+.venv/bin/pytest tests/integration -k coordinator -v --tb=short
+# Expect: that case FAILS on the tools and trajectory dimensions.
+# Revert the edit and re-run — expect it passes again.
+```
+
+This is the check that originally exposed the pre-ws16 vacuity (a "pass" was
+possible with zero real inferences); it must now be impossible to fake — a
+wrong expectation always fails the live run.
+
+#### Journey 16.4 — reading a judge/grade report (informational, not a gate)
+
+```bash
+make test-live-report
+```
+
+**Expect:** requires `agents-cli` on PATH (`uv tool install google-agents-cli`)
+in addition to the live-tier prerequisites above. Records fresh actuals for
+`tests/integration/eval_sets/review_agent.test.json` (override with
+`EVAL_SET=...`), converts them to an `agents-cli eval grade` trace, and writes
+a report under `artifacts/grade_results/` (gitignored). This is a secondary,
+**informational** cross-check over the same live traces the harness already
+gates on — `tool_use_quality_v1` agrees with the harness's tools/trajectory
+verdicts; `final_response_quality_v1` is not reliable yet (recorder doesn't
+capture tool return values) and isn't a pass/fail signal. See
+`.docs/version2-plan/working-docs/16-live-api-testing/research/agents-cli-architecture.md`
+for the full fit verdict.
+
+#### Journey 16.5 — Maps-link queries route to the Analytics Agent
+
+```bash
+make dev
+```
+
+Ask: **"Show me all campaign locations with Google Maps links"** (this is
+Act 5 Scene 5.1's query, unchanged). **Expect:** routing to the **Analytics
+Agent**'s `get_campaign_map_data` (not the Campaign Agent) — the response
+lists each campaign's store with a clickable Google Maps link. Contrast with
+**"Show me all store locations"** (no "Maps"/"links" wording), which still
+routes to the **Campaign Agent**'s `get_campaign_locations` and answers with
+plain city/state, no map links — that split is the fix.
+
+#### Journey 16.6 — creating a campaign for a product that already exists reuses it
+
+```bash
+make dev
+```
+
+Ask: **"Create a campaign for the Aurora cold brew at Target Downtown in
+Austin, Texas"** (Aurora Cold Brew 330ml is one of the seeded retail-core
+products). **Expect:** the agent calls `list_products` first, finds the
+existing product, and calls `create_campaign` directly with that product's ID
+— **no** `create_product` call, and the confirmation notes it reused the
+existing product rather than creating a duplicate. Before this workstream's
+fix the agent onboarded a brand-new duplicate "Aurora Cold Brew" product
+instead of reusing the existing one.
