@@ -110,7 +110,7 @@
             "role": "user"
           },
           "final_response": {
-            "parts": [{"text": "A new campaign for the Camel Wool Overcoat at Macy's Herald Square in New York has been created (Campaign ID 5). It reuses the existing Camel Wool Overcoat product (ID 8) already in the catalog rather than onboarding a duplicate."}],
+            "parts": [{"text": "A new campaign for the Camel Wool Overcoat at Macy's Herald Square in New York has been created. It reuses the existing Camel Wool Overcoat product (ID 8) already in the catalog rather than onboarding a duplicate."}],
             "role": "model"
           },
           "intermediate_data": {
