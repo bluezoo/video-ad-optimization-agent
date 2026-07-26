@@ -43,3 +43,37 @@ script. Amends the pending phases only (11b, 12, 13) and the shared records
      2020-2026. `desc_table` works regardless, so structure is verifiable but
      values (bin scale, `valid` semantics, day-cut timezone, magnitudes) are not.
 - Phase-doc research: pending (appended to this entry when Step 2 completes).
+
+## 2026-07-25 — checkpoint 1 amendment: kickoff research done
+
+Authenticated full `desc_table` scan of all 19 tables completed (raw JSON in
+scratch; the committed probe script will reproduce it). Findings digest in
+`working-doc.md`. Headlines beyond the six pre-kickoff probe results:
+
+- **Mimic vindicated where it counts:** `sensor_visits` column list matches our
+  port exactly; `sensor_dwell` has exactly 106 HHMM-encoded bins including
+  `_0058_to_0100` and `_2400_to_beyond` — ws05 port correction #1 confirmed
+  against live schema.
+- **`group_uv_daily` DOES carry `campaign_id` + `campaign_name`** (and `cuv`).
+  This CONTRADICTS the 2026-07-16 published-docs conclusion recorded in Q6/Q11
+  ("UV tables are group_id-keyed, no campaign column, contrary to the donor
+  spec") — the donor spec was right; our correction of it was wrong. Needs a
+  provenance amendment.
+- **`group_sensor_history` (group_id, group_name, sensor_id, sensor_name,
+  timestamp) is the group↔sensor mapping table** — Q11 has a real,
+  API-discoverable answer; membership is timestamped, so it varies over time.
+- **`sensor_dwell` exposes `distribution_average_duration` /
+  `distribution_median_duration`** — METRICS.md:45 defers the histogram→scalar
+  dwell rule to Phase 11 pending a real response; BlueZoo ships the scalar, so
+  the rule is "read it, don't derive it."
+- **`time_zone` STRING exists on every sensor table** alongside the documented
+  `time_offset` (presence proven; behavior unprovable with zero rows).
+- **Our own drift:** `app/models/attribution.py:43` `BlueZooVisitInterval`
+  carries `minimum_/maximum_/average_visitors_*`, which live on `sensor_visitors`
+  — violating ws05 port correction #5 ("scope the DTO to sensor_visits fields
+  only"). Live schema confirms two tables ⇒ a live conformer needs two queries
+  joined client-side. Recorded for 11b, deliberately not fixed here.
+
+Dependencies re-checked against STATUS.md (not phase-doc narrative): phases
+1-10, 11a, 14a/14b, 15, 16 all `merged`; 11b/12/13 `not started`. Nothing this
+workstream depends on is outstanding.
