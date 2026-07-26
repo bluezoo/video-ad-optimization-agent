@@ -77,3 +77,28 @@ scratch; the committed probe script will reproduce it). Findings digest in
 Dependencies re-checked against STATUS.md (not phase-doc narrative): phases
 1-10, 11a, 14a/14b, 15, 16 all `merged`; 11b/12/13 `not started`. Nothing this
 workstream depends on is outstanding.
+
+## 2026-07-25 — checkpoint 2: working doc approved
+
+Owner approved the six-dimension restatement: *"Yes, i think that make sense.
+We will get the data soon, but before we do that, we need to make sure our
+schema and system is adpated to the actual bluezoo system. We can achieve
+that."* Both flagged judgment calls approved implicitly by that yes:
+(1) amend the wrong-in-hindsight Q6/Q11 UV-campaign correction openly with
+provenance rather than silently editing it; (2) state the zero-data limitation
+bluntly and raise "tenant with real data / seed AP_599" as a client ask.
+Owner's framing to carry into the work: real data is coming, so the point of
+this pass is that **our schema and system are adapted to the actual BlueZoo
+system before it arrives**.
+
+## 2026-07-25 — checkpoint 3: plan — owner authorized direct execution
+
+Owner instruction immediately after approval: *"Go ahead and update the docs
+and worstreams and commit them"* — taken as approval to execute the three
+deliverables exactly as enumerated in the approved working doc's
+"Implementation approach" (probe script, saved scan, tenant-genericity
+requirements + amendments), rather than producing a separate plan.md gate for
+a three-deliverable docs+script workstream. Recorded explicitly so the
+deviation from the usual writing-plans step is visible, not silent. Execution
+is inline (CLAUDE.md trivial-phase fast path), with incremental commits per
+deliverable.
