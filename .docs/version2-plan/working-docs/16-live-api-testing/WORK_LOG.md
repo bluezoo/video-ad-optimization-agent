@@ -850,3 +850,15 @@ Carried follow-ups for a future live-tier touch: (1) enumerate live files pipeli
 
 ## 2026-07-23 — Checkpoint 6: FINISHED — PR #15 merged into version_2
 PR https://github.com/bluezoo/video-ad-optimization-agent/pull/15 (merge commit 437fb1c, merge — not squash — preserving the 86-commit process record per owner's finish choice). Remote + local branch deleted, worktree removed. STATUS row → merged. Owner follow-ups carried: Task 17 demo-asset publish (SETUP_INSTRUCTIONS documents the steps); live-tier ordering follow-up (judge consumes current-run media by default) + SETUP_INSTRUCTIONS judge-call count, both recorded in the final-review WORK_LOG entry.
+
+## 2026-07-25 — Post-merge full demo sweep (owner-requested): ALL 7 SCENARIOS PASS
+Owner asked for every demo scenario run against merged version_2 (@5db91bc). Sequential demo-scenario-verifier runs, main checkout, port 8501, fresh reset-db per scenario:
+- F1 2/2 PASS (real two-stage gen; one transient Veo empty-result on attempt 1, agent self-recovered — known watchlist flake)
+- F2 2/2 PASS (chart with defaults + clean no-metrics error path)
+- F3 2/2 PASS (deterministic 30→33 days; RPIs 0.0605/0.0595/0.0589 match the ws10/ws11a record exactly)
+- F4 1/1 PASS (comparison chart artifact byte-verified vs comparison payload)
+- F5 2/2 PASS (beverage listing + create-campaign resolves existing product id 23 — ws16 dup-product fix held in browser; non-fashion video gen, zero fashion terms)
+- F6 2/2 PASS (adapted: doc's sqlite setup INSERT denied by permission classifier; pause→re-activate drove the identical window-open/close code path; fresh-activation branch covered separately below)
+- from-scratch-onboarding 7/7 PASS on schema-only DB (DEMO_DATASET=none, GCS_BUCKET temporarily commented out of app/.env with owner's explicit approval, restored byte-identical after; incl. the fresh-activation check: metrics_generated=30, 3 attribution windows screen_id∈{101,102,103}≠campaign_id, active_to NULL)
+Global: zero storage.googleapis.com in every session JSON across all scenarios. Evidence: /tmp/postmerge-verify/<scenario>/. Generated media archived for owner quality review in .docs/postmerge-verify-media/2026-07-25/ (gitignored; INDEX.md maps files→scenarios; 2 GCS-mode videos pending gcloud re-auth to download).
+Pre-existing observations carried forward (candidates for a future phase, none ws16 regressions): same-day duplicate-filename regeneration wastes a paid Veo call before the UNIQUE constraint fires; make dev honors app/.env GCS_BUCKET (GCS mode) — local-first posture requires unsetting it there.
