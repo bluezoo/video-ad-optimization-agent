@@ -1,0 +1,251 @@
+#!/usr/bin/env python3
+"""Read-only probe of a BlueZoo Data Warehouse account.
+
+Answers one question: **what does this specific tenant's warehouse actually
+look like?** — because table availability, cluster hostname, and group/sensor
+configuration all vary per BlueZoo customer, and our connector has to work for
+any of them (see `working-docs/bluezoo-live-verification/findings.md`).
+
+Read-only by construction: only `list_tables`, `desc_table`, and `SELECT`
+statements are ever sent (`run_query` is server-side SELECT-only regardless).
+Nothing is written to BlueZoo, and the AccessKey is never printed or persisted.
+
+Usage
+-----
+    # key from app/.env (BLUEZOO_ACCESS_KEY=...) or the environment
+    python scripts/bluezoo_probe.py --out .docs/version2-plan/working-docs/bluezoo-live-verification/scan
+
+    # another customer / cluster
+    BLUEZOO_BASE_URL=https://<their-cluster-host>/v2/dwh python scripts/bluezoo_probe.py
+
+Environment
+-----------
+    BLUEZOO_ACCESS_KEY   required. Dashboard -> Profile -> AccessKey.
+    BLUEZOO_BASE_URL     optional. Defaults to the Apollo cluster host.
+                         The hostname is CLUSTER-scoped, not global: a key
+                         from cluster A returns BAD_TOKEN against cluster B's
+                         host. The dashboard Profile screen names the cluster.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+import urllib.error
+import urllib.request
+from datetime import UTC, date, datetime
+from pathlib import Path
+
+DEFAULT_BASE_URL = "https://hermes.apollo.bluezoo.io/v2/dwh"
+
+# BlueZoo rejects any run_query without a constraint on one of these columns.
+# Undocumented (their own published example would fail), enforced server-side.
+TIME_CONSTRAINT_COLUMNS = ("timestamp", "date_start", "date_end", "date")
+
+# Tables worth sampling for row counts, if the tenant has them. Everything
+# else is schema-only — this list exists to keep the probe cheap, not to
+# assert what a tenant "should" have.
+COUNT_TABLES = (
+    "sensor_visits",
+    "sensor_visitors",
+    "sensor_dwell",
+    "sensor_visitors_per_minute",
+    "group_uv_daily",
+    "group_sensor_history",
+)
+
+WIDE_WINDOW = (date(2020, 1, 1), date(2030, 12, 31))
+
+
+class BlueZooError(RuntimeError):
+    """An API call failed or the response was not usable."""
+
+
+class BlueZooProbe:
+    """Minimal read-only Data Warehouse client."""
+
+    def __init__(self, access_key: str, base_url: str = DEFAULT_BASE_URL, timeout: int = 60):
+        if not access_key:
+            raise BlueZooError(
+                "No BlueZoo AccessKey. Set BLUEZOO_ACCESS_KEY in app/.env or the "
+                "environment (dashboard -> Profile -> AccessKey). Never commit it."
+            )
+        self._key = access_key
+        self.base_url = base_url.rstrip("/")
+        self.timeout = timeout
+
+    def _call(self, path: str, body: str | None = None, content_type: str | None = None):
+        request = urllib.request.Request(
+            f"{self.base_url}/{path}", data=body.encode() if body else None
+        )
+        request.add_header("Authorization", f"AccessKey {self._key}")
+        if content_type:
+            request.add_header("Content-Type", content_type)
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                return json.loads(response.read())
+        except urllib.error.HTTPError as exc:  # 400/403 carry a JSON body
+            detail = exc.read().decode(errors="replace")[:300]
+            raise BlueZooError(f"{path}: HTTP {exc.code} {detail}") from exc
+        except urllib.error.URLError as exc:
+            raise BlueZooError(f"{path}: {exc.reason}") from exc
+
+    def list_tables(self) -> list[str]:
+        """Tables this account is entitled to — a per-tenant capability probe."""
+        rows = self._call("list_tables")
+        return sorted(row["table_name"] for row in rows)
+
+    def describe(self, table: str) -> list[dict]:
+        return self._call("desc_table", json.dumps({"table_name": table}), "application/json")
+
+    def query(self, sql: str):
+        """Run a SELECT. Rejects statements with no time constraint before
+        sending, so the failure names the real cause rather than surfacing
+        BlueZoo's message after a round trip."""
+        lowered = sql.lower()
+        if not any(column in lowered for column in TIME_CONSTRAINT_COLUMNS):
+            raise BlueZooError(
+                "BlueZoo requires every query to constrain one of "
+                f"{', '.join(TIME_CONSTRAINT_COLUMNS)} in its WHERE clause: {sql}"
+            )
+        return self._call("run_query", sql, "text/plain")
+
+
+def time_column_for(columns: list[dict]) -> str | None:
+    """Which time column this table can be filtered on, if any.
+
+    Tables disagree: sensor_* carry `timestamp`, group_uv_daily carries `date`,
+    the group_convert family carries `date_start`. Pick whichever exists rather
+    than assuming one.
+    """
+    names = {column["column_name"] for column in columns}
+    for candidate in TIME_CONSTRAINT_COLUMNS:
+        if candidate in names:
+            return candidate
+    return None
+
+
+def scan(probe: BlueZooProbe, count_tables: tuple[str, ...] = COUNT_TABLES) -> dict:
+    """Full read-only scan: entitlements, every table's schema, row counts."""
+    tables = probe.list_tables()
+    schemas: dict[str, list[dict]] = {}
+    errors: dict[str, str] = {}
+    for table in tables:
+        try:
+            schemas[table] = probe.describe(table)
+        except BlueZooError as exc:
+            errors[table] = str(exc)
+
+    counts: dict[str, object] = {}
+    start, end = WIDE_WINDOW
+    for table in count_tables:
+        if table not in schemas:
+            continue  # not entitled on this tenant — expected, not an error
+        column = time_column_for(schemas[table])
+        if column is None:
+            counts[table] = "no filterable time column"
+            continue
+        try:
+            rows = probe.query(
+                f"select count(*) as n from {table} "
+                f"where {column} >= '{start.isoformat()}' and {column} <= '{end.isoformat()}'"
+            )
+            counts[table] = rows[0].get("n") if rows else 0
+        except BlueZooError as exc:
+            counts[table] = f"error: {exc}"
+
+    return {
+        "scanned_at": datetime.now(UTC).isoformat(),
+        "base_url": probe.base_url,
+        "table_count": len(tables),
+        "tables": tables,
+        "schemas": schemas,
+        "schema_errors": errors,
+        "row_counts": counts,
+    }
+
+
+def render_markdown(result: dict) -> str:
+    """Human-readable digest of a scan — the reviewable half of the artifact."""
+    lines = [
+        "# BlueZoo live schema scan",
+        "",
+        f"- **Scanned:** {result['scanned_at']}",
+        f"- **Base URL:** `{result['base_url']}`",
+        f"- **Tables entitled:** {result['table_count']}",
+        "",
+        "Generated by `scripts/bluezoo_probe.py` (read-only).",
+        "",
+        "## Row counts",
+        "",
+        "| Table | Rows |",
+        "|---|---|",
+    ]
+    for table, count in result["row_counts"].items():
+        lines.append(f"| `{table}` | {count} |")
+    lines += ["", "## Schemas", ""]
+    for table in result["tables"]:
+        columns = result["schemas"].get(table)
+        if columns is None:
+            lines += [f"### `{table}`", "", f"ERROR: {result['schema_errors'].get(table)}", ""]
+            continue
+        lines += [f"### `{table}` ({len(columns)} columns)", "", "| Column | Type |", "|---|---|"]
+        lines += [f"| `{c['column_name']}` | {c['data_type']} |" for c in columns]
+        lines.append("")
+    return "\n".join(lines)
+
+
+def load_access_key() -> str:
+    """Environment wins; otherwise app/.env (gitignored, never committed)."""
+    key = os.environ.get("BLUEZOO_ACCESS_KEY", "").strip()
+    if key:
+        return key
+    env_file = Path(__file__).resolve().parent.parent / "app" / ".env"
+    if env_file.exists():
+        for line in env_file.read_text().splitlines():
+            name, _, value = line.partition("=")
+            if name.strip() == "BLUEZOO_ACCESS_KEY":
+                return value.strip().strip("'\"")
+    return ""
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--out", type=Path, help="Directory to write scan.json + scan.md into")
+    parser.add_argument(
+        "--base-url",
+        default=os.environ.get("BLUEZOO_BASE_URL", DEFAULT_BASE_URL),
+        help="Cluster-specific Data Warehouse base URL",
+    )
+    args = parser.parse_args()
+
+    try:
+        probe = BlueZooProbe(load_access_key(), args.base_url)
+        result = scan(probe)
+    except BlueZooError as exc:
+        print(f"FAILED: {exc}", file=sys.stderr)
+        return 1
+
+    markdown = render_markdown(result)
+    if args.out:
+        args.out.mkdir(parents=True, exist_ok=True)
+        (args.out / "scan.json").write_text(json.dumps(result, indent=2) + "\n")
+        (args.out / "scan.md").write_text(markdown + "\n")
+        print(f"Wrote {args.out / 'scan.json'} and {args.out / 'scan.md'}")
+    else:
+        print(markdown)
+
+    empty = [t for t, n in result["row_counts"].items() if n == 0]
+    if empty:
+        print(
+            f"\nNOTE: {len(empty)} sampled table(s) returned zero rows — schema is "
+            "verifiable, values are not.",
+            file=sys.stderr,
+        )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
