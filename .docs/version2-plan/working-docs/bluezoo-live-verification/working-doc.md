@@ -67,6 +67,13 @@ All findings below are from authenticated read-only calls made during kickoff
    monthly`, `group_sensor_history`, `group_uv_quarterly`. Table availability
    is an **account entitlement**, so `list_tables` is a per-tenant capability
    probe, not a constant.
+   > *Corrected during code review, 2026-07-25 (left visible rather than edited
+   > away, since this doc is the approved-scope record): `group_convert` is
+   > **not** an extra — it appears in the documented `list_tables` inventory
+   > (see `bluezoo-mapping-verification.md`, last bullet). There are six
+   > extras, not seven. Missed here: `group_dwell` is **documented but not
+   > entitled** on this account — 14 − 1 + 6 = 19. That absence is the stronger
+   > form of the same finding, and `findings.md` Part 2 #4 carries it.*
 5. **`sensor_visitors_per_minute` is enabled here** — schema is
    `visitors_inner` / `visitors_outer` (occupancy, as we concluded, not
    visits). **Q17 fallback (b) is available without asking BlueZoo**, at least
@@ -85,7 +92,7 @@ All findings below are from authenticated read-only calls made during kickoff
    documented `time_offset`. Directly relevant to Q18's UTC-vs-sensor-local
    day-cut question — though with no rows, only the *presence* is proven.
 9. **`sensor_dwell` exposes `distribution_average_duration` and
-   `distribution_median_duration`.** `docs/METRICS.md:45` defers the
+   `distribution_median_duration`.** `docs/METRICS.md` (Dwell time section) defers the
    "histogram → scalar dwell" rule to Phase 11 pending a real BlueZoo
    response. BlueZoo **ships the scalar directly** — the rule is "read it,
    don't derive it."

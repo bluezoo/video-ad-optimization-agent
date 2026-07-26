@@ -41,7 +41,36 @@ GCS_BUCKET=<your-bucket-name>
 ```
 GOOGLE_MAPS_API_KEY=<your-maps-key>   # or MAPS_API_KEY
 APP_MODE=demo                          # or connected; default demo — inert until Phase 11/12
+BLUEZOO_ACCESS_KEY=<uuid>              # only for scripts/bluezoo_probe.py — see below
+BLUEZOO_BASE_URL=<cluster-dwh-url>     # only for scripts/bluezoo_probe.py — see below
 ```
+
+## BlueZoo schema probe (`scripts/bluezoo_probe.py`)
+
+A read-only tool for answering "what does this BlueZoo tenant's warehouse
+actually look like?" — not part of the app, and not needed to run or test it.
+No BlueZoo integration code exists yet (that's Phase 11b); this exists so the
+adapter can be built against a real schema rather than the published docs alone.
+
+```bash
+python scripts/bluezoo_probe.py --out <dir>   # writes scan.json + scan.md
+python scripts/bluezoo_probe.py               # markdown digest to stdout
+```
+
+- **`BLUEZOO_ACCESS_KEY`** (required) — from the BlueZoo dashboard's Profile
+  screen. Read from the environment first, else `app/.env`. Never commit it; the
+  script never prints or persists it.
+- **`BLUEZOO_BASE_URL`** (optional) — defaults to the Apollo cluster's Data
+  Warehouse endpoint. **Hostnames are cluster-scoped, not global:** a key from
+  one cluster returns `BAD_TOKEN` against another's host, which reads like a bad
+  credential. The Profile screen names your cluster; override this when probing
+  a different customer. `--base-url` does the same thing per-invocation.
+
+Read-only by construction: `list_tables`, `desc_table`, and SELECT-only counts,
+with non-SELECT statements refused client-side before transmission.
+
+Findings and the saved scan of the Apollo / AP_599 account:
+`.docs/version2-plan/working-docs/bluezoo-live-verification/`.
 
 ## Run locally
 

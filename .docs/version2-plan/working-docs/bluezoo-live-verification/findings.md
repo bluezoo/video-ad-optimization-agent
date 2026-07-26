@@ -8,7 +8,15 @@ This document closes that item.
 
 **Account:** org "Walmart Demo", Cluster/Account **Apollo / AP_599**, Super Admin.
 **Method:** read-only calls via `scripts/bluezoo_probe.py`; full scan artifact in
-`scan/scan.json` + `scan/scan.md` (19 tables, every column, row counts).
+`scan/scan.json` + `scan/scan.md` (19 tables, every column, row counts over a
+2020-01-01…2030-12-31 window). Everything about *schemas, entitlements and row
+counts* is reproducible from that artifact by re-running the script. Four
+claims below are **not** — host aliasing (Part 2 #1), the BigQuery error text
+(#2), the time-constraint error message (#3), and the SELECT-only guarantee
+(Part 1) — because they are properties of *rejected* calls, which no successful
+scan records. Those come from the pre-kickoff manual probe calls transcribed in
+this workstream's `WORK_LOG.md` (checkpoint 1), with the error strings quoted
+verbatim there and below.
 **Owner framing:** real data is coming later; the point of this pass is that our
 schema and system are adapted to the actual BlueZoo system *before* it arrives.
 
@@ -22,13 +30,13 @@ this. What changes is what Phase 11b must build against.
 
 | Claim (source) | Live result |
 |---|---|
-| `sensor_visits` column list (ws05 port) | **Exact match**: `sensor_id`, `sensor_name`, `sensor_mac`, `sensor_address`, `sensor_latitude`, `sensor_longitude`, `timestamp`, `incoming_inner_count`, `incoming_outer_count`, `outgoing_inner_count`, `outgoing_outer_count`, `valid` (+2 extras, Part 2 #5) |
+| `sensor_visits` column list (as documented, and as ws05 verified against the docs) | **Exact match** to the published list: `sensor_id`, `sensor_name`, `sensor_mac`, `sensor_address`, `sensor_latitude`, `sensor_longitude`, `timestamp`, `incoming_inner_count`, `incoming_outer_count`, `outgoing_inner_count`, `outgoing_outer_count`, `valid` (+2 extras, Part 2 #5). Our *mimic* deliberately diverges per ws05's naming policy (`screen_visits`, keyed `screen_id`/`ad_campaign_id`, no sensor identity columns, occupancy fields merged in) — see `app/demo_data/BLUEZOO_MAPPING.md`; what this row confirms is that BlueZoo's real columns are what the docs said, so that policy was applied to an accurate baseline |
 | Counts are FLOAT64, not integers | Confirmed — all four count columns FLOAT64 |
 | `sensor_dwell` has 106 distribution bins | Confirmed exactly |
 | Bins are HHMM-encoded, not minutes (ws05 correction #1) | **Confirmed** — `distribution_bin_0058_to_0100` and `distribution_bin_2400_to_beyond` both present. The port correction was right and the donor's minutes encoding was wrong |
 | `minimum_/maximum_/average_visitors_*` naming | Confirmed on `sensor_visitors` |
 | `sensor_visits` and `sensor_visitors` are separate tables (ws05 correction #5) | Confirmed — distinct tables, distinct column sets |
-| `run_query` is SELECT-only | Confirmed (server-side) |
+| `run_query` is SELECT-only | **Not tested — inherited from BlueZoo's published guarantee.** Sending a non-SELECT to verify would have been a write attempt against a customer account; this workstream is read-only by construction, so the claim stands on their documentation, not our evidence |
 | `cuv` exists on UV tables | Confirmed — present despite being absent from the published example response |
 
 ## Part 2 — new facts the published docs did not contain
@@ -61,15 +69,27 @@ BlueZoo's own published example — `select * from sensor_visitors limit 1` —
 **would fail against the live API.** This is a hard server-side requirement on
 every historical read.
 
-Which column satisfies it varies by table: `sensor_*` carry `timestamp`,
-`group_uv_daily` carries `date`, the `group_convert*` family carries
-`date_start`. There is no single filter clause that works everywhere.
+Which column satisfies it varies by table, and not even consistently within a
+family: `sensor_*` carry `timestamp`; `group_uv_daily` carries `date`;
+`group_convert`, `_weekly` and `_monthly` carry `date_start`/`date_end`/`date`
+— but **`group_convert_daily` carries only `date`**. There is no single filter
+clause that works everywhere, and no safe per-family assumption either:
+discover the column from the schema, never hardcode a table→column map.
 
-### 4. This tenant has 19 tables, not the documented 14.
+### 4. This tenant's entitlements differ from the documented set in *both* directions.
 
-Beyond the documented set: `sensor_visitors_per_minute`, `group_convert`,
-`group_convert_daily`, `group_convert_weekly`, `group_convert_monthly`,
-`group_sensor_history`, `group_uv_quarterly`.
+19 tables, against 14 documented. Six are beyond the documented set:
+`sensor_visitors_per_minute`, `group_convert_daily`, `group_convert_weekly`,
+`group_convert_monthly`, `group_sensor_history`, `group_uv_quarterly`.
+(`group_convert` itself is *not* new — it appears in the documented
+`list_tables` inventory, undocumented as to schema; see
+`working-docs/replan-data-track/bluezoo-mapping-verification.md`.)
+
+**And one documented table is missing: `group_dwell` is not entitled here.**
+That is the more important half. 14 documented − 1 absent + 6 extras = the 19
+observed. Entitlements are not a superset of the docs; they are a different
+set, and a connector that assumes any documented table exists will break on
+some tenant.
 
 Table availability is an **account entitlement** — `list_tables` returns "the
 tables available under the account." A different BlueZoo customer will return a
@@ -166,12 +186,16 @@ derived from a finding above rather than from a guess.
    another's host, so a wrong default fails in a way that looks like a bad
    credential.
 2. **Call `list_tables` first and treat the result as capabilities.** Do not
-   assume any table exists. At minimum, `sensor_visitors_per_minute`, the
-   `group_convert*` family, `group_uv_quarterly` and `group_sensor_history`
-   must all be optional. Missing table ⇒ that feature degrades, not an error.
+   assume any table exists — *including documented ones*: `group_dwell` is
+   documented and absent here, while six undocumented tables are present. At
+   minimum `sensor_visitors_per_minute`, the `group_convert*` family,
+   `group_uv_quarterly`, `group_sensor_history` and `group_dwell` must all be
+   optional. Missing table ⇒ that feature degrades, not an error.
 3. **Every query carries a time constraint**, using the column that table
-   actually has (`timestamp` / `date` / `date_start`). Build this into the
-   query builder so it cannot be forgotten.
+   actually has — **read from the table's own schema, not from a hardcoded
+   map**: `group_convert_daily` has only `date` while the rest of its family
+   has `date_start`, so even per-family assumptions are unsafe. Build this into
+   the query builder so it cannot be forgotten.
 4. **Discover the group↔sensor mapping from `group_sensor_history`**, as of a
    date — do not invent a mapping table, and do not cache it as static.
 5. **Zero rows is a valid answer.** A brand-new tenant returns empty from every

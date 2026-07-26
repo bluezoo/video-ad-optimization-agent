@@ -7,6 +7,7 @@ per account, and a missing key failing loudly instead of silently.
 """
 
 import importlib.util
+import json
 from pathlib import Path
 
 import pytest
@@ -21,30 +22,31 @@ BlueZooProbe = bluezoo_probe.BlueZooProbe
 
 
 class FakeProbe(BlueZooProbe):
-    """Probe with the HTTP layer replaced by canned responses."""
+    """Probe with only the HTTP layer replaced.
 
-    def __init__(self, tables, schemas, counts=None):
+    Overrides `_call`, not `query`/`list_tables`, so the real guards and the
+    real response handling stay in the path — a fake that reimplemented them
+    would keep passing after they changed.
+    """
+
+    def __init__(self, tables, schemas, counts=None, describe_errors=()):
         super().__init__(access_key="fake-key")
         self._tables = tables
         self._schemas = schemas
         self._counts = counts or {}
+        self._describe_errors = set(describe_errors)
         self.queries = []
 
-    def list_tables(self):
-        return sorted(self._tables)
-
-    def describe(self, table):
-        return self._schemas[table]
-
-    def query(self, sql):
-        super_check = BlueZooProbe.query
-        # Reuse the real guard, then answer from canned counts.
-        lowered = sql.lower()
-        if not any(c in lowered for c in bluezoo_probe.TIME_CONSTRAINT_COLUMNS):
-            raise BlueZooError(f"no time constraint: {sql}")
-        assert super_check  # keep the reference meaningful for readers
-        self.queries.append(sql)
-        table = sql.split(" from ")[1].split(" ")[0]
+    def _call(self, path, body=None, content_type=None):
+        if path == "list_tables":
+            return [{"table_name": name} for name in self._tables]
+        if path == "desc_table":
+            table = json.loads(body)["table_name"]
+            if table in self._describe_errors:
+                raise BlueZooError(f"desc_table: HTTP 403 {table}")
+            return self._schemas[table]
+        self.queries.append(body)
+        table = body.split(" from ")[1].split(" ")[0]
         return [{"n": self._counts.get(table, 0)}]
 
 
@@ -58,14 +60,32 @@ class TestMissingKey:
             BlueZooProbe(access_key="")
 
 
-class TestTimeConstraintGuard:
+class TestQueryGuards:
     """BlueZoo rejects any query lacking a date_start/date_end/timestamp
-    filter — undocumented, and their own published example would fail."""
+    filter — undocumented, and their own published example would fail. The
+    probe also refuses non-SELECTs client-side, so read-only is a property of
+    the class rather than a promise about its callers."""
 
     def test_query_without_time_constraint_is_refused(self):
         probe = BlueZooProbe(access_key="fake-key")
         with pytest.raises(BlueZooError, match="time constraint|constrain"):
             probe.query("select * from sensor_visitors limit 1")
+
+    @pytest.mark.parametrize(
+        "statement",
+        [
+            "delete from sensor_visits where timestamp > '2020-01-01'",
+            "update sensor_visits set valid = false where timestamp > '2020-01-01'",
+            "drop table sensor_visits -- timestamp",
+        ],
+    )
+    def test_non_select_statements_never_leave_the_process(self, statement, monkeypatch):
+        probe = BlueZooProbe(access_key="fake-key")
+        monkeypatch.setattr(
+            probe, "_call", lambda *a, **k: pytest.fail("a non-SELECT was transmitted")
+        )
+        with pytest.raises(BlueZooError, match="SELECT"):
+            probe.query(statement)
 
     @pytest.mark.parametrize("column", ["timestamp", "date_start", "date_end", "date"])
     def test_each_accepted_time_column_passes_the_guard(self, column, monkeypatch):
@@ -127,6 +147,20 @@ class TestTenantVariability:
         )
         result = bluezoo_probe.scan(probe, count_tables=("sensor_visits",))
         assert result["row_counts"]["sensor_visits"] == 0
+
+    def test_one_unreadable_table_does_not_abort_the_scan(self):
+        """A tenant where one desc_table 403s while the rest succeed is
+        precisely what this script exists to survive."""
+        probe = FakeProbe(
+            tables=["sensor_visits", "sensor_pulses"],
+            schemas={"sensor_visits": _cols("sensor_id", "timestamp")},
+            describe_errors=["sensor_pulses"],
+        )
+        result = bluezoo_probe.scan(probe, count_tables=("sensor_visits",))
+        assert set(result["schemas"]) == {"sensor_visits"}
+        assert "sensor_pulses" in result["schema_errors"]
+        assert result["table_count"] == 2  # entitlement is still recorded
+        assert "sensor_pulses" in bluezoo_probe.render_markdown(result)
 
     def test_counted_query_carries_the_time_filter(self):
         probe = FakeProbe(

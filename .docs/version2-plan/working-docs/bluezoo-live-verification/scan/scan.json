@@ -1,6 +1,10 @@
 {
-  "scanned_at": "2026-07-26T02:48:18.083428+00:00",
+  "scanned_at": "2026-07-26T03:56:01.712507+00:00",
   "base_url": "https://hermes.apollo.bluezoo.io/v2/dwh",
+  "count_window": [
+    "2020-01-01",
+    "2030-12-31"
+  ],
   "table_count": 19,
   "tables": [
     "group_convert",

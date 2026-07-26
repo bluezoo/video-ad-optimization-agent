@@ -63,7 +63,7 @@ scratch; the committed probe script will reproduce it). Findings digest in
   timestamp) is the group↔sensor mapping table** — Q11 has a real,
   API-discoverable answer; membership is timestamped, so it varies over time.
 - **`sensor_dwell` exposes `distribution_average_duration` /
-  `distribution_median_duration`** — METRICS.md:45 defers the histogram→scalar
+  `distribution_median_duration`** — METRICS.md (Dwell time section) defers the histogram→scalar
   dwell rule to Phase 11 pending a real response; BlueZoo ships the scalar, so
   the rule is "read it, don't derive it."
 - **`time_zone` STRING exists on every sensor table** alongside the documented
@@ -156,3 +156,68 @@ where this scan bears on their content — the owner scoped amendments to pendin
 workstreams. Where a merged phase's instruction is now wrong (ws05 port
 correction #2's prose half), the correction lives in the shared verification
 record and Q6, both of which a reader of that instruction reaches.
+
+## 2026-07-25 — checkpoint 6: code review round
+
+Full-branch review dispatched. It cross-checked every schema assertion against
+`scan/scan.json` and confirmed the load-bearing ones — including the Q6
+reversal — but found three real factual errors and one gap. All verified
+independently against the artifact before fixing:
+
+- **DISCOVERY (correction to our own finding): `group_convert` was never an
+  "extra."** It appears in the documented `list_tables` inventory
+  (`bluezoo-mapping-verification.md`, last bullet) — we listed it as newly
+  discovered. Worse, we missed the mirror-image fact: **`group_dwell` is
+  documented but NOT entitled on this account.** The arithmetic closes exactly
+  (14 documented − 1 absent + 6 extras = 19), and the absence is the *stronger*
+  evidence for the tenant-genericity rule: entitlements are not a superset of
+  the docs, so "documented" is not a floor a connector may assume. Corrected in
+  `findings.md`, `11-*.md`, `99-open-questions.md`,
+  `bluezoo-mapping-verification.md`, and marked (not erased) in `working-doc.md`.
+- **"The `group_convert*` family carries `date_start`" is false for one of four
+  —** `group_convert_daily` has only `date`. The code was never affected
+  (`time_column_for` discovers the column), but the prose told 11b to hardcode
+  a table→column map. Rewritten as "read the column from the schema, never
+  hardcode," which is the safer rule anyway.
+- **"`sensor_visits` matches our port exactly" was overstated** — it matches
+  BlueZoo's *published column list* exactly; our mimic deliberately renames
+  identity columns per ws05's naming policy. Both statements are true; only the
+  second was written. Reworded, since `findings.md` Part 3 argues the port
+  *diverges* two sections later.
+- **`app/demo_data/BLUEZOO_MAPPING.md:26` still asserted the refuted UV claim.**
+  It is a shipped repo doc, not a phase doc, so the "pending workstreams only"
+  constraint doesn't reach it — and we had already amended two other merged
+  shared records on that reasoning. Amended in place with a pointer to
+  `findings.md`. This is the only `app/` file this workstream touches, and it is
+  documentation.
+- **Evidence provenance made explicit.** Four claims (host aliasing, the
+  BigQuery error text, the time-constraint message, SELECT-only) are properties
+  of *rejected* calls and so cannot appear in a successful scan; `findings.md`
+  now says which claims the artifact backs and which come from the checkpoint-1
+  manual calls. Notably **SELECT-only was never tested** — verifying it would
+  have meant attempting a write against a customer account. Now labelled as
+  inherited from BlueZoo's published guarantee rather than "Confirmed."
+
+Code changes from the same round: client-side non-SELECT refusal in
+`BlueZooProbe.query` (makes "read-only" a property of the class, not a promise
+about call sites — the guard is earmarked for reuse in 11b); honest docstring
+about the time-guard being a best-effort scan rather than WHERE-clause parsing;
+`BlueZooError` wrapping for non-JSON responses and malformed `list_tables`
+(likeliest real failure when pointed at a wrong cluster); `count_window`
+recorded in the scan artifact so "0 rows" is self-describing; count extraction
+no longer able to synthesize a 0.
+
+`FakeProbe` now overrides `_call` instead of `query`, so tests exercise the real
+guards rather than a copy that could drift. Tests 16 → 20 (non-SELECT refusal
+×3, partial-`desc_table`-failure scan). Scan re-run live: byte-identical
+schemas/tables/counts to the committed artifact, differing only by the new
+`count_window` field — an incidental reproducibility check.
+
+Env vars documented in `SETUP_INSTRUCTIONS.md` (the working doc promised
+"`app/.env.example`-style documentation"; no such file exists in this repo, and
+`SETUP_INSTRUCTIONS.md` is where CLAUDE.md says setup belongs).
+
+Not actioned: the reviewer flagged a missing `STATUS.md` row, but the row exists
+on `version_2` (`192dd40`) — STATUS.md is single-writer in the main checkout, so
+the worktree's copy is simply behind. 11b's note there does need refreshing;
+done in the main checkout, not on this branch.

@@ -22,7 +22,7 @@ Ported from `ad-campaign-agent` @ `b6e3302358d61892e388d7ff744b2aff0e04b399`
 |---|---|---|
 | `screen_visits` | `store_visits` | `sensor_visits` (+ occupancy fields the donor merged in from `sensor_visitors` — the live adapter reads TWO tables) |
 | `screen_dwell` | `store_dwell` | `sensor_dwell` |
-| `campaign_uv_daily` | `campaign_uv_daily` | `group_uv_daily` (BlueZoo keys by `group_id`, no campaign column — the donor spec's claim otherwise was wrong) |
+| `campaign_uv_daily` | `campaign_uv_daily` | `group_uv_daily` (**correction, 2026-07-25:** the live schema *does* carry `campaign_id` + `campaign_name` — this cell's earlier claim that it doesn't, and that the donor spec was wrong, is itself wrong; the published docs were incomplete. Our `ad_campaign_id` rename stands regardless, and is reinforced: the name now collides here too. See `.docs/version2-plan/working-docs/bluezoo-live-verification/findings.md` Part 2 #6.) |
 | `campaign_flow_transition` | `campaign_flow_transition` | `group_flow_transition` |
 | `video_attribution` | `video_attribution` | (no BlueZoo equivalent — app-side concept; now consumed, not just reserved: the DB table carries the live windows, `attribution.py` performs the ad-play join against them, and seed.py's frame remains the shape reference) |
 
