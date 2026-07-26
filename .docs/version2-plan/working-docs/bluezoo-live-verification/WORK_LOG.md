@@ -102,3 +102,57 @@ a three-deliverable docs+script workstream. Recorded explicitly so the
 deviation from the usual writing-plans step is visible, not silent. Execution
 is inline (CLAUDE.md trivial-phase fast path), with incremental commits per
 deliverable.
+
+## 2026-07-25 — checkpoint 4: deliverables 1 + 2 (probe script, saved scan)
+
+- `scripts/bluezoo_probe.py` — read-only tenant probe. Env-driven
+  (`BLUEZOO_ACCESS_KEY`, `BLUEZOO_BASE_URL`) so it runs against any BlueZoo
+  customer, not just ours. Guards the undocumented mandatory time filter
+  *before* sending, picks the right time column per table
+  (`timestamp`/`date`/`date_start`), skips non-entitled tables rather than
+  failing, never prints or persists the key.
+- `working-docs/bluezoo-live-verification/scan/{scan.json,scan.md}` — produced
+  by actually running it against Apollo / AP_599: 19 tables, every column and
+  type, all 6 sampled tables at 0 rows (stderr NOTE emitted).
+- `tests/unit/test_bluezoo_probe.py` — 16 tests, 0.02s, no network. Pins the
+  tenant-variable behaviors specifically: BlueZoo's own published example query
+  is refused by the guard; each of the four time columns is accepted; a missing
+  optional table is skipped not errored; zero rows is a valid answer; the scan
+  output never contains the key.
+- 3 ruff findings fixed (`datetime.timezone.utc` → `datetime.UTC` et al);
+  lint clean, tests re-verified 16/16.
+
+## 2026-07-25 — checkpoint 5: deliverable 3 (findings + amendments)
+
+`findings.md` written as the durable record, then provenance amendments applied
+to **pending phases only**, per the owner's constraint:
+
+- `11-live-bluezoo-adapter.md` — the substantive one. 11b's last outstanding
+  validation item ("authenticated drift check") marked **done**, plus nine
+  build rules each traced to a live observation, the `BlueZooVisitInterval`
+  two-table drift handed to 11b as a design decision, and the zero-rows limit
+  called out as blocking `CachedBlueZooAudienceDataSource` outright. Also
+  corrected the Dependencies line, which claimed the drift check was still
+  pending.
+- `12-live-pos-adapter.md` / `13-production-hardening-live-mode.md` — narrower:
+  per-tenant configuration as a precedent (12), and secrets holding a
+  `{base_url, access_key}` pair plus wrong-cluster-vs-bad-credential error
+  ambiguity (13).
+- `99-open-questions.md` — Q2 (ask (b) closed; REST proven, transport now a
+  decision), **Q6 corrected openly** (the UV campaign-column reversal, with the
+  surviving `ad_campaign_id` rationale), Q11 answered (`group_sensor_history`),
+  Q12 answered-but-inverted (access granted, data absent — now the top ask),
+  Q17 narrowed (fallback (b) entitled here), Q18 halved, closing paragraph
+  updated.
+- `working-docs/replan-data-track/bluezoo-mapping-verification.md` — pointer
+  from its "remaining unknowns" section, and an explicit note that its must-fix
+  #2's prose-correction half is overturned (rename half stands).
+- `docs/METRICS.md` — the deferred dwell histogram→scalar rule: BlueZoo ships
+  `distribution_average_duration`/`distribution_median_duration`, so the rule is
+  a direct read; units still unverified with zero rows.
+
+**Decision recorded:** merged phases (5, 10, 11a) were left untouched even
+where this scan bears on their content — the owner scoped amendments to pending
+workstreams. Where a merged phase's instruction is now wrong (ws05 port
+correction #2's prose half), the correction lives in the shared verification
+record and Q6, both of which a reader of that instruction reaches.

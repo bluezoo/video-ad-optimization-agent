@@ -51,3 +51,10 @@ Phases 11b, 12 (this phase hardens the connected-mode paths those phases build).
 
 1. What does authenticated-user identity actually look like on this app's deployment target (Cloud Run vs. Agent Engine) — is there an existing platform-level identity/session mechanism to build on, or does one need to be added?
 2. Does BlueZoo/legal have a specific data-governance requirement around OTel message-content capture that should drive Tier B step 5's decision, rather than this plan guessing at a default? [global #13 in `99-open-questions.md`]
+
+> **Amended (workstream bluezoo-live-verification, 2026-07-25) — the connected-mode config surface is per-tenant, which this phase's hardening must account for.** The live scan (`working-docs/bluezoo-live-verification/findings.md`) proved that a BlueZoo deployment is identified by more than a credential: the **cluster base URL varies per customer** (a valid key returns `BAD_TOKEN` against another cluster's host, so a misconfigured URL is indistinguishable from a bad credential at the call site), and **table entitlements vary per account**. Two consequences for this phase:
+>
+> - **Tier A, secret handling:** whatever secret store Phases 11/12 adopt holds a `{base_url, access_key}` *pair* per tenant, not a lone key. Treat the base URL as configuration that travels with the credential — separating them is how a support ticket becomes "auth is broken" when it's actually "wrong host."
+> - **Tier A, error surfacing:** the fail-closed error required by Phase 11 step 4 should distinguish *bad credential* from *wrong cluster* where the API permits (both currently surface as `BAD_TOKEN`) — at minimum, name the base URL in the error text so the ambiguity is visible to whoever reads the log.
+>
+> No new Tier A/Tier B item is added; this is a constraint on how the existing secret-handling and error-path items are built. Note also that the tenant available today has zero rows, so any connected-mode smoke test written for this phase must treat an empty result as success, not as a failed integration.
