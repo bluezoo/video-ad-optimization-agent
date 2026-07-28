@@ -80,3 +80,6 @@ Task 11: pre-PR sweep CLEAN — credential/UUID grep over `git diff version_2...
 ## 2026-07-28 — checkpoint 6: PR open
 Final whole-branch review: "Ready to merge" after one Important doc fix (dangling Scene-1 INSERT pointers, fixed in 517b48a and re-verified end-to-end). Known Minors triaged note-for-later (read-phase retry classification → next transport-touching workstream; probe-section wording pre-dates branch; pytest.ini claim was itself mistaken — repo genuinely uses pytest.ini; _TIME_CONSTRAINT_COLUMNS redundancy kept deliberately probe-identical).
 PR #18 into version_2: https://github.com/bluezoo/video-ad-optimization-agent/pull/18 — body links phase doc, summarizes, states verification evidence, and flags the provenance note's 15-sensor enumeration for explicit owner sign-off. Awaiting owner confirmation to self-merge.
+
+## 2026-07-28 — checkpoint 6 (final): merged
+Owner reviewed and confirmed; sensor-id enumeration in the fixture provenance note approved as-is (all 15 counts are 672 = 96 slots × 7 days — grid-completeness flags with zero traffic signal, less sensitive than the traffic magnitudes already merged in bluezoo-live-verification). PR #18 squash-merged into version_2 as e30394f; remote branch deleted; worktree cleaned up. STATUS → merged.
