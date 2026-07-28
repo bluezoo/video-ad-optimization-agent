@@ -55,46 +55,63 @@ root and start with `APP_MODE=connected`.
 
 ## Scene 1 — fail-closed (no BlueZoo config)
 
-**Launch:**
+> **Amended (workstream 11b, 2026-07-28):** Scene 1 originally asserted a
+> tool-time error; live verification showed startup demo-seeding reaches the
+> audience seam first, so misconfigured connected mode fail-fasts at `make
+> dev` startup — a stronger fail-closed surface.
+
+**Launch (explicit empty overrides — required):**
 
 ```bash
-APP_MODE=connected make dev
+APP_MODE=connected BLUEZOO_BASE_URL= BLUEZOO_ACCESS_KEY= make dev
 ```
 
-(Leave every `BLUEZOO_*` variable unset — comment them out of `app/.env` or
-run in a shell where they were never exported.)
+Do not rely on merely leaving `BLUEZOO_*` unexported: `app/.env` is
+auto-loaded by the `demo-assets`/dev tooling in a way that fills in unset
+variables, so a shell that "never exported them" can still end up
+BlueZoo-configured if `app/.env` sets them. Explicit empty-string overrides
+on the command line are what guarantees "missing" per the constructor's
+`.strip()` check (an empty string strips to empty, which counts as missing).
 
-**Query:** "Show me the pending videos for campaign 1, then activate the
-first one." (reuses the activation query shape from `fashion.md` Scene F6.1
-— insert one synthetic pending video first if the seeded DB has none:
-`sqlite3 campaigns.db "INSERT INTO campaign_videos (campaign_id, product_id,
-video_filename, status) VALUES (1, (SELECT product_id FROM campaigns WHERE id
-= 1), 'ws11b-scenario-pending.mp4', 'generated');"`)
-
-**Expected tool calls:** `list_pending_videos` (or `get_video_review_table`),
-then `activate_video` for the setup video's id. The `activate_video` call
-fires — it is not skipped — but its underlying metrics derivation reaches the
-audience-data seam, which resolves to `LiveBlueZooAudienceDataSource()` under
-`APP_MODE=connected`, whose constructor raises immediately because
-`BLUEZOO_BASE_URL`/`BLUEZOO_ACCESS_KEY` are unset.
+**What actually happens:** `make dev` depends on the `demo-assets` target,
+which runs `python -m scripts.demo_assets`. That script's first import
+(`from app.config import LOCAL_ASSETS_DIR`) pulls in the `app` package,
+whose `app/agent.py` runs `init_database()` + `seed_demo_data()` at **module
+import time** — unconditionally, every launch. Seeding derives the seeded
+demo campaigns' metrics through the audience-data seam
+(`get_audience_datasource()`), which resolves to
+`LiveBlueZooAudienceDataSource()` under `APP_MODE=connected`; its constructor
+raises immediately because `BLUEZOO_BASE_URL`/`BLUEZOO_ACCESS_KEY` are
+missing. The exception propagates out of the import, `demo-assets` exits
+non-zero, and `make` aborts the `dev` target **before `adk web` ever runs** —
+**no query is ever sent, no tool call ever fires, and port 8501 never
+binds.**
 
 **Expected error** (`BlueZooConfigError` from `app/audience/live_bluezoo.py`,
-exact message fragments to look for in the tool response/trace):
+exact message fragments to look for in the terminal/startup log):
 
 - `"APP_MODE=connected requires BLUEZOO_BASE_URL and BLUEZOO_ACCESS_KEY"`
 - `"cluster-scoped pair"`
 - `"SETUP_INSTRUCTIONS.md"`
 
-**Pass criteria:** the error text above is visible in the tool
-response/trace, and the video's status is NOT updated to `activated` in
-`campaigns.db` (`SELECT status FROM campaign_videos WHERE id = <id>` still
-shows `generated`) — no metrics rows were silently synthesized from demo
-data.
+Also expect the wrapping context from `app/agent.py`'s import-time try/except:
+`"[Agent Init] Database initialization error: ..."` and
+`"[Agent Init] DB_PATH attempted: ..."` printed to stderr, then a Python
+traceback ending in `app.audience.live_bluezoo.BlueZooConfigError: ...`, and
+finally `make: *** [demo-assets] Error 1`.
 
-**Fail criteria:** a success response, any metrics numbers reported, or the
-video's status flipping to `activated` despite the missing config — any of
-these means a silent fallback to demo data survived, which is the exact
-regression this workstream's fail-closed design prevents.
+**Pass criteria:** the three error fragments above appear in the startup
+log; the process exits non-zero and port 8501 never binds (no `adk web`
+banner, nothing reachable at `http://localhost:8501`); `campaigns.db` is
+unchanged by this run — no new metrics rows, and if a setup video was
+inserted for this scene it stays at whatever status it was created with
+(never `activated`) — no silent fallback to demo data.
+
+**Fail criteria:** the server starts and binds port 8501 despite missing
+BlueZoo config, any metrics rows appear, or a video's status flips to
+`activated` — any of these means a silent fallback to demo data survived,
+which is the exact regression this workstream's fail-closed design
+prevents.
 
 ## Scene 2 — happy path (real MO_92 rows)
 

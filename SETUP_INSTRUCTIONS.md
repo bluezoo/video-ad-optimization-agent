@@ -223,6 +223,24 @@ config; in-code Secret Manager SDK reads are deliberately Phase 13 Tier B.
   configuration, never to data).
 - `BLUEZOO_VALID_POLICY` (and the row count it produced) is logged on every
   live read, so the active policy is always auditable per query.
+- **Misconfigured connected mode fails at process startup, not first query.**
+  `app/agent.py` runs demo-data seeding at **module import time**
+  (unconditionally, every launch), and seeding derives metrics through the
+  audience-data seam — so a bad deploy with missing/wrong
+  `BLUEZOO_BASE_URL`/`BLUEZOO_ACCESS_KEY` dies immediately at startup
+  (`make dev`'s `demo-assets` prerequisite, or the equivalent import in a
+  deployed process) instead of surfacing the error later at the first live
+  query. This is stronger fail-closed behavior than a lazily-triggered error
+  would be, but it also means a misconfiguration is a hard outage, not a
+  degraded feature — get the `{base_url, access_key}` pair right before
+  deploying.
+- **Fresh/empty-DB startup scans BlueZoo, read-only.** On a database with no
+  prior demo seeding, connected-mode startup derives the seeded demo
+  campaigns' metrics through the **live** source rather than the synthetic
+  generator — a few hundred KB of `run_query` bytes scanned per campaign
+  window (30-day window × mapped sensors × ~41 B/row), well under BlueZoo's
+  500 GB/sensor-location monthly allowance. Expected and read-only, but worth
+  knowing before assuming a fresh deploy's first boot is "free."
 
 ## Lint/format
 
