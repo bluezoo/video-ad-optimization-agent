@@ -20,3 +20,6 @@ Owner: "lgtm" to the six-dimension restatement (outcome/user/why-now/success/con
 
 ## 2026-07-27 — checkpoint 3: plan approved
 Owner: "approve" — 12-task plan (plan.md), INCLUDING the execution-mode exception: Task 1 via subagent-driven-development; Tasks 2–11 (live research vs metered customer-confidential MO_92, result-gated query shapes) run inline in the controlling session; Task 12 via requesting-code-review + finishing-a-development-branch. Live tasks stop-and-wait if BLUEZOO_ACCESS_KEY/BLUEZOO_BASE_URL absent from app/.env.
+
+## 2026-07-27 — Task 1 complete (mirrors .superpowers/sdd/progress.md)
+Probe extension: load_env_var (BLUEZOO_BASE_URL now read from app/.env, env wins) + guarded --sql runner. commits 365cf79..def074f, 31/31 probe tests, make test-unit 350 pass, lint clean, review approved (spec ✅, zero findings).
