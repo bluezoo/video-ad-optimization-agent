@@ -35,3 +35,6 @@ Full-history flip shape (87 MB read): flip is ONE-WAY false→true (23 sensors, 
 
 ## 2026-07-27 — Task 6 (Test 2) complete
 Health join (30d, equi-join, 34 sensors): valid median health 0.99 vs invalid median 0.00 — strong correlation. Exceptions name the semantics: 3 valid sensors at 0.0 health WITHOUT flip-back (not a live health flag); 1 healthy-but-invalid sensor (pre-acceptance). Verdict: valid = "accepted into service after verified reporting", set once at commissioning. ~5 MB.
+
+## 2026-07-27 — Task 7 (Test 3) complete
+group_sensor_history (ids only, 28 KB): BlueZoo does NOT exclude invalid sensors from groups — all 19 live-false sensors are in current revisions (51 invalid vs 22 valid in latest memberships). Groups = venue topology, not a quality filter. "Group products filter valid internally?" moves to outreach.

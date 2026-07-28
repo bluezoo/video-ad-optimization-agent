@@ -128,7 +128,26 @@ conclusive. Cost: ~5 MB. Evidence: `/tmp/bluezoo-semantics/test2.json`.
 
 ## Test 3 — what BlueZoo themselves do with invalid sensors
 
-_(pending)_
+Full-history `group_sensor_history` pull, **ids only** (`group_id`,
+`sensor_id`, `timestamp` — name columns deliberately never selected): 1,181
+rows, 75 groups, 94 sensors, revisions 2021-08-02 → 2025-12-02 (~28 KB).
+Joined client-side against Test 1's per-sensor latest `valid` state.
+
+**Hypothesis refuted: BlueZoo does NOT exclude invalid sensors from groups.**
+
+- Latest revision of each group contains **51 invalid + 22 valid** sensors
+  (plus 10 ids that never appear in `sensor_visits`).
+- **All 19 currently-live invalid sensors are members of current group
+  revisions** — every one of them, same as the 15 valid ones.
+- The 17 sensors never grouped skew *both* ways (10 false, 4 true, 3 null).
+
+**Interpretation:** groups are a **venue-topology construct** (which rooms
+belong to which property — prior findings 5.5), not a data-quality filter.
+The scope doc's fallback rule ("if BlueZoo's own group products exclude
+invalid sensors, that's a defensible rule for us") gets no support from
+membership. Whether group-level *aggregates* (`group_uv_daily` etc.) filter
+`valid` rows internally at computation time is invisible from membership and
+moves to the outreach draft as a sharpened question.
 
 ## Test 4 — are invalid counts implausible?
 
