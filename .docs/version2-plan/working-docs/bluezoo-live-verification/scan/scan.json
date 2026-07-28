@@ -1,0 +1,1799 @@
+{
+  "scanned_at": "2026-07-26T03:56:01.712507+00:00",
+  "base_url": "https://hermes.apollo.bluezoo.io/v2/dwh",
+  "count_window": [
+    "2020-01-01",
+    "2030-12-31"
+  ],
+  "table_count": 19,
+  "tables": [
+    "group_convert",
+    "group_convert_daily",
+    "group_convert_monthly",
+    "group_convert_weekly",
+    "group_flow_correlation",
+    "group_flow_duration",
+    "group_flow_segmentation",
+    "group_flow_transition",
+    "group_sensor_history",
+    "group_uv_custom",
+    "group_uv_daily",
+    "group_uv_monthly",
+    "group_uv_quarterly",
+    "group_uv_weekly",
+    "sensor_dwell",
+    "sensor_pulses",
+    "sensor_visitors",
+    "sensor_visitors_per_minute",
+    "sensor_visits"
+  ],
+  "schemas": {
+    "group_convert": [
+      {
+        "column_name": "campaign_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "campaign_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "group_source_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "group_source_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "group_destination_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "group_destination_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "date_start",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "date_end",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "date",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "cuv_freq_10",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_9",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_8",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_7",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_6",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_5",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_4",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_3",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_2",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_1",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "intersection_freq_10",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "intersection_freq_9",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "intersection_freq_8",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "intersection_freq_7",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "intersection_freq_6",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "intersection_freq_5",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "intersection_freq_4",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "intersection_freq_3",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "intersection_freq_2",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "intersection_freq_1",
+        "data_type": "FLOAT64"
+      }
+    ],
+    "group_convert_daily": [
+      {
+        "column_name": "group_source_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "group_source_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "group_destination_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "group_destination_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "date",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "cuv_freq_10",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_9",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_8",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_7",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_6",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_5",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_4",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_3",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_2",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_1",
+        "data_type": "FLOAT64"
+      }
+    ],
+    "group_convert_monthly": [
+      {
+        "column_name": "group_source_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "group_source_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "group_destination_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "group_destination_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "date_start",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "date_end",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "date",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "cuv_freq_10",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_9",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_8",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_7",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_6",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_5",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_4",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_3",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_2",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_1",
+        "data_type": "FLOAT64"
+      }
+    ],
+    "group_convert_weekly": [
+      {
+        "column_name": "group_source_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "group_source_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "group_destination_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "group_destination_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "date_start",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "date_end",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "date",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "cuv_freq_10",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_9",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_8",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_7",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_6",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_5",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_4",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_3",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_2",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_1",
+        "data_type": "FLOAT64"
+      }
+    ],
+    "group_flow_correlation": [
+      {
+        "column_name": "campaign_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "campaign_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "group_a_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "group_a_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "group_b_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "group_b_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "date",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "correlation_inner_count",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "correlation_total_inner_count",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "minimum_employees_duration",
+        "data_type": "INT64"
+      }
+    ],
+    "group_flow_duration": [
+      {
+        "column_name": "campaign_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "campaign_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "group_set_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "group_set_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "date",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "number_of_groups_visited",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "total_journey_count",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "average_journey_duration",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "minimum_employees_duration",
+        "data_type": "INT64"
+      }
+    ],
+    "group_flow_segmentation": [
+      {
+        "column_name": "campaign_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "campaign_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "group_set_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "group_set_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "date",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "shoppers_count",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "window_shoppers_count",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "passersby_count",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "employees_count",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "maximum_passersby_duration",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "minimum_employees_duration",
+        "data_type": "INT64"
+      }
+    ],
+    "group_flow_transition": [
+      {
+        "column_name": "campaign_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "campaign_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "group_source_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "group_source_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "group_destination_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "group_destination_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "date",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "transition_inner_count",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "transition_total_inner_count",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "minimum_employees_duration",
+        "data_type": "INT64"
+      }
+    ],
+    "group_sensor_history": [
+      {
+        "column_name": "group_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "group_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "sensor_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "sensor_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "timestamp",
+        "data_type": "TIMESTAMP"
+      }
+    ],
+    "group_uv_custom": [
+      {
+        "column_name": "campaign_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "campaign_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "group_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "group_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "date_start",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "date_end",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "date",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "cuv_freq_10",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_9",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_8",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_7",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_6",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_5",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_4",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_3",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_2",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_1",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "outgoing_inner_visits",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "maximum_freq",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "actual_accuracy",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "target_accuracy",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "target_uv",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "total_cost",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "calculation_contribution_ratio",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "calculation_unique_visitor_count",
+        "data_type": "INT64"
+      }
+    ],
+    "group_uv_daily": [
+      {
+        "column_name": "group_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "group_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "date",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "cuv_freq_10",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_9",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_8",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_7",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_6",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_5",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_4",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_3",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_2",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_1",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "outgoing_inner_visits",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "maximum_freq",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "actual_accuracy",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "target_accuracy",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "target_uv",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "total_cost",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "calculation_contribution_ratio",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "campaign_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "campaign_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "calculation_unique_visitor_count",
+        "data_type": "INT64"
+      }
+    ],
+    "group_uv_monthly": [
+      {
+        "column_name": "group_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "group_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "date_start",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "date_end",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "date",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "cuv_freq_10",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_9",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_8",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_7",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_6",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_5",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_4",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_3",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_2",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_1",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "outgoing_inner_visits",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "maximum_freq",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "actual_accuracy",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "target_accuracy",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "target_uv",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "total_cost",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "calculation_contribution_ratio",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "campaign_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "campaign_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "calculation_unique_visitor_count",
+        "data_type": "INT64"
+      }
+    ],
+    "group_uv_quarterly": [
+      {
+        "column_name": "group_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "group_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "date_start",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "date_end",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "date",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "cuv_freq_10",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_9",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_8",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_7",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_6",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_5",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_4",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_3",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_2",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_1",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "outgoing_inner_visits",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "maximum_freq",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "actual_accuracy",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "target_accuracy",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "target_uv",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "total_cost",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "calculation_contribution_ratio",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "campaign_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "campaign_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "calculation_unique_visitor_count",
+        "data_type": "INT64"
+      }
+    ],
+    "group_uv_weekly": [
+      {
+        "column_name": "group_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "group_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "date_start",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "date_end",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "date",
+        "data_type": "DATE"
+      },
+      {
+        "column_name": "cuv_freq_10",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_9",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_8",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_7",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_6",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_5",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_4",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_3",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_2",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv_freq_1",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "cuv",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "outgoing_inner_visits",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "maximum_freq",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "actual_accuracy",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "target_accuracy",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "target_uv",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "total_cost",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "calculation_contribution_ratio",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "campaign_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "campaign_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "calculation_unique_visitor_count",
+        "data_type": "INT64"
+      }
+    ],
+    "sensor_dwell": [
+      {
+        "column_name": "sensor_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "sensor_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "sensor_mac",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "sensor_address",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "sensor_latitude",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "sensor_longitude",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "timestamp",
+        "data_type": "TIMESTAMP"
+      },
+      {
+        "column_name": "total_visits",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_weight",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0000_to_0001",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0001_to_0002",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0002_to_0003",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0003_to_0004",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0004_to_0005",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0005_to_0006",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0006_to_0007",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0007_to_0008",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0008_to_0009",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0009_to_0010",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0010_to_0011",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0011_to_0012",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0012_to_0013",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0013_to_0014",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0014_to_0015",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0015_to_0016",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0016_to_0017",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0017_to_0018",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0018_to_0019",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0019_to_0020",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0020_to_0021",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0021_to_0022",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0022_to_0023",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0023_to_0024",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0024_to_0025",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0025_to_0026",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0026_to_0027",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0027_to_0028",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0028_to_0029",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0029_to_0030",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0030_to_0032",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0032_to_0034",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0034_to_0036",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0036_to_0038",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0038_to_0040",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0040_to_0042",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0042_to_0044",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0044_to_0046",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0046_to_0048",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0048_to_0050",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0050_to_0052",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0052_to_0054",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0054_to_0056",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0056_to_0058",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0058_to_0100",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0100_to_0105",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0105_to_0110",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0110_to_0115",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0115_to_0120",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0120_to_0125",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0125_to_0130",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0130_to_0135",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0135_to_0140",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0140_to_0145",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0145_to_0150",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0150_to_0155",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0155_to_0200",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0200_to_0205",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0205_to_0210",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0210_to_0215",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0215_to_0220",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0220_to_0225",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0225_to_0230",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0230_to_0235",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0235_to_0240",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0240_to_0245",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0245_to_0250",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0250_to_0255",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0255_to_0300",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0300_to_0315",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0315_to_0330",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0330_to_0345",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0345_to_0400",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0400_to_0415",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0415_to_0430",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0430_to_0445",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0445_to_0500",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0500_to_0515",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0515_to_0530",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0530_to_0545",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0545_to_0600",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0600_to_0615",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0615_to_0630",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0630_to_0645",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0645_to_0700",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0700_to_0715",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0715_to_0730",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0730_to_0745",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0745_to_0800",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0800_to_0900",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_0900_to_1000",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_1000_to_1100",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_1100_to_1200",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_1200_to_1300",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_1300_to_1400",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_1400_to_1500",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_1500_to_1600",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_1600_to_1700",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_1700_to_1800",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_1800_to_1900",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_1900_to_2000",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_2000_to_2100",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_2100_to_2200",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_2200_to_2300",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_2300_to_2400",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "distribution_bin_2400_to_beyond",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "valid",
+        "data_type": "BOOL"
+      },
+      {
+        "column_name": "distribution_average_duration",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "distribution_median_duration",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "time_offset",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "time_zone",
+        "data_type": "STRING"
+      }
+    ],
+    "sensor_pulses": [
+      {
+        "column_name": "sensor_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "sensor_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "sensor_mac",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "sensor_address",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "sensor_latitude",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "sensor_longitude",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "timestamp",
+        "data_type": "TIMESTAMP"
+      },
+      {
+        "column_name": "expected_pulse_count",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "pulse_count",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "time_offset",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "time_zone",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "pulse_rssi_distribution",
+        "data_type": "STRUCT<r000 INT64, r001 INT64, r002 INT64, r003 INT64, r004 INT64, r005 INT64, r006 INT64, r007 INT64, r008 INT64, r009 INT64, r010 INT64, r011 INT64, r012 INT64, r013 INT64, r014 INT64, r015 INT64, r016 INT64, r017 INT64, r018 INT64, r019 INT64, r020 INT64, r021 INT64, r022 INT64, r023 INT64, r024 INT64, r025 INT64, r026 INT64, r027 INT64, r028 INT64, r029 INT64, r030 INT64, r031 INT64, r032 INT64, r033 INT64, r034 INT64, r035 INT64, r036 INT64, r037 INT64, r038 INT64, r039 INT64, r040 INT64, r041 INT64, r042 INT64, r043 INT64, r044 INT64, r045 INT64, r046 INT64, r047 INT64, r048 INT64, r049 INT64, r050 INT64, r051 INT64, r052 INT64, r053 INT64, r054 INT64, r055 INT64, r056 INT64, r057 INT64, r058 INT64, r059 INT64, r060 INT64, r061 INT64, r062 INT64, r063 INT64, r064 INT64, r065 INT64, r066 INT64, r067 INT64, r068 INT64, r069 INT64, r070 INT64, r071 INT64, r072 INT64, r073 INT64, r074 INT64, r075 INT64, r076 INT64, r077 INT64, r078 INT64, r079 INT64, r080 INT64, r081 INT64, r082 INT64, r083 INT64, r084 INT64, r085 INT64, r086 INT64, r087 INT64, r088 INT64, r089 INT64, r090 INT64, r091 INT64, r092 INT64, r093 INT64, r094 INT64, r095 INT64, r096 INT64, r097 INT64, r098 INT64, r099 INT64, r100 INT64, r101 INT64, r102 INT64, r103 INT64, r104 INT64, r105 INT64, r106 INT64, r107 INT64, r108 INT64, r109 INT64, r110 INT64, r111 INT64, r112 INT64, r113 INT64, r114 INT64, r115 INT64, r116 INT64, r117 INT64, r118 INT64, r119 INT64, r120 INT64, r121 INT64, r122 INT64, r123 INT64, r124 INT64, r125 INT64, r126 INT64, r127 INT64>"
+      },
+      {
+        "column_name": "mac_count_global",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "mac_count_local",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "rssi_cellular_avg",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "rssi_wifi_avg",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "mac_count_global_whitelisted",
+        "data_type": "INT64"
+      }
+    ],
+    "sensor_visitors": [
+      {
+        "column_name": "sensor_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "sensor_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "sensor_mac",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "sensor_address",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "sensor_latitude",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "sensor_longitude",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "timestamp",
+        "data_type": "TIMESTAMP"
+      },
+      {
+        "column_name": "minimum_visitors_inner",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "maximum_visitors_inner",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "average_visitors_inner",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "minimum_visitors_outer",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "maximum_visitors_outer",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "average_visitors_outer",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "valid",
+        "data_type": "BOOL"
+      },
+      {
+        "column_name": "time_offset",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "time_zone",
+        "data_type": "STRING"
+      }
+    ],
+    "sensor_visitors_per_minute": [
+      {
+        "column_name": "sensor_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "sensor_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "sensor_mac",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "sensor_address",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "sensor_latitude",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "sensor_longitude",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "timestamp",
+        "data_type": "TIMESTAMP"
+      },
+      {
+        "column_name": "valid",
+        "data_type": "BOOL"
+      },
+      {
+        "column_name": "time_offset",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "visitors_inner",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "visitors_outer",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "time_zone",
+        "data_type": "STRING"
+      }
+    ],
+    "sensor_visits": [
+      {
+        "column_name": "sensor_id",
+        "data_type": "INT64"
+      },
+      {
+        "column_name": "sensor_name",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "sensor_mac",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "sensor_address",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "sensor_latitude",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "sensor_longitude",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "timestamp",
+        "data_type": "TIMESTAMP"
+      },
+      {
+        "column_name": "incoming_inner_count",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "incoming_outer_count",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "outgoing_inner_count",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "outgoing_outer_count",
+        "data_type": "FLOAT64"
+      },
+      {
+        "column_name": "valid",
+        "data_type": "BOOL"
+      },
+      {
+        "column_name": "time_offset",
+        "data_type": "STRING"
+      },
+      {
+        "column_name": "time_zone",
+        "data_type": "STRING"
+      }
+    ]
+  },
+  "schema_errors": {},
+  "row_counts": {
+    "sensor_visits": 0,
+    "sensor_visitors": 0,
+    "sensor_dwell": 0,
+    "sensor_visitors_per_minute": 0,
+    "group_uv_daily": 0,
+    "group_sensor_history": 0
+  }
+}

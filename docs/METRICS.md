@@ -61,13 +61,24 @@ in BlueZoo's docs); real semantics deferred to Phase 11.
 
 This app's `video_metrics.dwell_time_seconds` column stores **one scalar average per video per day**. BlueZoo's `sensor_dwell` is *not* that: it is "a distribution of visit durations per 15-minute slots" — i.e., visit-duration *bins*, not a single number. Mapping the distribution onto our scalar requires a defined, documented aggregation rule (e.g., a weighted mean across bins) that must be validated against a real BlueZoo response before it is written down as fact — that validation belongs to Phase 11 (`.docs/version2-plan/11-live-bluezoo-adapter.md`). Until then, treat our column as demo-mode synthetic data with intentionally unresolved provenance.
 
+**Update (live schema scan, 2026-07-25): the aggregation rule is "don't aggregate — read BlueZoo's own scalar."** An authenticated `desc_table` against a live account found that `sensor_dwell` also ships **`distribution_average_duration`** and **`distribution_median_duration`**, neither of which appears in BlueZoo's published documentation. So the live mapping onto our scalar is a direct read, not a bin-midpoint weighted mean. Two caveats keep this paragraph short of settling the entry: the account scanned has zero rows, so the columns' **units and scale are unverified** (as is the bin values' 0–1-vs-0–100 scale), and demo-mode data stays synthetic regardless. Phase 11 still owns writing the rule down as fact once real rows exist. Record: `.docs/version2-plan/working-docs/bluezoo-live-verification/findings.md`.
+
+**Resolved (real-data verification, 2026-07-27).** The caveats above are now closed, against a tenant with 5.1M real rows (MO_92; `findings.md` Part 5.2). The rule for live mode:
+
+- **`distribution_average_duration` and `distribution_median_duration` are integer SECONDS** — observed 260 s, 402 s, 160 s. That is a **direct 1:1 mapping onto `dwell_time_seconds`.** Read the scalar; do not derive one from the histogram.
+- **The 106 bins are 0–100 percentages, not 0–1 shares** — one sampled slot's first three bins alone sum to 62.9. Anything that does consume the histogram must not treat bins as fractions; that would be a 100× error.
+- **Dwell can legitimately be NULL.** When `distribution_weight` is `0.0`, every bin is `0` and **both scalars are NULL**, while `total_visits` is still non-zero. Null dwell is "no distribution derivable for this slot," not a fault — a live conformer must carry it through rather than coercing it to `0`, which would silently drag any average down.
+
+Demo-mode data remains synthetic with unchanged provenance; this governs the live path only.
+
 ## Appendix: BlueZoo table map (do-not-conflate notes)
 
 | BlueZoo table | What it measures | Relationship to this app |
 |---|---|---|
 | `sensor_visits` | Inner-zone visit counts — "also known as impressions" (BlueZoo's own caption) | **= our impressions.** The one confirmed 1:1 mapping. |
 | `sensor_visitors` | Occupancy (min/avg/max) per 15-minute period | *Not* visits: occupancy is a point-in-time count, visits are events. Candidate (unconfirmed) relative of circulation. |
-| `sensor_dwell` | Distribution of visit-duration bins per 15-minute slot | No direct mapping to our scalar `dwell_time_seconds` — needs an aggregation rule (Phase 11). |
+| `sensor_dwell` | Distribution of visit-duration bins (**0–100 percentages**) per 15-minute slot, **plus undocumented `distribution_average_duration` / `distribution_median_duration` scalars, in integer seconds** (verified against real data 2026-07-27) | **= our `dwell_time_seconds`, read directly.** Do not weight bins. NULL when `distribution_weight = 0`; carry the null through rather than coercing to 0. |
+| `sensor_visits` `valid` column | Per-**sensor** (not per-slot) status that flips over a sensor's lifetime; `null` is an undocumented third state | **Unresolved and high-stakes:** `valid=false` is half of all rows and 72% of all counts. Whether to exclude it swings impressions ~4×. Make the policy explicit and logged; see open question 18. |
 | `sensor_visitors_per_minute` | Fine-grained occupancy time series | Unused today; candidate input for playout attribution (Phase 10). |
 | `group_uv_daily/weekly/monthly/custom` | Unique visitor counts, deduplicated over a period | "Unique reach" — a *different* metric from impressions; never conflate deduplicated visitors with visit counts. See open question 6 ("Unique-reach metric (Phase 3 glossary)") in `.docs/version2-plan/99-open-questions.md`. |
 | `group_flow_transition/correlation/duration/segmentation` | Cross-zone traffic-flow journeys | Carries a `campaign_id` field that is **BlueZoo's own "flow campaign" concept — unrelated to this app's ad campaigns.** When mapping BlueZoo data, never reuse the bare name `campaign_id` for this app's ad-campaign id; pick a distinct field name (e.g. `ad_campaign_id`) to avoid collision. |

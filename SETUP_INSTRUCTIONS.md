@@ -41,7 +41,75 @@ GCS_BUCKET=<your-bucket-name>
 ```
 GOOGLE_MAPS_API_KEY=<your-maps-key>   # or MAPS_API_KEY
 APP_MODE=demo                          # or connected; default demo — inert until Phase 11/12
+BLUEZOO_ACCESS_KEY=<uuid>              # only for scripts/bluezoo_probe.py — see below
+BLUEZOO_BASE_URL=<cluster-dwh-url>     # only for scripts/bluezoo_probe.py — see below
 ```
+
+## BlueZoo schema probe (`scripts/bluezoo_probe.py`)
+
+A read-only tool for answering "what does this BlueZoo tenant's warehouse
+actually look like?" — not part of the app, and not needed to run or test it.
+No BlueZoo integration code exists yet (that's Phase 11b); this exists so the
+adapter can be built against a real schema rather than the published docs alone.
+
+```bash
+python scripts/bluezoo_probe.py --out <dir>   # writes scan.json + scan.md
+python scripts/bluezoo_probe.py               # markdown digest to stdout
+```
+
+- **`BLUEZOO_ACCESS_KEY`** (required) — from the BlueZoo dashboard's Profile
+  screen. Read from the environment first, else `app/.env`. Never commit it; the
+  script never prints or persists it.
+- **`BLUEZOO_BASE_URL`** (optional) — defaults to the Apollo cluster's Data
+  Warehouse endpoint. **Hostnames are cluster-scoped, not global:** a key from
+  one cluster returns `BAD_TOKEN` against another's host, which reads like a bad
+  credential. The Profile screen names your cluster; override this when probing
+  a different customer. `--base-url` does the same thing per-invocation.
+
+Read-only by construction: `list_tables`, `desc_table`, and SELECT-only counts,
+with non-SELECT statements refused client-side before transmission.
+
+### Cost — read before running any query of your own
+
+**BlueZoo meters a monthly bytes-scanned allowance** (BigQuery style),
+undocumented. It exists to prevent abuse, not to bill you, and the ceiling is
+per-tenant configuration BlueZoo will raise on request — MO_92 currently sits
+at **500 GB per sensor location** per month. But the *default* is low enough to
+trip by accident: roughly **735 MB of full-history aggregate queries exhausted
+a real tenant's month** at the original 1 GB/sensor-location setting, after
+which *every* `run_query` failed — including single-sensor, single-day ones —
+until BlueZoo reset it. There is **no endpoint to check remaining
+consumption**; you find the limit by hitting it. `list_tables`, `desc_table`
+and the Real-time API are exempt.
+
+Practical rules — cheap to follow, and they keep you clear of the wall
+regardless of where it currently sits:
+
+- **Never `select *`.** `sensor_dwell` is 120 columns / ~1 KB per row; a full
+  scan is ~5 GB in one statement.
+- **Name columns explicitly and keep time windows narrow.** The probe counts
+  over the last 30 days by default for this reason; `--full-history` is an
+  explicit opt-in and is only safe on a tenant known to be empty.
+- The probe prints a `COST NOTE` naming the widest table, records
+  `select_star_bytes_per_row` in `scan.json`, and raises a distinct
+  `QuotaExceeded` (exit code 2) rather than a generic failure.
+- **If you do hit it, ask** — BlueZoo raises the limit on request rather than
+  making you wait for the month to roll over.
+
+### Saved scans
+
+- `working-docs/bluezoo-live-verification/scan/` — **AP_599** (Apollo, org
+  "Walmart Demo"): empty tenant; proves schema and entitlements.
+- `working-docs/bluezoo-live-verification/scan-mo92/` — **MO_92** (Morpheus
+  *staging*, a hospitality-sector tenant): 5.1M rows of **real customer venue
+  data**. Its AccessKey and any extract are customer-confidential; the
+  committed artifacts are schema and row counts only — no venue names, no
+  traffic rows. Keep it that way: never commit a key, a venue name or a data
+  extract from this tenant.
+
+Each cluster issues its **own** AccessKey — an Apollo key returns `BAD_TOKEN`
+against the Morpheus host. Findings for both:
+`.docs/version2-plan/working-docs/bluezoo-live-verification/findings.md`.
 
 ## Run locally
 
