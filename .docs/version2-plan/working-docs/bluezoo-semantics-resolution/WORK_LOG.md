@@ -53,3 +53,6 @@ make test green (unit 350 + e2e 25, 0 fail), make lint clean. Credential/PII swe
 
 ## 2026-07-27 — final whole-branch review: READY TO MERGE (3 minors, fixed)
 Reviewer (fable): zero Critical/Important. Credential/PII verdict CLEAN (independent sweep); consistency verdict CONSISTENT (rule + numbers identical across findings/Q18/11b/METRICS/Draft A; 62% arithmetic independently verified). Minors fixed inline: (1) "~0.99 at flip" softened to current-fleet cross-section phrasing in all 4 places incl. Draft A; (2) Test 5 LA-sensor ids (800/859) disambiguated from May-2024 west sensor 865; (3) METRICS.md row provenance style accepted as-is (table cell, precedent-matching).
+
+## 2026-07-27 — checkpoint 6 (partial): PR open
+PR #17 into version_2: https://github.com/bluezoo/video-ad-optimization-agent/pull/17 — awaiting owner confirmation to self-merge (merge vs squash also owner's call).
