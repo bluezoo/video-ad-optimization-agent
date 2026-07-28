@@ -27,17 +27,17 @@ bluezoo-semantics-resolution):
   would fail looking like a bad credential.
 """
 
-import json  # noqa: F401
+import json
 import logging
-import os  # noqa: F401
-import time  # noqa: F401
-import urllib.error  # noqa: F401
-import urllib.request  # noqa: F401
+import os
+import time
+import urllib.error
+import urllib.request
 from datetime import UTC, date, datetime, timedelta
 
 from .. import config
-from ..models.attribution import BlueZooVisitInterval  # noqa: F401
-from .datasource import AudienceDataSource  # noqa: F401
+from ..models.attribution import BlueZooVisitInterval
+from .datasource import AudienceDataSource
 
 logger = logging.getLogger(__name__)
 
@@ -177,3 +177,105 @@ def _coerce_valid(value) -> bool:
     if isinstance(value, str):
         return value.strip().lower() == "true"
     return bool(value)
+
+
+def _classify_http_error(code: int, detail: str) -> BlueZooError:
+    """Map a non-retryable HTTP error body to the right exception.
+
+    (5xx never reaches here — the transport wraps those in _Retryable.)
+    """
+    if "fair use limit" in detail or "data scanned" in detail:
+        return BlueZooQuotaExceeded(
+            "BlueZoo monthly bytes-scanned allowance exhausted — every "
+            "run_query fails until it resets or BlueZoo raises it (they "
+            "raise it on request: contact BlueZoo; metadata and the "
+            f"Real-time API keep working). Server said: {detail}"
+        )
+    if "BAD_TOKEN" in detail:
+        return BlueZooConfigError(
+            "BlueZoo rejected the AccessKey (BAD_TOKEN). Keys are "
+            "CLUSTER-scoped: check that BLUEZOO_ACCESS_KEY and "
+            "BLUEZOO_BASE_URL are the matching {base_url, access_key} pair "
+            f"for this tenant's cluster. Server said: {detail}"
+        )
+    return BlueZooError(f"run_query: HTTP {code} {detail}")
+
+
+class LiveBlueZooAudienceDataSource(AudienceDataSource):
+    """Real MO_92-shaped audience data through the 11a seam (REST-first)."""
+
+    def __init__(self) -> None:
+        self._base_url = os.environ.get("BLUEZOO_BASE_URL", "").strip().rstrip("/")
+        self._access_key = os.environ.get("BLUEZOO_ACCESS_KEY", "").strip()
+        missing = [
+            name
+            for name, value in (
+                ("BLUEZOO_BASE_URL", self._base_url),
+                ("BLUEZOO_ACCESS_KEY", self._access_key),
+            )
+            if not value
+        ]
+        if missing:
+            raise BlueZooConfigError(
+                f"APP_MODE=connected requires BLUEZOO_BASE_URL and "
+                f"BLUEZOO_ACCESS_KEY (missing: {', '.join(missing)}). Set them "
+                "in app/.env locally, or inject both from Secret Manager at "
+                "deploy time — they are a cluster-scoped pair; BLUEZOO_BASE_URL "
+                "deliberately has no default. See SETUP_INSTRUCTIONS.md "
+                "(connected mode)."
+            )
+        self._sensor_by_screen = _parse_sensor_map(os.environ.get("BLUEZOO_SENSOR_MAP", ""))
+        self._screen_by_sensor = {s: c for c, s in self._sensor_by_screen.items()}
+
+    def _call(self, sql: str) -> list[dict]:
+        """POST one already-guarded SELECT to run_query; JSON rows back.
+
+        The ONLY method that touches the network — unit tests override it,
+        keeping the fast tier network-free by construction.
+        """
+        request = urllib.request.Request(f"{self._base_url}/run_query", data=sql.encode())
+        request.add_header("Authorization", f"AccessKey {self._access_key}")
+        request.add_header("Content-Type", "text/plain")
+        try:
+            with urllib.request.urlopen(request, timeout=_TIMEOUT_SECONDS) as response:
+                body = response.read()
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode(errors="replace")[:300]
+            if exc.code >= 500:
+                raise _Retryable(f"run_query: HTTP {exc.code} {detail}") from exc
+            raise _classify_http_error(exc.code, detail) from exc
+        except urllib.error.URLError as exc:  # includes socket timeouts
+            raise _Retryable(f"run_query: {exc.reason}") from exc
+        try:
+            rows = json.loads(body)
+        except ValueError as exc:
+            raise BlueZooConfigError(
+                "run_query returned non-JSON — likeliest cause is "
+                "BLUEZOO_BASE_URL pointing at the wrong cluster host (a "
+                f"proxy or login page answered). Got: {body[:200]!r}"
+            ) from exc
+        if not isinstance(rows, list):
+            raise BlueZooError(f"run_query returned an unexpected shape: {rows!r}")
+        return rows
+
+    def _query(self, sql: str) -> list[dict]:
+        """Guard, send, and retry exactly once on transient failures only.
+
+        Quota, credential, and other 4xx errors are never retried — the
+        remedy for each is different and none of them is 'try again'.
+        """
+        _guard_sql(sql)
+        try:
+            return self._call(sql)
+        except _Retryable as first:
+            logger.warning("bluezoo run_query transient failure, retrying once: %s", first)
+            time.sleep(_RETRY_BACKOFF_SECONDS)
+            try:
+                return self._call(sql)
+            except _Retryable as second:
+                raise BlueZooError(f"run_query failed after one retry: {second}") from second
+
+    def get_visit_intervals(
+        self, *, screen_ids: list[int], date_from: date, date_to: date
+    ) -> list[BlueZooVisitInterval]:
+        raise NotImplementedError("Task 5")  # pragma: no cover — replaced next task

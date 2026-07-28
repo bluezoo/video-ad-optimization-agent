@@ -13,8 +13,10 @@ from app.audience.live_bluezoo import (
     _COLUMNS,
     BlueZooConfigError,
     BlueZooError,
-    BlueZooQuotaExceeded,  # noqa: F401
+    BlueZooQuotaExceeded,
+    LiveBlueZooAudienceDataSource,
     _build_sql,
+    _classify_http_error,
     _coerce_valid,
     _guard_sql,
     _parse_sensor_map,
@@ -117,3 +119,105 @@ class TestCoerceValid:
         assert _coerce_valid("true") is True
         assert _coerce_valid("True") is True
         assert _coerce_valid("false") is False  # bool("false") would be True — the bug this exists for
+
+
+@pytest.fixture
+def live_env(monkeypatch):
+    monkeypatch.setenv("BLUEZOO_BASE_URL", "https://stub.invalid/v2/dwh")
+    monkeypatch.setenv("BLUEZOO_ACCESS_KEY", "stub-key")
+    monkeypatch.setenv("BLUEZOO_SENSOR_MAP", "101:87,102:433")
+    monkeypatch.setattr("app.audience.live_bluezoo._RETRY_BACKOFF_SECONDS", 0)
+
+
+class TestConstructorFailsClosed:
+    def test_missing_base_url_and_key_named_exactly(self, monkeypatch):
+        for var in ("BLUEZOO_BASE_URL", "BLUEZOO_ACCESS_KEY", "BLUEZOO_SENSOR_MAP"):
+            monkeypatch.delenv(var, raising=False)
+        with pytest.raises(BlueZooConfigError) as excinfo:
+            LiveBlueZooAudienceDataSource()
+        assert "BLUEZOO_BASE_URL" in str(excinfo.value)
+        assert "BLUEZOO_ACCESS_KEY" in str(excinfo.value)
+
+    def test_missing_map_fails_closed(self, monkeypatch, live_env):
+        monkeypatch.delenv("BLUEZOO_SENSOR_MAP")
+        with pytest.raises(BlueZooConfigError, match="BLUEZOO_SENSOR_MAP"):
+            LiveBlueZooAudienceDataSource()
+
+    def test_base_url_has_no_default(self, monkeypatch, live_env):
+        monkeypatch.delenv("BLUEZOO_BASE_URL")
+        with pytest.raises(BlueZooConfigError, match="BLUEZOO_BASE_URL"):
+            LiveBlueZooAudienceDataSource()
+
+    def test_full_env_constructs(self, live_env):
+        source = LiveBlueZooAudienceDataSource()
+        assert isinstance(source, LiveBlueZooAudienceDataSource)
+
+
+class TestClassifyHttpError:
+    def test_quota_body_maps_to_quota_exceeded(self):
+        exc = _classify_http_error(400, "fair use limit: data scanned this month ...")
+        assert isinstance(exc, BlueZooQuotaExceeded)
+        assert "raise" in str(exc)  # remediation: BlueZoo raises it on request
+
+    def test_bad_token_maps_to_config_error_naming_the_pair(self):
+        exc = _classify_http_error(403, '{"error": "BAD_TOKEN"}')
+        assert isinstance(exc, BlueZooConfigError)
+        assert "BLUEZOO_BASE_URL" in str(exc)  # cluster-scoped pair hint
+
+    def test_other_4xx_is_generic_bluezoo_error(self):
+        exc = _classify_http_error(400, "syntax error near WHERE")
+        assert type(exc) is BlueZooError
+
+
+class _FlakyOnce(LiveBlueZooAudienceDataSource):
+    """First _call raises the given transient error; second succeeds."""
+
+    def __init__(self, first_error):
+        super().__init__()
+        self._first_error = first_error
+        self.calls = 0
+
+    def _call(self, sql):
+        self.calls += 1
+        if self.calls == 1:
+            raise self._first_error
+        return []
+
+
+class TestRetry:
+    def test_transient_failure_retried_once_then_succeeds(self, live_env):
+        from app.audience.live_bluezoo import _Retryable
+
+        source = _FlakyOnce(_Retryable("HTTP 503"))
+        assert source._query(
+            "select timestamp from sensor_visits where timestamp >= '2026-07-20'"
+        ) == []
+        assert source.calls == 2
+
+    def test_second_transient_failure_surfaces_typed_error(self, live_env):
+        from app.audience.live_bluezoo import _Retryable
+
+        class _AlwaysDown(LiveBlueZooAudienceDataSource):
+            def _call(self, sql):
+                raise _Retryable("HTTP 503")
+
+        with pytest.raises(BlueZooError, match="after one retry"):
+            _AlwaysDown()._query(
+                "select timestamp from sensor_visits where timestamp >= '2026-07-20'"
+            )
+
+    def test_quota_is_never_retried(self, live_env):
+        source = _FlakyOnce(BlueZooQuotaExceeded("allowance exhausted"))
+        with pytest.raises(BlueZooQuotaExceeded):
+            source._query(
+                "select timestamp from sensor_visits where timestamp >= '2026-07-20'"
+            )
+        assert source.calls == 1
+
+    def test_config_error_is_never_retried(self, live_env):
+        source = _FlakyOnce(BlueZooConfigError("BAD_TOKEN"))
+        with pytest.raises(BlueZooConfigError):
+            source._query(
+                "select timestamp from sensor_visits where timestamp >= '2026-07-20'"
+            )
+        assert source.calls == 1
