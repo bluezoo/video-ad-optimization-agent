@@ -1,7 +1,8 @@
 """Audience data-source selection (Phase 11a).
 
 APP_MODE is the only mode knob (Phase 6): demo → SyntheticAudienceDataSource;
-connected → fail closed until Phase 11b lands the live BlueZoo conformer.
+connected → LiveBlueZooAudienceDataSource (Phase 11b), which fails closed at
+construction if BlueZoo configuration is missing.
 
 Ported from the donor factory's mechanics — lazy dotted-path registry,
 thread-safe singleton, test-override seam — minus its traps: no GCS_BUCKET
@@ -24,10 +25,9 @@ __all__ = [
     "reset_audience_datasource",
 ]
 
-# Phase 11b registers AppMode.CONNECTED here (its live/cached conformer).
-# Until then, connected mode fails closed in _instantiate_for_mode().
 _BUILTIN_SOURCES: dict[AppMode, str] = {
     AppMode.DEMO: "app.audience.synthetic:SyntheticAudienceDataSource",
+    AppMode.CONNECTED: "app.audience.live_bluezoo:LiveBlueZooAudienceDataSource",
 }
 
 _lock = threading.Lock()
@@ -53,14 +53,12 @@ def _instantiate_for_mode() -> AudienceDataSource:
     mode = config.APP_MODE
     dotted = _BUILTIN_SOURCES.get(mode)
     if dotted is None:
-        # Phase 6's deferred fail-closed guard, now real: a clear, specific
-        # error — never NotImplementedError, never a silent demo fallback.
+        # Defensive guard, not a Phase 11b gap: every AppMode member must
+        # have a _BUILTIN_SOURCES entry, so reaching here is a bug.
         raise RuntimeError(
-            f"APP_MODE={mode.value!r} requires the live BlueZoo audience "
-            "adapter (Phase 11b), which is not implemented yet — no live "
-            "data source or credentials are configured, and silently "
-            "falling back to demo data is not allowed. Set APP_MODE=demo "
-            "(or leave it unset) to use the synthetic demo source."
+            f"No audience data source is registered for APP_MODE={mode.value!r} "
+            "— this is a bug (every AppMode member must have a _BUILTIN_SOURCES "
+            "entry). Silently falling back to demo data is not allowed."
         )
     module_name, _, class_name = dotted.partition(":")
     cls = getattr(importlib.import_module(module_name), class_name)

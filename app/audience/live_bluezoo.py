@@ -278,4 +278,51 @@ class LiveBlueZooAudienceDataSource(AudienceDataSource):
     def get_visit_intervals(
         self, *, screen_ids: list[int], date_from: date, date_to: date
     ) -> list[BlueZooVisitInterval]:
-        raise NotImplementedError("Task 5")  # pragma: no cover — replaced next task
+        # Attribute read at call time so tests (and future config reloads)
+        # can monkeypatch the policy — same pattern as the factory's APP_MODE.
+        policy = config.BLUEZOO_VALID_POLICY
+        sensor_ids = sorted(
+            self._sensor_by_screen[s]
+            for s in set(screen_ids)
+            if s in self._sensor_by_screen
+        )
+        if not sensor_ids:
+            # Interface contract: unknown screens yield no rows, not an error.
+            logger.info(
+                "bluezoo live read: no mapped sensors for screens=%s — no rows",
+                sorted(set(screen_ids)),
+            )
+            return []
+        rows = self._query(_build_sql(sensor_ids, date_from, date_to, policy))
+        out = [self._to_interval(row) for row in rows]
+        out.sort(key=lambda iv: (iv.screen_id, iv.timestamp))
+        # Rule R visibility: policy + row count logged on EVERY live read so
+        # the exclusion (or its absence) is auditable per query.
+        logger.info(
+            "bluezoo live read: policy=%s sensors=%s window=%s..%s rows=%d",
+            policy.value,
+            sensor_ids,
+            date_from.isoformat(),
+            date_to.isoformat(),
+            len(out),
+        )
+        return out
+
+    def _to_interval(self, row: dict) -> BlueZooVisitInterval:
+        sensor_id = int(row["sensor_id"])
+        screen_id = self._screen_by_sensor.get(sensor_id)
+        if screen_id is None:
+            # The SQL filtered on our sensor ids; a foreign one back is a
+            # server-side surprise worth failing loudly on, never dropping.
+            raise BlueZooError(f"run_query returned unmapped sensor_id={sensor_id}")
+        return BlueZooVisitInterval(
+            timestamp=_parse_utc_naive(row["timestamp"]),
+            screen_id=screen_id,
+            # Live rows know nothing of this app's campaigns; occupancy
+            # fields stay None (sensor_visits-only query — see module doc).
+            incoming_inner_count=float(row["incoming_inner_count"]),
+            outgoing_inner_count=float(row["outgoing_inner_count"]),
+            incoming_outer_count=float(row["incoming_outer_count"]),
+            outgoing_outer_count=float(row["outgoing_outer_count"]),
+            valid=_coerce_valid(row["valid"]),
+        )

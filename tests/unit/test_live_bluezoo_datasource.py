@@ -5,7 +5,9 @@ tier must never touch BlueZoo (owner directive: `make test` stays
 network-free — the live tier in tests/live/ carries the real reads).
 """
 
-from datetime import date, datetime
+import logging
+import re
+from datetime import date, datetime, timedelta
 
 import pytest
 
@@ -221,3 +223,121 @@ class TestRetry:
                 "select timestamp from sensor_visits where timestamp >= '2026-07-20'"
             )
         assert source.calls == 1
+
+
+_SQL_IDS = re.compile(r"sensor_id in \(([\d, ]+)\)")
+_SQL_WINDOW = re.compile(r"timestamp >= '([^']+)' and timestamp < '([^']+)'")
+
+
+class _StubbedLive(LiveBlueZooAudienceDataSource):
+    """Deterministic fake server: honors the SQL's sensor + window predicates
+    (so screen filtering and windowing are genuinely exercised end-to-end),
+    returns rows on the 15-min UTC grid, all valid."""
+
+    def _call(self, sql):
+        ids = [int(x) for x in _SQL_IDS.search(sql).group(1).split(",")]
+        start = date.fromisoformat(_SQL_WINDOW.search(sql).group(1))
+        end = date.fromisoformat(_SQL_WINDOW.search(sql).group(2))
+        rows = []
+        d = start
+        while d < end:
+            for hour in (9, 10):
+                for minute in (0, 15, 30, 45):
+                    for sensor_id in ids:
+                        rows.append(
+                            {
+                                "timestamp": f"{d.isoformat()}T{hour:02d}:{minute:02d}:00Z",
+                                "sensor_id": sensor_id,
+                                "incoming_inner_count": float(sensor_id % 7) + minute / 60.0,
+                                "outgoing_inner_count": 1.5,
+                                "incoming_outer_count": 4.0,
+                                "outgoing_outer_count": float(sensor_id % 5) + hour / 24.0,
+                                "valid": True,
+                            }
+                        )
+            d += timedelta(days=1)
+        return rows
+
+
+class TestGetVisitIntervals:
+    def test_maps_sensors_back_to_screens(self, live_env):
+        out = _StubbedLive().get_visit_intervals(
+            screen_ids=[101, 102], date_from=D_FROM, date_to=D_FROM
+        )
+        assert out and {iv.screen_id for iv in out} == {101, 102}
+
+    def test_unmapped_screens_yield_no_rows_not_error(self, live_env):
+        assert (
+            _StubbedLive().get_visit_intervals(
+                screen_ids=[999], date_from=D_FROM, date_to=D_FROM
+            )
+            == []
+        )
+
+    def test_occupancy_fields_are_none(self, live_env):
+        iv = _StubbedLive().get_visit_intervals(
+            screen_ids=[101], date_from=D_FROM, date_to=D_FROM
+        )[0]
+        assert iv.average_visitors_inner is None and iv.maximum_visitors_outer is None
+
+    def test_timestamps_are_naive_utc(self, live_env):
+        out = _StubbedLive().get_visit_intervals(
+            screen_ids=[101], date_from=D_FROM, date_to=D_FROM
+        )
+        assert all(iv.timestamp.tzinfo is None for iv in out)
+
+    def test_counts_stay_float(self, live_env):
+        iv = _StubbedLive().get_visit_intervals(
+            screen_ids=[101], date_from=D_FROM, date_to=D_FROM
+        )[0]
+        assert isinstance(iv.incoming_inner_count, float)
+
+    def test_ad_campaign_id_is_none_live_rows_know_no_campaigns(self, live_env):
+        iv = _StubbedLive().get_visit_intervals(
+            screen_ids=[101], date_from=D_FROM, date_to=D_FROM
+        )[0]
+        assert iv.ad_campaign_id is None
+
+    def test_policy_and_rowcount_logged_per_read(self, live_env, caplog):
+        with caplog.at_level(logging.INFO, logger="app.audience.live_bluezoo"):
+            _StubbedLive().get_visit_intervals(
+                screen_ids=[101], date_from=D_FROM, date_to=D_FROM
+            )
+        joined = " ".join(r.getMessage() for r in caplog.records)
+        assert "policy=valid-only" in joined and "rows=8" in joined
+
+    def test_include_all_policy_reaches_the_sql(self, live_env, monkeypatch):
+        from app import config as config_module
+
+        monkeypatch.setattr(
+            config_module, "BLUEZOO_VALID_POLICY", config_module.BlueZooValidPolicy.INCLUDE_ALL
+        )
+        seen = {}
+
+        class _Spy(_StubbedLive):
+            def _call(self, sql):
+                seen["sql"] = sql
+                return super()._call(sql)
+
+        _Spy().get_visit_intervals(screen_ids=[101], date_from=D_FROM, date_to=D_FROM)
+        assert " and valid" not in seen["sql"]
+
+    def test_foreign_sensor_in_response_fails_loudly(self, live_env):
+        class _Foreign(LiveBlueZooAudienceDataSource):
+            def _call(self, sql):
+                return [
+                    {
+                        "timestamp": "2026-07-20T09:00:00Z",
+                        "sensor_id": 55555,
+                        "incoming_inner_count": 1.0,
+                        "outgoing_inner_count": 1.0,
+                        "incoming_outer_count": 1.0,
+                        "outgoing_outer_count": 1.0,
+                        "valid": True,
+                    }
+                ]
+
+        with pytest.raises(BlueZooError, match="unmapped sensor_id=55555"):
+            _Foreign().get_visit_intervals(
+                screen_ids=[101], date_from=D_FROM, date_to=D_FROM
+            )
