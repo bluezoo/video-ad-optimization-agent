@@ -18,9 +18,11 @@ AdPlayRecord mirrors the client's CMS end-of-day batch record (Email 5,
 project_context.md): which ad played on which screen, when, advertising
 which products. BlueZooVisitInterval mirrors ONE row of BlueZoo's
 sensor_visits — and nothing else (replan amendment: scoped to sensor_visits
-fields only; extra="forbid" enforces it). In demo mode both shapes are
-produced deterministically (app/demo_data/attribution.py, seed.py); Phase 11
-connected mode fills the same shapes from the real CMS/BlueZoo feeds.
+fields only — the six occupancy fields below are acknowledged sensor_visitors
+drift, kept optional and demo-only rather than removed; extra="forbid" still
+rejects anything new). In demo mode both shapes are produced deterministically
+(app/demo_data/attribution.py, seed.py); Phase 11 connected mode fills the
+same shapes from the real CMS/BlueZoo feeds.
 """
 
 from datetime import datetime
@@ -52,10 +54,18 @@ class BlueZooVisitInterval(BaseModel):
     outgoing_inner_count: float
     incoming_outer_count: float
     outgoing_outer_count: float
-    minimum_visitors_inner: float
-    maximum_visitors_inner: float
-    average_visitors_inner: float
-    minimum_visitors_outer: float
-    maximum_visitors_outer: float
-    average_visitors_outer: float
+    # Occupancy fields (BlueZoo `sensor_visitors` columns, NOT `sensor_visits`)
+    # — DEMO-POPULATED ONLY. The live conformer (Phase 11b) queries
+    # sensor_visits alone and leaves these None: populating them would cost a
+    # second table scan against BlueZoo's metered bytes-scanned allowance, for
+    # values nothing in this app reads (the attribution join consumes only
+    # incoming_inner_count and outgoing_outer_count). If a real metric ever
+    # needs occupancy, add the sensor_visitors query then — do NOT assume
+    # these are live-populated. See docs/METRICS.md (circulation entry).
+    minimum_visitors_inner: float | None = None
+    maximum_visitors_inner: float | None = None
+    average_visitors_inner: float | None = None
+    minimum_visitors_outer: float | None = None
+    maximum_visitors_outer: float | None = None
+    average_visitors_outer: float | None = None
     valid: bool = True
