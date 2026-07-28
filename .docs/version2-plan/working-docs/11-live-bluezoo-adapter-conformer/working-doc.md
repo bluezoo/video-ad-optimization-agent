@@ -56,3 +56,11 @@
 - Fixing `screens_for_campaign`'s demo convention or the CMS mapping question (Phase 12 confirms with client).
 - Any BlueZoo write, ever. Any use of `sensor_pulses` or BlueZoo's `campaign_id`.
 - README.md untouched.
+
+## Approval (2026-07-27) — conditions binding the plan
+
+Owner approved all three flagged decisions (REST-first as our recorded assumption; cached provider dropped, Exit criteria amended; secrets via app/.env + deploy-time injection, GSM SDK stays Phase 13 Tier B). Conditions:
+
+1. **SETUP_INSTRUCTIONS.md must document the `{base_url, access_key}` secret PAIR explicitly** (per Phase 13's existing amendment — the base URL travels with the credential; separating them turns "wrong host" into a ticket reading "auth is broken") **and include a concrete `gcloud run deploy --set-secrets` line**, not a prose gesture.
+2. **The DTO divergence lives in the model itself:** the six occupancy fields' docstring/field comments state they are demo-populated and left `None` in connected mode because populating them costs a second table scan for values nothing reads.
+3. **DISCOVERY protocol run for the two-query premise** — done at approval time: WORK_LOG DISCOVERY entry; provenance amendments in `11-live-bluezoo-adapter.md` (drift note + Exit criteria), `docs/METRICS.md` (circulation), `99-open-questions.md` (Q5).
