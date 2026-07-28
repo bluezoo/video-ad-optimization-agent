@@ -29,3 +29,6 @@ Preflight: creds present, list_tables = 19 (sensor_pulses entitled, group_dwell 
 
 ## 2026-07-27 — Task 4 (Test 1) complete
 Full-history flip shape (87 MB read): flip is ONE-WAY false→true (23 sensors, zero interleaving; median 21 days false first) → commissioning flag, not health flapping. null = pre-instrumentation (razor cutover 2021-10-14T12:45→13:00Z). 19 always-false sensors still live today (of 69); 34 currently-producing = 19 false + 15 true, matching Test 0's pulse fleet. One true→false exception (sensor 319) at end-of-life during a late-2022 fleet retirement.
+
+## 2026-07-27 — Task 5 (Test 4) complete
+30d distribution: false mean 16.0 / p50 0.0 vs true mean 33.1 / p50 2.1 — historical "invalid counts higher" INVERTS in current fleet (was driven by retired 2022 sensors). Current invalid = quiet, unvetted placements, not over-counters. ~1.7 MB.

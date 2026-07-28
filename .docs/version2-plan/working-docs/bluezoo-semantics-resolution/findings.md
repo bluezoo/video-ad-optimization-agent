@@ -101,7 +101,28 @@ _(pending)_
 
 ## Test 4 — are invalid counts implausible?
 
-_(pending)_
+30-day window (17 B/row ≈ 1.7 MB), `incoming_inner_count` by state:
+
+| `valid` | slots | mean | p50 | p99 | max |
+|---|---|---|---|---|---|
+| `false` | 56,508 | 15.98 | **0.0** | 290.4 | 951.4 |
+| `true` | 44,624 | 33.06 | 2.09 | 655.3 | 1219.2 |
+
+(No `null` rows in the window — consistent with Test 1: `null` ended 2021-10-14.)
+
+**The historical "invalid counts are higher" inverts in the current fleet.**
+Full history showed false-mean 77.4 vs true-mean 31.1 (prior findings 5.3);
+the last 30 days show false-mean **16.0 vs true-mean 33.1**, with invalid
+sensors silent at the median slot (p50 = 0). The high historical invalid
+counts came from the **retired late-2022 fleet** (Test 1 Finding 4), not from
+today's uncommissioned sensors.
+
+**Interpretation:** current invalid sensors are not implausible over-counters
+— they look like real but unvetted placements (quieter locations, or simply
+not calibrated/accepted). This weakens "miscalibrated garbage" and supports
+"unverified/uncommissioned": the data may be physically real, but BlueZoo has
+not signed off on it. Either way, the exclusion recommendation is unaffected —
+what matters is that the operator's *accepted* fleet is the `true` set.
 
 ## Test 5 — UTC vs sensor-local (the testable half)
 
