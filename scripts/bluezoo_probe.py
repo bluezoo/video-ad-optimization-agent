@@ -29,8 +29,11 @@ Environment
 
 Cost
 ----
-BlueZoo meters a monthly BYTES-SCANNED allowance (BigQuery style). It is small
-— roughly a gigabyte — and once spent, EVERY `run_query` fails until it resets,
+BlueZoo meters a monthly BYTES-SCANNED allowance (BigQuery style) as an abuse
+guard. The ceiling is per-tenant configuration they raise on request (one live
+tenant sits at 500 GB per sensor location), but the DEFAULT is 1 GB per sensor
+location — low enough that ~735 MB of full-history aggregates exhausted it in
+practice. Once spent, EVERY `run_query` fails until it resets or is raised,
 including single-day ones. Metadata (`list_tables`, `desc_table`) and the
 Real-time API are exempt. This probe therefore counts over the last
 DEFAULT_WINDOW_DAYS by default; `--full-history` is an explicit opt-in and is
@@ -56,11 +59,12 @@ DEFAULT_BASE_URL = "https://hermes.apollo.bluezoo.io/v2/dwh"
 # partitioned, and a query with no time predicate would scan all of history.
 TIME_CONSTRAINT_COLUMNS = ("timestamp", "date_start", "date_end", "date")
 
-# BlueZoo bills a monthly BYTES-SCANNED quota (BigQuery style), stated as "1GB
-# per sensor" — and on a tenant with ~5M rows/table, ~735MB of full-history
-# aggregates was enough to exhaust it, after which EVERY run_query fails,
-# including single-day ones. Hence: count over a narrow recent window by
-# default, and make full history an explicit opt-in.
+# BlueZoo meters a monthly BYTES-SCANNED quota (BigQuery style), defaulting to
+# "1GB per sensor location" — and on a tenant with ~5M rows/table, ~735MB of
+# full-history aggregates was enough to exhaust it, after which EVERY run_query
+# fails, including single-day ones. The ceiling is negotiable (they raise it on
+# request), but the default is not generous. Hence: count over a narrow recent
+# window by default, and make full history an explicit opt-in.
 DEFAULT_WINDOW_DAYS = 30
 
 # Approximate on-disk width per BigQuery's documented type sizes, used to warn
@@ -196,8 +200,8 @@ def row_width_bytes(columns: list[dict], selected: list[str] | None = None) -> i
 
     BigQuery bills columns actually read, so `select *` on a wide table is the
     expensive mistake: `sensor_dwell` is 120 columns / ~1 KB per row, which
-    over 5M rows is ~5 GB — several times a tenant's whole monthly allowance
-    in one statement. Call this before writing a query, not after.
+    over 5M rows is ~5 GB in a single statement. Call this before writing a
+    query, not after.
     """
     wanted = set(selected) if selected is not None else None
     return sum(
@@ -327,8 +331,8 @@ def main() -> int:
         help=(
             f"Count over {FULL_HISTORY[0]}..{FULL_HISTORY[1]} instead of the last "
             f"{DEFAULT_WINDOW_DAYS} days. EXPENSIVE on a populated tenant: the counting "
-            "queries read the time column of every row they span, and the monthly "
-            "bytes-scanned allowance is small. Use only on a tenant known to be empty."
+            "queries read the time column of every row they span, against a metered "
+            "monthly bytes-scanned allowance. Use only on a tenant known to be empty."
         ),
     )
     args = parser.parse_args()
@@ -364,9 +368,9 @@ def main() -> int:
     if widest:
         table, width = widest[0]
         print(
-            f"\nCOST NOTE: `select * from {table}` reads ~{width} bytes/row. Against a "
-            "monthly bytes-scanned allowance of roughly a gigabyte, name your columns "
-            "explicitly and keep time windows narrow.",
+            f"\nCOST NOTE: `select * from {table}` reads ~{width} bytes/row. BlueZoo "
+            "meters a monthly bytes-scanned allowance, so name your columns explicitly "
+            "and keep time windows narrow.",
             file=sys.stderr,
         )
     return 0

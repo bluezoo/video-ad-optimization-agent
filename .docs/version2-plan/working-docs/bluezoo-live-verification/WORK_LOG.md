@@ -225,7 +225,7 @@ done in the main checkout, not on this branch.
 ## 2026-07-27 — checkpoint 7: second tenant WITH REAL DATA (MO_92)
 
 Scope extension, owner-approved mid-PR. BlueZoo granted access to a second
-account after we raised the zero-data ask: org "Hotels International",
+account after we raised the zero-data ask:,
 cluster/account **Morpheus / MO_92**, their **staging** environment at
 `https://hermes.morpheus.bluezoo.io/v2/dwh`. 5.1M rows in `sensor_visits`, 101
 sensors, 2021-03 → current. Owner directive: fold it into this PR, keep the
@@ -302,7 +302,7 @@ cost under 3 MB and answered more than round 1's 735 MB did.**
 
 ### Decisions recorded
 
-1. **Customer-data restraint.** MO_92 holds a real hotel operator's venues and
+1. **Customer-data restraint.** MO_92 holds a real hospitality operator's venues and
    traffic. `findings.md` quotes two venue names BlueZoo themselves disclosed in
    writing plus numeric magnitudes, and deliberately does **not** reproduce the
    93-sensor inventory. Committed artifacts (`scan-mo92/`) are schema and row
@@ -316,3 +316,65 @@ cost under 3 MB and answered more than round 1's 735 MB did.**
 3. The old top-priority client ask ("give us real data") is **granted and
    closed**; `findings.md`'s asks section was rewritten around what actually
    remains.
+
+## 2026-07-27 — checkpoint 8: PII scrub + quota correction
+
+Two owner directives, both post-dating checkpoint 7's commit.
+
+**1. "make sure we dont commit the keys or any PII."**
+
+Swept the whole branch diff (`git log -p version_2..HEAD`), not just the scan
+artifacts.
+
+- **Credentials: clean.** No AccessKey, in any commit, in any form. The only
+  UUID-shaped strings on the branch are BlueZoo's public docs anchor and ADK
+  session ids from earlier workstreams. `support@bluezoo.io` appears once,
+  quoted verbatim inside an API error message — a public support address,
+  deliberately kept.
+- **Customer identifiers: found and scrubbed.** Checkpoint 7's prose named the
+  MO_92 operator's organization, two of its venues, one area name and a group
+  slug. All redacted (`⟨venue A⟩`, `⟨area name⟩`, "a hospitality-sector
+  tenant"), across `findings.md`, `99-open-questions.md`,
+  `11-live-bluezoo-adapter.md`, `docs/METRICS.md`, `SETUP_INSTRUCTIONS.md` and
+  this log. **No finding was weakened** — every one rested on shapes, units,
+  ratios or magnitudes, never on a name. The `campaign_id`↔`group_id`
+  correspondence is now stated as the relationship it is rather than by
+  example, and the free-text-needs-trimming note survives as "one sampled name
+  carried a trailing space."
+- The redaction is stated explicitly in `findings.md` Part 5's restraint note,
+  so a later reader doesn't mistake the placeholders for literal values.
+
+Because workstream PRs are squash-merged, `version_2` never receives the
+pre-scrub intermediate commits.
+
+**2. DISCOVERY — the quota is an abuse guard with a negotiable ceiling, not a
+hard capacity limit.**
+
+Yasha (BlueZoo), in writing, 2026-07-27: *"The DWH table scan quota is
+implemented to prevent system abuse. We have currently set it at 500 GB per
+sensor location for this month so you should be good. If you happen to exceed
+it, we'll make sure to increase the limit to accommodate your demo. So I
+suggest you not worry about it."*
+
+This contradicts checkpoint 7, which I had committed hours earlier calling the
+allowance "small — roughly a gigabyte" and treating it as a binding
+architectural constraint. What was true: the mechanism, the total nature of
+exhaustion, the absence of any introspection endpoint, the `select *` trap. What
+was wrong: the severity. The 1 GB/sensor-location figure was the *default* we
+were provisioned with, not the product's limit; MO_92 now sits 500× higher.
+
+Amended `findings.md` Part 5.1, `11-live-bluezoo-adapter.md`,
+`13-production-hardening-live-mode.md`, `99-open-questions.md` Q18,
+`SETUP_INSTRUCTIONS.md` and `scripts/bluezoo_probe.py`. The frugality
+engineering stays — a `select *` on `sensor_dwell` is still 5.2 GB, and the
+default ceiling is still trippable by accident — but it is now framed as
+discipline rather than survival. One item explicitly did **not** soften:
+`QuotaExceeded` must still surface as a named operational state, and the fact
+that BlueZoo raises the ceiling on request is the reason why — an operator has
+to be able to tell that asking is the remedy.
+
+Two new open questions, both one email away and neither blocking 11b: how "per
+sensor location" is charged when a query spans many locations (735 MB tripped a
+limit nominally worth 1 GB × 101 locations, which suggests broad sweeps draw
+against every location's allowance rather than a shared pool), and whether the
+raised ceiling persists past "this month."

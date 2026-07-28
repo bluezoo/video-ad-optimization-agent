@@ -63,7 +63,7 @@ This app's `video_metrics.dwell_time_seconds` column stores **one scalar average
 
 **Update (live schema scan, 2026-07-25): the aggregation rule is "don't aggregate — read BlueZoo's own scalar."** An authenticated `desc_table` against a live account found that `sensor_dwell` also ships **`distribution_average_duration`** and **`distribution_median_duration`**, neither of which appears in BlueZoo's published documentation. So the live mapping onto our scalar is a direct read, not a bin-midpoint weighted mean. Two caveats keep this paragraph short of settling the entry: the account scanned has zero rows, so the columns' **units and scale are unverified** (as is the bin values' 0–1-vs-0–100 scale), and demo-mode data stays synthetic regardless. Phase 11 still owns writing the rule down as fact once real rows exist. Record: `.docs/version2-plan/working-docs/bluezoo-live-verification/findings.md`.
 
-**Resolved (real-data verification, 2026-07-27).** The caveats above are now closed, against a tenant with 5.1M real rows (MO_92 / "Hotels International"; `findings.md` Part 5.2). The rule for live mode:
+**Resolved (real-data verification, 2026-07-27).** The caveats above are now closed, against a tenant with 5.1M real rows (MO_92; `findings.md` Part 5.2). The rule for live mode:
 
 - **`distribution_average_duration` and `distribution_median_duration` are integer SECONDS** — observed 260 s, 402 s, 160 s. That is a **direct 1:1 mapping onto `dwell_time_seconds`.** Read the scalar; do not derive one from the histogram.
 - **The 106 bins are 0–100 percentages, not 0–1 shares** — one sampled slot's first three bins alone sum to 62.9. Anything that does consume the histogram must not treat bins as fractions; that would be a 100× error.

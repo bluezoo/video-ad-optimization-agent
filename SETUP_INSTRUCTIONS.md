@@ -72,31 +72,40 @@ with non-SELECT statements refused client-side before transmission.
 ### Cost — read before running any query of your own
 
 **BlueZoo meters a monthly bytes-scanned allowance** (BigQuery style),
-undocumented and small. Roughly **735 MB of full-history aggregate queries
-exhausted a real tenant's month**, after which *every* `run_query` fails —
-including single-sensor, single-day ones — until it resets. There is **no
-endpoint to check remaining consumption**; you find the limit by hitting it.
-`list_tables`, `desc_table` and the Real-time API are exempt.
+undocumented. It exists to prevent abuse, not to bill you, and the ceiling is
+per-tenant configuration BlueZoo will raise on request — MO_92 currently sits
+at **500 GB per sensor location** per month. But the *default* is low enough to
+trip by accident: roughly **735 MB of full-history aggregate queries exhausted
+a real tenant's month** at the original 1 GB/sensor-location setting, after
+which *every* `run_query` failed — including single-sensor, single-day ones —
+until BlueZoo reset it. There is **no endpoint to check remaining
+consumption**; you find the limit by hitting it. `list_tables`, `desc_table`
+and the Real-time API are exempt.
 
-Practical rules:
+Practical rules — cheap to follow, and they keep you clear of the wall
+regardless of where it currently sits:
 
 - **Never `select *`.** `sensor_dwell` is 120 columns / ~1 KB per row; a full
-  scan is ~5 GB, several times a tenant's whole month in one statement.
+  scan is ~5 GB in one statement.
 - **Name columns explicitly and keep time windows narrow.** The probe counts
   over the last 30 days by default for this reason; `--full-history` is an
   explicit opt-in and is only safe on a tenant known to be empty.
 - The probe prints a `COST NOTE` naming the widest table, records
   `select_star_bytes_per_row` in `scan.json`, and raises a distinct
   `QuotaExceeded` (exit code 2) rather than a generic failure.
+- **If you do hit it, ask** — BlueZoo raises the limit on request rather than
+  making you wait for the month to roll over.
 
 ### Saved scans
 
 - `working-docs/bluezoo-live-verification/scan/` — **AP_599** (Apollo, org
   "Walmart Demo"): empty tenant; proves schema and entitlements.
 - `working-docs/bluezoo-live-verification/scan-mo92/` — **MO_92** (Morpheus
-  *staging*, org "Hotels International"): 5.1M rows of **real customer venue
+  *staging*, a hospitality-sector tenant): 5.1M rows of **real customer venue
   data**. Its AccessKey and any extract are customer-confidential; the
-  committed artifacts are schema and row counts only.
+  committed artifacts are schema and row counts only — no venue names, no
+  traffic rows. Keep it that way: never commit a key, a venue name or a data
+  extract from this tenant.
 
 Each cluster issues its **own** AccessKey — an Apollo key returns `BAD_TOKEN`
 against the Morpheus host. Findings for both:

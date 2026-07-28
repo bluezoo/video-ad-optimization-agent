@@ -9,7 +9,7 @@ This document closes that item.
 **Accounts:** two, deliberately.
 **AP_599** — org "Walmart Demo", cluster **Apollo**, Super Admin, `hermes.apollo.bluezoo.io`.
 Empty; proves schema and entitlements (Parts 1–4).
-**MO_92** — org "Hotels International", cluster **Morpheus** (staging),
+**MO_92** — a hospitality-sector tenant, cluster **Morpheus** (staging),
 `hermes.morpheus.bluezoo.io`, its own AccessKey. Real data from real customer
 venues; proves semantics, magnitudes and the cost model (**Part 5**, added
 2026-07-27). Read Part 5 before designing any live query — it contains the
@@ -222,19 +222,22 @@ derived from a finding above rather than from a guess.
 # Part 5 — second tenant, with real data (MO_92, 2026-07-27)
 
 Everything above was learned from **AP_599 (Apollo)**, which has zero rows.
-BlueZoo then granted access to **MO_92 (Morpheus), org "Hotels International"** —
+BlueZoo then granted access to **MO_92 (Morpheus)** —
 their staging environment, carrying real sensor data from real customer venues.
 Base URL `https://hermes.morpheus.bluezoo.io/v2/dwh`, **its own AccessKey**.
 Artifact: `scan-mo92/`.
 
 This closes almost every value-level question Part 2 #7 had to leave open.
 
-> **A note on customer data.** MO_92 contains a real hotel operator's venue
-> names and traffic. This document quotes two venue names that BlueZoo
-> themselves put in writing when granting access, plus numeric magnitudes, and
-> deliberately does **not** reproduce the full 93-sensor inventory. The
-> committed scan artifacts are schema and row counts only — no venue names, no
-> traffic. Treat MO_92 credentials and any extract as customer-confidential.
+> **A note on customer data.** MO_92 contains a real hospitality operator's
+> venue names and traffic. Nothing identifying is committed anywhere in this
+> branch: the operator's name, its venue names and its campaign names are
+> **redacted throughout this document** (`⟨venue A⟩`, `⟨area name⟩`), the
+> 93-sensor inventory is not reproduced, and the committed scan artifacts are
+> schema and row counts only — no names, no traffic rows. What *is* recorded is
+> what the port needs: shapes, units, null behavior, ratios and order-of-
+> magnitude figures. Treat MO_92 credentials and any extract as
+> customer-confidential; keep the key in `app/.env`, never in a commit.
 
 ## 5.0 The cluster finding, confirmed the hard way
 
@@ -262,17 +265,36 @@ This answers Q18's "row caps / rate limits" — and the premise was wrong again.
 There is **no row cap**. There is a monthly **bytes-scanned** allowance, billed
 BigQuery-style on columns read × rows scanned.
 
-What we learned by hitting it:
+**The ceiling is elastic — corrected 2026-07-27 by BlueZoo (Yasha).** After we
+hit the wall, they clarified in writing: *"The DWH table scan quota is
+implemented to prevent system abuse. We have currently set it at 500 GB per
+sensor location for this month so you should be good. If you happen to exceed
+it, we'll make sure to increase the limit to accommodate your demo."* So:
 
-- **It is small.** Roughly **735 MB** of full-history aggregate queries
-  exhausted it. Whatever "per sensor" means in their message, it did *not*
-  behave like 1 GB × 101 sensors.
+- **It is an abuse guard, not a billing meter**, and it is **per-tenant
+  configuration BlueZoo will raise on request** — not a fixed product limit.
+- The **1 GB per sensor location** in the error above was the *default* we were
+  provisioned with. It is now **500 GB per sensor location** on MO_92, a 500×
+  increase, and BlueZoo's guidance is explicitly "don't worry about it."
+- This materially de-risks the demo. It does **not** make the mechanism go
+  away, and everything below about *how* it meters is unchanged.
+
+What we learned by hitting it, all still true:
+
+- **The default ceiling is low enough to hit by accident.** Roughly **735 MB**
+  of full-history aggregate queries exhausted the original 1 GB/sensor-location
+  allowance. Note that 735 MB total tripped a limit nominally worth 1 GB × 101
+  locations — so a query spanning all locations appears to draw against *every*
+  location's allowance, not a shared pool. Unconfirmed, but it is the only
+  reading consistent with what we observed, and it means **broad sweeps are
+  disproportionately expensive relative to per-location reads.**
 - **Exhaustion is total.** Afterwards *every* `run_query` failed, including a
   single-sensor single-day one. There is no degraded mode.
 - **Metadata and Real-time are exempt.** `list_tables`, `desc_table`,
   `get_occupancy_count` and `get_visits` all kept working throughout.
 - **There is no way to check remaining allowance.** No endpoint, and responses
-  carry no bytes-scanned metadata. You discover the limit by hitting it.
+  carry no bytes-scanned metadata. You discover the limit by hitting it — which
+  is why client-side estimation is worth keeping even at 500 GB.
 
 **Where the 735 MB went** — not row count, but *columns × history*. A single
 `select distinct time_zone, time_offset` over full history cost ~245 MB; the
@@ -281,21 +303,35 @@ second round — every finding in Part 5 below — cost **under 3 MB**, because 
 used narrow windows and explicit column lists.
 
 **The trap to design against:** `sensor_dwell` is 120 columns, **1,013 bytes
-per row**. A `select *` over its 5.1M rows is **~5.2 GB — several times a
-tenant's whole monthly allowance in one statement.**
+per row**. A `select *` over its 5.1M rows is **~5.2 GB in one statement** —
+five times the original default allowance, and still a meaningful bite out of
+the raised one if the access pattern repeats it daily.
 
-Consequences for Phase 11b, which are architectural rather than cosmetic:
+Consequences for Phase 11b. With the ceiling raised these are *good practice
+plus one hard requirement*, rather than the survival constraints they looked
+like before the correction:
 
-1. Never `select *`. Name columns; the query builder should require them.
+1. Never `select *`. Name columns; the query builder should require them. (The
+   cheapest of these to honour, and the one that saves the most.)
 2. Narrow time predicates always — which is very likely *why* BlueZoo mandates
    a time constraint at all (partition pruning).
-3. An end-of-day reconciliation job issuing per-ad-play queries across many
-   sensors is a plausible way to exhaust a customer's monthly allowance. Budget
-   the access pattern before building it; consider one windowed bulk read per
-   day over per-play queries.
-4. `QuotaExceeded` needs distinct handling: unfixable by retry or narrowing,
-   and it disables the whole warehouse path until reset. A live conformer
-   should surface it as a named operational state, not a generic 5xx.
+3. Budget the access pattern before building it. An end-of-day reconciliation
+   job issuing per-ad-play queries across many sensors is the shape most likely
+   to grow into a problem; prefer one windowed bulk read per day. At 500 GB
+   this is a design preference, not a blocker — but the per-location accounting
+   noted above means a tenant-wide sweep costs far more than its raw byte count
+   suggests.
+4. **Hard requirement, unchanged by the raise:** `QuotaExceeded` needs distinct
+   handling. It is unfixable by retry or narrowing and disables the whole
+   warehouse path until reset or manual intervention. A live conformer must
+   surface it as a named operational state, not a generic 5xx — the fact that
+   BlueZoo will raise the limit on request is *precisely* why the error has to
+   be legible enough for someone to know to ask.
+
+**Still open:** what "per sensor location" means for accounting when one query
+spans many locations (see the bullet above), and whether the raised ceiling is
+month-scoped ("for this month") or persistent. Both are one email to BlueZoo;
+neither blocks 11b.
 
 ## 5.2 Dwell — Q18 answered, and METRICS.md's deferred rule is now settled
 
@@ -362,8 +398,9 @@ a data-quality signal rather than silently zero-filling.
 Many rows share a single identical timestamp, so the table is **snapshot- /
 revision-versioned**: each membership change writes a fresh set of rows stamped
 with that revision time (~12.7 revisions per sensor on average). Groups are
-human-named (e.g. `hotel-downtown`) and map to venue-level sensor sets — for a
-hotel, individual rooms such as the bar's dining room and named ballrooms.
+human-named slugs (e.g. `⟨venue-slug⟩`) and map to venue-level sensor sets — in
+this tenant, individual rooms within a property (dining areas, named function
+rooms).
 
 **Read it as-of a date** (`max(timestamp) <= D`), never as a static lookup, and
 never assume the newest revision applied to historical traffic.
@@ -374,30 +411,32 @@ never assume the newest revision applied to historical traffic.
 across 13 distinct campaigns. So the column is not vestigial — it is in active
 use, which settles the caveat Part 2 #6 had to leave open.
 
-And we can now see *what it means*. Sample rows (2026-07-26):
+And we can now see *what it means*. Sample rows (2026-07-26) — **venue and
+campaign names redacted** (see the restraint note at the end of Part 5); shapes
+and values are verbatim:
 
 | campaign_id | campaign_name | group_id | cuv | target_uv | actual_accuracy |
 |---|---|---|---|---|---|
-| 1301 | Hotel Olympus | 2194 | 82.81 | 2000 | 100.0 |
-| 1303 | Hotel Downtown | 2196 | 959.46 | 2000 | 99.99999997 |
-| 1325 | `Lobbies ` | 2212 | 179.98 | 2000 | 99.99999999 |
+| 1301 | `⟨venue A⟩` | 2194 | 82.81 | 2000 | 100.0 |
+| 1303 | `⟨venue B⟩` | 2196 | 959.46 | 2000 | 99.99999997 |
+| 1325 | `⟨area name⟩` + trailing space | 2212 | 179.98 | 2000 | 99.99999999 |
 
-`campaign_id` is effectively **1:1 with `group_id`** (campaign 1303 "Hotel
-Downtown" ↔ group 2196 `hotel-downtown`) and carries `target_uv` and
-`actual_accuracy`. It is a **BlueZoo unique-visitor *measurement* campaign over
-a sensor group — not an advertising campaign.**
+`campaign_id` is effectively **1:1 with `group_id`** — campaign 1303's name is
+the human-readable form of group 2196's slug, and so on down the list — and it
+carries `target_uv` and `actual_accuracy`. It is a **BlueZoo unique-visitor
+*measurement* campaign over a sensor group — not an advertising campaign.**
 
 So: the donor spec was right that the column exists, our docs-based correction
 was wrong to deny it, **and the `ad_campaign_id` rename is more necessary than
 ever** — the name now collides on the UV tables too, with a concept that means
-something entirely different. (Note also the trailing space in `"Lobbies "` —
-campaign names are free text and need trimming.)
+something entirely different. (Note also that one sampled name carried a
+**trailing space** — campaign names are free text and need trimming.)
 
 `cuv` is FLOAT (82.81, 959.46): extrapolated from sampled MACs, never a count.
 
 ## 5.7 Magnitudes, for demo calibration
 
-One real venue (a hotel bar/dining room, America/New_York), 2026-07-26, busiest
+One real venue (an indoor dining area, America/New_York), 2026-07-26, busiest
 15-minute slots — `incoming_inner` / `incoming_outer`:
 
 | slot (UTC) | inner | outer |
