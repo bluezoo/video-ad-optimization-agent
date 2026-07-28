@@ -50,7 +50,46 @@ group-by). Evidence: `/tmp/bluezoo-semantics/test0-*.json` (uncommitted).
 
 ## Test 1 — the shape of the `valid` flip, and what `null` is
 
-_(pending)_
+One full-history grouped read (`sensor_id`, `valid`, min/max `timestamp`,
+`count(*)`; 17 B/row ≈ 87 MB — the workstream's one big read), 128 sensor×state
+rows over 101 sensors, classified client-side:
+
+| Category | Sensors |
+|---|---|
+| always `false` | **69** |
+| one-way `false` → `true` (ranges never overlap) | **23** |
+| always `true` | 3 |
+| always `null` | 3 |
+| `null` → `true` | 2 |
+| `null` → `true` → `false` (see below) | 1 |
+
+**Finding 1 — the flip is one-way, commissioning-shaped.** Zero sensors
+interleave `false` and `true`: every two-state sensor's `false` window ends
+before its `true` window begins. Flipped sensors spent **median 21 days false
+before turning true** (min 0, max 1119) — the shape of an
+install→calibrate→accept pipeline, not of outage-driven health flapping.
+
+**Finding 2 — `null` means "before instrumentation," full stop.** Globally,
+the last `null` slot is `2021-10-14T12:45Z` and the first non-null slot is
+`2021-10-14T13:00Z` — a razor cutover at one 15-minute boundary. The column
+was simply added on 2021-10-14; the 3 always-null sensors died before that
+date. `null` is **not** a third semantic state.
+
+**Finding 3 — `false` does not mean dead.** Of the 69 always-false sensors,
+**19 still produce data today** (last slot 2026-07-27), alongside 15
+currently-producing `true` sensors — 34 total, exactly the pulse-reporting
+fleet Test 0 counted. `valid=false` on this tenant is a live population of
+never-commissioned sensors, not retired hardware.
+
+**Finding 4 — one true→false exception, consistent with decommission.**
+Sensor 319 (ids only; no names selected) ran `true` 2021-10 → 2022-07, shows a
+short `false` window 2022-12-05..12, then never reports again. ~50 of the 69
+always-false sensors also went dark in the same late-2022 window — a fleet
+retirement event. So the only observed reverse flip coincides with
+end-of-life, reinforcing (not weakening) the commissioning reading.
+
+Evidence: `/tmp/bluezoo-semantics/test1.json` (uncommitted; ids and
+timestamps only — no name columns were ever selected).
 
 ## Test 2 — does `valid` track sensor health?
 

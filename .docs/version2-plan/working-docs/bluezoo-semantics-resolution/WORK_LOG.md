@@ -26,3 +26,6 @@ Probe extension: load_env_var (BLUEZOO_BASE_URL now read from app/.env, env wins
 
 ## 2026-07-27 — Task 2 (preflight) + Task 3 (Test 0) complete
 Preflight: creds present, list_tables = 19 (sensor_pulses entitled, group_dwell absent — matches scan). Test 0: sensor_pulses POPULATED — 101,136 rows/30d, 34 sensors, cadence exactly 96/sensor/day (15-min grid) → Test 2 viable, equi-join on (sensor_id,timestamp). Caveat: pulses cover 34 currently-reporting sensors vs 101 historical. ~2 MB scanned.
+
+## 2026-07-27 — Task 4 (Test 1) complete
+Full-history flip shape (87 MB read): flip is ONE-WAY false→true (23 sensors, zero interleaving; median 21 days false first) → commissioning flag, not health flapping. null = pre-instrumentation (razor cutover 2021-10-14T12:45→13:00Z). 19 always-false sensors still live today (of 69); 34 currently-producing = 19 false + 15 true, matching Test 0's pulse fleet. One true→false exception (sensor 319) at end-of-life during a late-2022 fleet retirement.
