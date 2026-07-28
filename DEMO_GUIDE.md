@@ -475,17 +475,34 @@ byte-identity and that's a regression, not an intentional change.
 
 #### Journey 11a.2 — connected mode fails closed (terminal check, no browser needed)
 
+> **Updated (workstream 11b, 2026-07-27):** this journey originally described
+> the pre-11b placeholder (a `RuntimeError` saying Phase 11b "isn't
+> implemented yet"). Phase 11b landed `LiveBlueZooAudienceDataSource`, so the
+> factory now actually constructs it — and *that* constructor is what fails
+> closed when BlueZoo config is missing. Text below reflects the current
+> behavior; see Workstream 11b's journeys further down for the full
+> connected-mode happy-path/fail-closed/policy-knob set.
+
 ```bash
 APP_MODE=connected .venv/bin/python -c \
   "from app.audience import get_audience_datasource; get_audience_datasource()"
 ```
 
-**Expect:** a `RuntimeError` whose message names `APP_MODE='connected'`, Phase
-11b (the live BlueZoo adapter that isn't implemented yet), and the way back
-(`APP_MODE=demo`, the default). In the app, any flow that derives metrics
-(video activation, demo-data seeding) raises this same error in connected mode
-instead of silently falling back to demo data — the fail-closed principle from
-Phase 6, now real rather than deferred.
+(run with every `BLUEZOO_*` variable unset, e.g. in a shell/`.env` where they
+were never exported — if they ARE set, this constructs
+`LiveBlueZooAudienceDataSource` successfully instead of raising, which is
+correct: fail-closed guards missing config, not connected mode itself.)
+
+**Expect:** a `BlueZooConfigError` (from `app/audience/live_bluezoo.py`,
+raised at datasource construction) whose message names both
+`BLUEZOO_BASE_URL` and `BLUEZOO_ACCESS_KEY` — exact fragments to look for:
+`"APP_MODE=connected requires BLUEZOO_BASE_URL and BLUEZOO_ACCESS_KEY"`,
+`"cluster-scoped pair"`, and a pointer to `SETUP_INSTRUCTIONS.md`. In the app,
+any flow that derives metrics (video activation, demo-data seeding) raises
+this same error in connected mode instead of silently falling back to demo
+data — the fail-closed principle from Phase 6, now real rather than
+deferred. See Journey 11b.3 for this same check driven through the UI
+(activate a video) rather than this terminal one-liner.
 
 #### Journey 11a.3 — invalid APP_MODE still rejected at startup
 
