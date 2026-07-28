@@ -5,9 +5,11 @@ tier must never touch BlueZoo (owner directive: `make test` stays
 network-free — the live tier in tests/live/ carries the real reads).
 """
 
+import json
 import logging
 import re
 from datetime import date, datetime, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -341,3 +343,48 @@ class TestGetVisitIntervals:
             _Foreign().get_visit_intervals(
                 screen_ids=[101], date_from=D_FROM, date_to=D_FROM
             )
+
+
+FIXTURE = Path(__file__).parent / "data" / "bluezoo_sensor_visits_sample.json"
+FIXTURE_D_FROM = date(2026, 7, 25)  # <- capture's D1
+FIXTURE_D_TO = date(2026, 7, 25)
+
+
+@pytest.fixture
+def live_env_real_sensors(monkeypatch):
+    """Same shape as `live_env`, but mapped to this fixture's real captured
+    sensor ids (77, 80) rather than `live_env`'s placeholder 87/433 — Task 6's
+    Step 0 evidence-based selection (see bluezoo_sensor_visits_sample.md)
+    picked 77/80, not 87/433."""
+    monkeypatch.setenv("BLUEZOO_BASE_URL", "https://stub.invalid/v2/dwh")
+    monkeypatch.setenv("BLUEZOO_ACCESS_KEY", "stub-key")
+    monkeypatch.setenv("BLUEZOO_SENSOR_MAP", "101:77,102:80")
+    monkeypatch.setattr("app.audience.live_bluezoo._RETRY_BACKOFF_SECONDS", 0)
+
+
+class TestRealPayloadFixture:
+    """The dropped cached provider's replacement: a REAL MO_92 payload,
+    parsed by the real conformer code on every fast-tier run."""
+
+    def test_real_payload_parses_into_dtos(self, live_env_real_sensors):
+        raw = json.loads(FIXTURE.read_text())
+        assert raw, "fixture must not be empty"
+
+        class _Replay(LiveBlueZooAudienceDataSource):
+            def _call(self, sql):
+                return raw
+
+        # Fixture rows are for sensors 77/80 == mapped screens 101/102
+        # (Step 0 evidence-based selection; see bluezoo_sensor_visits_sample.md).
+        out = _Replay().get_visit_intervals(
+            screen_ids=[101, 102], date_from=FIXTURE_D_FROM, date_to=FIXTURE_D_TO
+        )
+        assert len(out) == len(raw)
+        assert {iv.screen_id for iv in out} == {101, 102}
+        assert all(iv.timestamp.tzinfo is None for iv in out)
+        assert all(
+            iv.timestamp.minute % 15 == 0 and iv.timestamp.second == 0 for iv in out
+        )
+        assert all(isinstance(iv.incoming_inner_count, float) for iv in out)
+        assert all(isinstance(iv.valid, bool) for iv in out)
+        assert all(iv.average_visitors_inner is None for iv in out)
