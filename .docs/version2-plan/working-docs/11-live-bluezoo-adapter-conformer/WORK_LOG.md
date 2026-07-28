@@ -36,3 +36,18 @@ Owner approved the 11-task plan ("Live cost is fine, proceed") with two plan ame
 2. BLUEZOO_SENSOR_MAP sensors chosen from EVIDENCE (new Task 6 Step 0): MO_92 recent grid coverage ~34%, 19 live sensors valid=false — select top valid-row producers over the last 7 days via a group-by query (~20 KB), record ids/counts/rationale in the fixture provenance note; Task 7 + Task 9 consume the verified ids.
 3. Singleton must not cache construction failure (owner-named property): new factory test test_construction_failure_is_not_cached — failed connected construction, then fixed env, succeeds WITHOUT reset.
 Plan: working-docs/11-live-bluezoo-adapter-conformer/plan.md. Execution: subagent-driven-development.
+
+## 2026-07-27 — Task 3 complete (mirrors .superpowers/sdd/progress.md)
+live_bluezoo foundations (typed errors, sensor map, guarded SQL builder, coercers). commit 06be2ad, review clean, 19 helper tests. Minor (no action): _TIME_CONSTRAINT_COLUMNS substring redundancy — inherited verbatim from the probe's proven constant.
+
+## 2026-07-27 — Task 4 complete (mirrors .superpowers/sdd/progress.md)
+Transport: _classify_http_error, fail-closed constructor, _call (sole networked method), _query single-retry wrapper. commit f8176db, review clean, 388 unit tests green.
+
+## 2026-07-27 — Task 5 complete (mirrors .superpowers/sdd/progress.md)
+get_visit_intervals + _to_interval; AppMode.CONNECTED registered; live source passes the 11a contract battery (stubbed transport); TestConnectedFailsClosed rewritten (fail-closed now at construction, naming missing config; construction failure NOT cached by singleton — owner property tested). commit f0a31bb, review clean, 405 unit tests green. Two disclosed deviations adjudicated acceptable by reviewer: battery slot-grain override (48→8 stamps, keeps 15-min delta property — 48 was a synthetic-day artifact) and rule-scoped noqa B017.
+
+## 2026-07-28 — Task 6 complete (mirrors .superpowers/sdd/progress.md)
+Real MO_92 payload fixture (192 rows, seven named columns, sensors 77+80 chosen from evidence — top valid-row producers, n=672 each over 7 days) + provenance note + network-free replay test. commit b402247, review clean; controller independently re-verified redaction (only timestamp string-valued). Serialization verified: timestamp ISO+ms+offset, valid native bool, counts native float — no coercer fixes needed. NOTE for Tasks 7/9: verified sensors are 77/80, NOT the plan's 87/433 placeholders. Also: 77/80 show FULL grid coverage (96/day), so scene-2 join has dense data.
+
+## 2026-07-28 — Task 7 complete (mirrors .superpowers/sdd/progress.md)
+Live-tier MO_92 test (sensors 77/80, yesterday-UTC window, valid-only + include-all superset): 2/2 PASS against real MO_92 (~25 KB scanned). Fast-tier non-collection independently re-verified by reviewer. commit 4b539a4, review clean. Minor noted for Task 8: SETUP_INSTRUCTIONS live-tier section doesn't yet mention the BlueZoo test — Task 8 adds it.
