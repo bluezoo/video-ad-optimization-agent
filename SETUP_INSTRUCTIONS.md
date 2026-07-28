@@ -165,6 +165,65 @@ Run a single test: `pytest tests/unit/test_campaign_tools.py::TestClass::test_na
 
 See `.docs/version2-plan/working-docs/16-live-api-testing/WORK_LOG.md` for the full OWNER GATE 1–4 decision record and `.docs/version2-plan/16-live-api-testing.md` for the phase's design.
 
+**Flakiness watchlist addendum (workstream 11b):** `tests/live/test_live_bluezoo_datasource.py` assumes MO_92 sensors 77 and 80 are currently reporting (evidence: `tests/unit/data/bluezoo_sensor_visits_sample.md`) — if both go dark the non-empty assertions fail; swap the ids in that test's `BLUEZOO_SENSOR_MAP` monkeypatch (and, if you're pointing at a different tenant, in the connected-mode `BLUEZOO_SENSOR_MAP` below) rather than treating it as a regression.
+
+## Connected mode (`APP_MODE=connected`) — live BlueZoo adapter
+
+Phase 11b's live conformer (`app/audience/live_bluezoo.py`) reads real audience
+data from BlueZoo's REST Data Warehouse (`run_query` against `sensor_visits`)
+instead of the demo-mode SQLite mock. It is a fixed, read-only, one-query
+adapter — no query builder, no pagination, no capability probing (see the
+module docstring for the full conforming-rules list).
+
+| Variable | Required | Meaning |
+|---|---|---|
+| `APP_MODE` | yes (`connected`) | Selects the live BlueZoo audience source (Phase 11b). |
+| `BLUEZOO_BASE_URL` | yes | Cluster-specific DWH URL, e.g. `https://<cluster-host>/v2/dwh`. **No default** — cluster-scoped, pairs with the key. |
+| `BLUEZOO_ACCESS_KEY` | yes | Bare AccessKey UUID (dashboard → Profile). The adapter adds the `AccessKey ` prefix itself. Never commit it. |
+| `BLUEZOO_SENSOR_MAP` | yes | `screen_id:sensor_id,...` e.g. `101:77,102:80`. One-to-one; malformed values fail closed at startup. Phase 12's CMS integration decides the long-term source of this mapping. |
+| `BLUEZOO_VALID_POLICY` | no (default `valid-only`) | `valid-only` = Rule R (count only commissioning-accepted rows; OUR recommendation, pending BlueZoo confirmation — see `docs/METRICS.md`). `include-all` = no filter. Every live read logs `policy=... rows=...`. |
+
+**The pair rule:** secrets hold a `{base_url, access_key}` pair per tenant,
+never a lone key — the base URL is cluster-scoped configuration that travels
+with the credential; separating them is how "wrong host" becomes a support
+ticket reading "auth is broken" (Phase 13 amendment). Store and inject
+`BLUEZOO_BASE_URL` and `BLUEZOO_ACCESS_KEY` together, from the same secret
+prefix, for the same tenant — never mix a base URL from one cluster with a
+key from another.
+
+**Deploy (Cloud Run)** — one secret per half of the pair, same tenant prefix
+so they can't be mixed; note the `^@^` delimiter on `--set-env-vars` because
+`BLUEZOO_SENSOR_MAP` itself contains commas:
+
+```bash
+# One secret per half of the pair, same tenant prefix so they can't be mixed:
+gcloud secrets create bluezoo-morpheus-base-url   --data-file=- <<< "https://<cluster-host>/v2/dwh"
+gcloud secrets create bluezoo-morpheus-access-key --data-file=- <<< "<ACCESS_KEY_UUID>"
+
+gcloud run deploy video-ad-agent \
+  --set-secrets "BLUEZOO_BASE_URL=bluezoo-morpheus-base-url:latest,BLUEZOO_ACCESS_KEY=bluezoo-morpheus-access-key:latest" \
+  --set-env-vars "^@^APP_MODE=connected@BLUEZOO_SENSOR_MAP=101:77,102:80@BLUEZOO_VALID_POLICY=valid-only"
+```
+
+Agent Engine deploys inject the same pair through the deploy script's env
+config; in-code Secret Manager SDK reads are deliberately Phase 13 Tier B.
+
+**Operational notes:**
+- Missing `BLUEZOO_BASE_URL` or `BLUEZOO_ACCESS_KEY` at startup raises
+  `BlueZooConfigError` naming exactly which var(s) are missing.
+- A rejected credential (`BAD_TOKEN` from BlueZoo) also raises
+  `BlueZooConfigError`, naming the `{base_url, access_key}` pair as the thing
+  to check — cluster-scoped keys return `BAD_TOKEN` against any other
+  cluster's host, which reads like a bad credential but usually isn't one.
+- Quota exhaustion (monthly bytes-scanned allowance) raises the distinct,
+  **non-retryable** `BlueZooQuotaExceeded` — every `run_query` fails until it
+  resets or BlueZoo raises the allowance; the remediation is to ask BlueZoo to
+  raise it, not to retry.
+- Zero rows is a legitimate result, not an error (fail-closed applies to
+  configuration, never to data).
+- `BLUEZOO_VALID_POLICY` (and the row count it produced) is logged on every
+  live read, so the active policy is always auditable per query.
+
 ## Lint/format
 
 ```bash
