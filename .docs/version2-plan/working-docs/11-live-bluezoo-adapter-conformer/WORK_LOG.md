@@ -76,3 +76,7 @@ Verifier note: chrome-devtools screenshots couldn't write to disk (workspace-roo
 ## 2026-07-28 — Tasks 10+11 complete (mirrors .superpowers/sdd/progress.md)
 Task 10: verification PASS (checkpoint 5 above); Scene-1 doc-drift fixes 40c713e + 9cdf73e reviewed and approved.
 Task 11: pre-PR sweep CLEAN — credential/UUID grep over `git diff version_2...HEAD` matched only benign env-var-name text; no app/.env or scan artifacts in diff; fixture re-verified (192 rows, exactly 7 columns, only timestamp string-valued). Step 1b: all 4 DISCOVERY amendments in branch diff (grep count 3 + 1 with the `, owner-approved` marker variant the plan's pattern missed). Gates: make lint clean, make test green (fast tier, zero network). Residual worktree campaigns.db reset via make reset-db.
+
+## 2026-07-28 — checkpoint 6: PR open
+Final whole-branch review: "Ready to merge" after one Important doc fix (dangling Scene-1 INSERT pointers, fixed in 517b48a and re-verified end-to-end). Known Minors triaged note-for-later (read-phase retry classification → next transport-touching workstream; probe-section wording pre-dates branch; pytest.ini claim was itself mistaken — repo genuinely uses pytest.ini; _TIME_CONSTRAINT_COLUMNS redundancy kept deliberately probe-identical).
+PR #18 into version_2: https://github.com/bluezoo/video-ad-optimization-agent/pull/18 — body links phase doc, summarizes, states verification evidence, and flags the provenance note's 15-sensor enumeration for explicit owner sign-off. Awaiting owner confirmation to self-merge.
