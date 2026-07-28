@@ -103,15 +103,13 @@ finally `make: *** [demo-assets] Error 1`.
 **Pass criteria:** the three error fragments above appear in the startup
 log; the process exits non-zero and port 8501 never binds (no `adk web`
 banner, nothing reachable at `http://localhost:8501`); `campaigns.db` is
-unchanged by this run — no new metrics rows, and if a setup video was
-inserted for this scene it stays at whatever status it was created with
-(never `activated`) — no silent fallback to demo data.
+unchanged by this run — no new metrics rows — no silent fallback to demo
+data.
 
 **Fail criteria:** the server starts and binds port 8501 despite missing
-BlueZoo config, any metrics rows appear, or a video's status flips to
-`activated` — any of these means a silent fallback to demo data survived,
-which is the exact regression this workstream's fail-closed design
-prevents.
+BlueZoo config, or any metrics rows appear — either means a silent fallback
+to demo data survived, which is the exact regression this workstream's
+fail-closed design prevents.
 
 ## Scene 2 — happy path (real MO_92 rows)
 

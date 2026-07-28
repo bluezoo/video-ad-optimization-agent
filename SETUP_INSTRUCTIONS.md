@@ -234,13 +234,18 @@ config; in-code Secret Manager SDK reads are deliberately Phase 13 Tier B.
   would be, but it also means a misconfiguration is a hard outage, not a
   degraded feature — get the `{base_url, access_key}` pair right before
   deploying.
-- **Fresh/empty-DB startup scans BlueZoo, read-only.** On a database with no
-  prior demo seeding, connected-mode startup derives the seeded demo
-  campaigns' metrics through the **live** source rather than the synthetic
-  generator — a few hundred KB of `run_query` bytes scanned per campaign
-  window (30-day window × mapped sensors × ~41 B/row), well under BlueZoo's
-  500 GB/sensor-location monthly allowance. Expected and read-only, but worth
-  knowing before assuming a fresh deploy's first boot is "free."
+- **Every connected-mode startup scans BlueZoo, read-only — not just the
+  first boot.** Demo-data seeding's metrics regeneration step
+  (`app/database/mock_data.py`, "Step 4") runs **unconditionally on every
+  `populate_mock_data()` call** — fresh DB or not — regenerating all active
+  demo campaigns' metrics through the **live** source rather than the
+  synthetic generator. Cost per startup: a few hundred KB of `run_query`
+  bytes scanned per campaign window (30-day window × mapped sensors ×
+  ~41 B/row), well under BlueZoo's 500 GB/sensor-location monthly allowance,
+  but it recurs on every `make dev` restart and every deployed-process
+  (re)start while `APP_MODE=connected` and demo campaigns are active.
+  Expected and read-only, but budget for it as a per-restart cost, not a
+  one-time seeding cost.
 
 ## Lint/format
 
