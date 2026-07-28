@@ -475,7 +475,7 @@ byte-identity and that's a regression, not an intentional change.
 
 #### Journey 11a.2 — connected mode fails closed (terminal check, no browser needed)
 
-> **Updated (workstream 11b, 2026-07-27):** this journey originally described
+> **Amended (workstream 11b, 2026-07-28):** this journey originally described
 > the pre-11b placeholder (a `RuntimeError` saying Phase 11b "isn't
 > implemented yet"). Phase 11b landed `LiveBlueZooAudienceDataSource`, so the
 > factory now actually constructs it — and *that* constructor is what fails
@@ -511,10 +511,20 @@ APP_MODE=banana make dev
 ```
 
 **Expect:** a `ValueError` at config load (unchanged behavior — predates ws11a).
-These are two different layers: an invalid `APP_MODE` value fails at **config
-load** (`ValueError`), while a valid-but-unimplemented value (`connected`) fails
-at **datasource resolution** (`RuntimeError`) the first time something actually
-needs audience data.
+
+> **Amended (workstream 11b, 2026-07-28):** the paragraph below originally
+> contrasted this with a valid-but-unimplemented `connected` mode failing
+> with `RuntimeError` at datasource resolution — that described the pre-11b
+> placeholder and is superseded; see Journey 11a.2's amendment.
+
+These are two different layers: an invalid `APP_MODE` value (e.g. `banana`)
+fails at **config load** (`app/config.py`, `ValueError`) before the app even
+starts. A *valid* `APP_MODE=connected` loads fine — `connected` is no longer
+unimplemented (Phase 11b) — but a **misconfigured** connected mode (missing
+`BLUEZOO_BASE_URL`/`BLUEZOO_ACCESS_KEY`) fails later, at **datasource
+construction** (`app/audience/live_bluezoo.py`, `BlueZooConfigError`), the
+first time something actually needs audience data — see Journey 11a.2's
+updated text for the exact error fragments.
 
 ### Workstream 15 — local-first storage, gated seeding, product onboarding
 
