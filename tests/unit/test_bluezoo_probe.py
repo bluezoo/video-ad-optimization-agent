@@ -243,6 +243,53 @@ class TestScanCost:
         assert not isinstance(caught.value, bluezoo_probe.QuotaExceeded)
 
 
+class TestLoadEnvVar:
+    """Base URL and key both come from the environment or app/.env —
+    the env file half previously existed only for the AccessKey."""
+
+    def test_environment_wins_over_env_file(self, monkeypatch, tmp_path):
+        env_file = tmp_path / ".env"
+        env_file.write_text("BLUEZOO_BASE_URL=https://file.example/v2/dwh\n")
+        monkeypatch.setenv("BLUEZOO_BASE_URL", "https://env.example/v2/dwh")
+        assert (
+            bluezoo_probe.load_env_var("BLUEZOO_BASE_URL", env_file)
+            == "https://env.example/v2/dwh"
+        )
+
+    def test_env_file_value_is_read_and_unquoted(self, monkeypatch, tmp_path):
+        monkeypatch.delenv("BLUEZOO_BASE_URL", raising=False)
+        env_file = tmp_path / ".env"
+        env_file.write_text('OTHER=x\nBLUEZOO_BASE_URL="https://file.example/v2/dwh"\n')
+        assert (
+            bluezoo_probe.load_env_var("BLUEZOO_BASE_URL", env_file)
+            == "https://file.example/v2/dwh"
+        )
+
+    def test_missing_everywhere_returns_empty(self, monkeypatch, tmp_path):
+        monkeypatch.delenv("BLUEZOO_BASE_URL", raising=False)
+        assert bluezoo_probe.load_env_var("BLUEZOO_BASE_URL", tmp_path / "absent") == ""
+
+
+class TestRunSql:
+    def test_renders_rows_as_json(self):
+        probe = FakeProbe(
+            tables=["sensor_visits"],
+            schemas={"sensor_visits": _cols("sensor_id", "timestamp")},
+            counts={"sensor_visits": 42},
+        )
+        out = bluezoo_probe.run_sql(
+            probe, "select count(*) as n from sensor_visits where timestamp >= '2026-07-01'"
+        )
+        assert json.loads(out) == [{"n": 42}]
+
+    def test_guards_still_apply(self):
+        probe = FakeProbe(tables=[], schemas={})
+        with pytest.raises(BlueZooError, match="constrain"):
+            bluezoo_probe.run_sql(probe, "select 1 from t")
+        with pytest.raises(BlueZooError, match="SELECT"):
+            bluezoo_probe.run_sql(probe, "delete from t where timestamp > '2020-01-01'")
+
+
 class TestRendering:
     def test_markdown_digest_includes_counts_and_columns(self):
         probe = FakeProbe(

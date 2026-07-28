@@ -20,12 +20,14 @@ Usage
 
 Environment
 -----------
-    BLUEZOO_ACCESS_KEY   required. Dashboard -> Profile -> AccessKey.
-    BLUEZOO_BASE_URL     optional. Defaults to the Apollo cluster host.
-                         The hostname is CLUSTER-scoped, not global: a key
-                         from cluster A returns BAD_TOKEN against cluster B's
-                         host. The dashboard Profile screen names the cluster,
-                         and each cluster issues its own AccessKey.
+    BLUEZOO_ACCESS_KEY   required. Dashboard -> Profile -> AccessKey. Read from
+                         app/.env or the environment.
+    BLUEZOO_BASE_URL     optional. Defaults to the Apollo cluster host. Read from
+                         app/.env or the environment. The hostname is
+                         CLUSTER-scoped, not global: a key from cluster A returns
+                         BAD_TOKEN against cluster B's host. The dashboard Profile
+                         screen names the cluster, and each cluster issues its own
+                         AccessKey.
 
 Cost
 ----
@@ -303,18 +305,27 @@ def render_markdown(result: dict) -> str:
     return "\n".join(lines)
 
 
-def load_access_key() -> str:
+def load_env_var(name: str, env_file: Path | None = None) -> str:
     """Environment wins; otherwise app/.env (gitignored, never committed)."""
-    key = os.environ.get("BLUEZOO_ACCESS_KEY", "").strip()
-    if key:
-        return key
-    env_file = Path(__file__).resolve().parent.parent / "app" / ".env"
+    value = os.environ.get(name, "").strip()
+    if value:
+        return value
+    env_file = env_file or Path(__file__).resolve().parent.parent / "app" / ".env"
     if env_file.exists():
         for line in env_file.read_text().splitlines():
-            name, _, value = line.partition("=")
-            if name.strip() == "BLUEZOO_ACCESS_KEY":
-                return value.strip().strip("'\"")
+            key, _, raw = line.partition("=")
+            if key.strip() == name:
+                return raw.strip().strip("'\"")
     return ""
+
+
+def load_access_key() -> str:
+    return load_env_var("BLUEZOO_ACCESS_KEY")
+
+
+def run_sql(probe: BlueZooProbe, sql: str) -> str:
+    """One guarded SELECT, rendered as JSON for the terminal."""
+    return json.dumps(probe.query(sql), indent=2, default=str)
 
 
 def main() -> int:
@@ -322,8 +333,12 @@ def main() -> int:
     parser.add_argument("--out", type=Path, help="Directory to write scan.json + scan.md into")
     parser.add_argument(
         "--base-url",
-        default=os.environ.get("BLUEZOO_BASE_URL", DEFAULT_BASE_URL),
-        help="Cluster-specific Data Warehouse base URL",
+        default=load_env_var("BLUEZOO_BASE_URL") or DEFAULT_BASE_URL,
+        help="Cluster-specific Data Warehouse base URL (env or app/.env BLUEZOO_BASE_URL)",
+    )
+    parser.add_argument(
+        "--sql",
+        help="Run one SELECT (read-only + time-constraint guards apply) and print rows as JSON",
     )
     parser.add_argument(
         "--full-history",
@@ -339,6 +354,9 @@ def main() -> int:
 
     try:
         probe = BlueZooProbe(load_access_key(), args.base_url)
+        if args.sql:
+            print(run_sql(probe, args.sql))
+            return 0
         result = scan(probe, window=FULL_HISTORY if args.full_history else None)
     except QuotaExceeded as exc:
         print(f"QUOTA EXHAUSTED: {exc}", file=sys.stderr)
