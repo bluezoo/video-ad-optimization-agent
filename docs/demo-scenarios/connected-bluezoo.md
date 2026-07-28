@@ -122,9 +122,19 @@ APP_MODE=connected BLUEZOO_SENSOR_MAP=101:77,102:80,103:89 make dev
 (`BLUEZOO_BASE_URL`/`BLUEZOO_ACCESS_KEY` come from `app/.env` — do not
 re-specify them on the command line or anywhere else in this doc.)
 
+If the seeded DB has no pending video for campaign 1 (the seeded demo videos
+are all pre-`activated`), insert one synthetic pending video **before
+starting the server** (scenario setup, not an assertion-time mutation):
+
+```bash
+sqlite3 campaigns.db "INSERT INTO campaign_videos \
+  (campaign_id, product_id, video_filename, status) \
+  VALUES (1, (SELECT product_id FROM campaigns WHERE id = 1), \
+  'connected-scene2-pending.mp4', 'generated');"
+```
+
 **Query 1:** "Show me the pending videos for campaign 1, then activate the
-first one." (same setup-video insert as Scene 1 if needed, using a fresh
-`video_filename` so it doesn't collide with any earlier scene's row.)
+first one."
 
 **Query 2 (follow-up turn):** "Show me that video's campaign metrics."
 
@@ -174,8 +184,9 @@ APP_MODE=connected BLUEZOO_SENSOR_MAP=101:77,102:80,103:89 BLUEZOO_VALID_POLICY=
 
 **Query:** repeat a metrics-affecting action from Scene 2 — e.g. "Activate
 [another pending video for campaign 1] and show me the campaign's metrics"
-(insert another synthetic pending video first, same pattern as Scenes 1–2, or
-re-run `generate_additional_metrics` for the video from Scene 2 if it's
+(insert another synthetic pending video first — same `sqlite3 INSERT` as
+Scene 2 with a fresh `video_filename`, e.g. `connected-scene3-pending.mp4` —
+or re-run `generate_additional_metrics` for the video from Scene 2 if it's
 already activated).
 
 **Expected tool calls:** same shape as Scene 2 (activation and/or metrics
