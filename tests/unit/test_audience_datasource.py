@@ -101,6 +101,36 @@ class TestSyntheticConformance(AudienceDataSourceContract):
         return SyntheticAudienceDataSource()
 
 
+class TestLiveStubConformance(AudienceDataSourceContract):
+    """The live conformer, transport stubbed (fast tier stays network-free),
+    run through the same battery the synthetic source passes."""
+
+    SCREEN_IDS = [101, 102]
+
+    @pytest.fixture(autouse=True)
+    def _live_env(self, monkeypatch):
+        monkeypatch.setenv("BLUEZOO_BASE_URL", "https://stub.invalid/v2/dwh")
+        monkeypatch.setenv("BLUEZOO_ACCESS_KEY", "stub-key")
+        monkeypatch.setenv("BLUEZOO_SENSOR_MAP", "101:87,102:433")
+
+    def make_source(self):
+        from tests.unit.test_live_bluezoo_datasource import _StubbedLive
+
+        return _StubbedLive()
+
+    def test_slot_grain_is_15_minutes(self):
+        # Override: _StubbedLive's fixture is a deliberately small 2-hour
+        # (09:00-11:00) fake day, unlike the synthetic source's full
+        # 09:00-21:00 demo day — same 15-min grain, fewer slots.
+        intervals = self.make_source().get_visit_intervals(
+            screen_ids=self.SCREEN_IDS[:1], date_from=D_FROM, date_to=D_FROM
+        )
+        stamps = sorted(iv.timestamp for iv in intervals)
+        assert len(stamps) == 8
+        deltas = {b - a for a, b in zip(stamps, stamps[1:], strict=False)}
+        assert deltas == {timedelta(minutes=15)}
+
+
 class TestSyntheticEquivalence:
     """The synthetic source is seed.py behind the seam — same rows exactly."""
 

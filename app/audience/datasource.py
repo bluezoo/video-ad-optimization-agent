@@ -1,7 +1,7 @@
 """AudienceDataSource — the audience-measurement seam (Phase 11a).
 
 One interface, two worlds: demo mode's synthetic source (this phase) and
-Phase 11b's live/cached BlueZoo conformers answer the same read. The
+Phase 11b's live BlueZoo conformer answers the same read. The
 signature is deliberately BlueZoo-shaped — screens + a date window in,
 sensor_visits-shaped intervals out — so nothing synthetic-only (campaign
 ids, seed configs) leaks into what a real adapter must implement.

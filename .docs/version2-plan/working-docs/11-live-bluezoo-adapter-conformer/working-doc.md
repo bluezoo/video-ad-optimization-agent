@@ -1,0 +1,66 @@
+# Workstream 11b: live-bluezoo-adapter (conformer)
+
+**Branch:** `version_2_live-bluezoo-adapter-conformer` (off `version_2` @ 23b0dfe)
+**Phase doc:** `.docs/version2-plan/11-live-bluezoo-adapter.md` (11b half; foot amendment = binding scoping decisions)
+
+## Research findings
+
+1. **The seam is exactly as scoped.** `app/audience/` = 143 lines / 3 files; `datasource.py` is 27 lines with the single abstract method `get_visit_intervals(*, screen_ids, date_from, date_to) -> list[BlueZooVisitInterval]`. The factory (`__init__.py`) already reserves the `AppMode.CONNECTED` slot for 11b in `_BUILTIN_SOURCES` and fails closed with a specific `RuntimeError` until it's registered. One consumer: the ad-play join at `app/demo_data/attribution.py:170`.
+2. **The DTO drift is cheaper to resolve than the phase doc assumed.** `BlueZooVisitInterval`'s six occupancy fields (`minimum_/maximum_/average_visitors_inner/outer` — `sensor_visitors` columns that leaked in from the donor, findings Part 3) have **zero consumers** in the entire app: the join reads only `incoming_inner_count` (impressions) and `outgoing_outer_count` (circulation). The "two queries joined client-side" the drift note prescribed exists to populate fields nobody reads — at double the scan cost per read, forever.
+3. **The float→int policy already exists** at the single aggregation point: `attribution.py:209` `impressions = int(round(a["inner"]))` (and `:219` for circulation). The conformer returns floats in the DTO (fields are already `float`); nothing new needed — just document it.
+4. **`screens_for_campaign()` supplies the seam's `screen_ids`** (ws10 convention `campaign*100+k`); they are this app's ids, not BlueZoo's. The screen→sensor mapping is therefore keyed by our `screen_id` and is per-deployment config (the client's CMS will eventually dictate it — phase doc step 5's "confirm with client" stands; `group_sensor_history` is BlueZoo's *group*↔sensor topology, not our mapping, and per semantics finding must never be used as a quality filter).
+5. **Secret-handling floor conflict:** phase doc step 6 suggests ADK's `SecretManagerClient`, which needs `google-adk>=1.29.0`; the repo floor is 1.21.0 (`app/requirements.txt:9`). A floor bump for an optional import is real blast radius. Also: the `app/.env` AccessKey pattern is already the accepted, working dev pattern (probe, live tier, semantics workstream).
+6. **Test-tier fit confirmed:** `tests/live/conftest.py` re-registers `tests/integration`'s env fixtures (real env from `app/.env` per test, isolated DB) — a live conformer test slots in with zero new infra. `make test` currently 350 unit / ~32 s, network-free; that property is a kickoff directive to protect.
+7. **The probe (`scripts/bluezoo_probe.py`) is not importable from `app/`** (scripts/ isn't a package). Its guards (SELECT-only, mandatory time constraint) and its `QuotaExceeded` distinction are the pattern to replicate in the conformer's own thin HTTP layer — pattern reuse, not code import.
+8. **All conforming rules re-read from both findings docs** (live-verification Part 5; semantics-resolution): Rule R + logged exclusion; UTC timestamps; per-cluster base URL; mandatory time predicate; named columns only; no `select *`; quota → named error; zero rows ≠ error; dense grids (absence = outage); `(sensor_id, timestamp)` unique; counts are floats; `sensor_pulses` never in impressions math.
+
+## Implementation approach
+
+**One new class, one new module: `LiveBlueZooAudienceDataSource` in `app/audience/live_bluezoo.py`**, registered as `AppMode.CONNECTED: "app.audience.live_bluezoo:LiveBlueZooAudienceDataSource"` in the existing `_BUILTIN_SOURCES` dict. No registry changes, no new abstractions. The module contains the class plus its private helpers (thin urllib HTTP layer with the probe's two client-side guards, a `BlueZooQuotaExceeded` exception, config parsing) — helpers, not layers.
+
+**Decision points, with recommendations:**
+
+**(a) REST-first — the owner-flagged assumption.** Build against BlueZoo's REST Data Warehouse (`run_query`), proven end-to-end against MO_92's 5.1M rows. If the client later chooses BigQuery dataset-share, that becomes a second class implementing the same one-method interface. **This is our assumption, not a client instruction — explicit yes required at this gate.**
+
+**(b) Query `sensor_visits` only; make the six occupancy fields `float | None = None`.** Per research finding 2: no consumer exists, so the second `sensor_visitors` query would double every read's scan cost to populate dead fields, and zero-filling would fabricate data. Making them optional is a 6-line DTO edit, honest (`None` = "not fetched"), leaves the synthetic path byte-identical (it still supplies values), and keeps `extra="forbid"`. Rejected alternatives: two-query join (cost without consumer); zero-fill (fabricated data); DTO split/removal (touches Phase 5 generator + golden tests — blast radius without benefit). This resolves the phase-doc "design call" (foot of Part 3 drift note) and gets a provenance amendment.
+
+**(c) Rule R as configurable, logged policy.** New config knob `BLUEZOO_VALID_POLICY` (in `app/config.py`, same validation pattern as `APP_MODE`): `valid-only` (default = Rule R: SQL `and valid` — excludes `false` and `NULL`) | `include-all` (no filter; for reconciliation/debug and for the day BlueZoo answers differently). Every live read logs the policy plus rows-returned so the exclusion is visible per query. Never baked in; flipping the knob requires zero code.
+
+**(d) Screen→sensor mapping: explicit env config `BLUEZOO_SENSOR_MAP`** — `"screen_id:sensor_id,screen_id:sensor_id,…"` (e.g. `101:87,102:433`), parsed and validated at datasource construction (fail-closed on malformed entries; unmapped screens yield no rows, matching the interface contract "unknown screens yield no rows"). Documented in `SETUP_INSTRUCTIONS.md` with the note that the client's CMS integration (Phase 12) will decide the long-term source of this mapping. Rejected: DB table (schema churn for config), `group_sensor_history` (BlueZoo's topology, not ours; explicitly warned against as a filter).
+
+**(e) Credentials: env/app/.env now; Secret Manager via deploy-time injection, not in-code SDK.** `BLUEZOO_BASE_URL` + `BLUEZOO_ACCESS_KEY` read from env (both required in connected mode → the fail-closed error names exactly what's missing; base URL has NO default per the cluster-scoping rule — a wrong default fails looking like a bad credential). For any deployment beyond a dev machine, `SETUP_INSTRUCTIONS.md` documents injecting these from Google Secret Manager at deploy time (Cloud Run `--set-secrets` / Agent Engine env config) — satisfying "no plaintext credential anywhere careless" without the `google-adk>=1.29.0` floor bump or an optional-import code path. In-code secret-store reads stay in Phase 13 where the full identity/audit work lives. (~85% confident this is what you want given the one-class scope guard; explicitly confirm.)
+
+**(f) Cached provider: DROP, and capture its value as a fixture instead.** `CachedBlueZooAudienceDataSource` is the designated trim, and it is competing: a third class, a capture pipeline, and anonymization tooling. Its original purpose — prove a real payload flows through our code — is served better and cheaper by (1) the live tier exercising the real conformer against real MO_92 rows, and (2) a **one-time recorded `run_query` response (redacted: ids/timestamps/counts only) checked in as a unit-test fixture**, so the fast tier parses a genuinely real payload shape on every `make test` run, no credentials, no third class. Exit criteria amended accordingly with provenance (per scoping decision 3: "say so explicitly").
+
+**(g) Operational floor (step 7, scoped to what one method needs):** request timeout (60 s, probe-proven); one retry with short backoff on timeout/5xx only (never on 4xx, never on quota); `BlueZooQuotaExceeded` as a named exception surfaced with the "contact BlueZoo to raise the allowance" remediation text; typed errors distinguishing bad-credential (`BAD_TOKEN`) / wrong-cluster (non-JSON response) / quota / generic HTTP; UTC-correct window predicate (`timestamp >= date_from AND timestamp < date_to + 1 day`, dates treated as UTC days — matching the mimic's documented UTC convention and the verified UTC timestamp basis); named columns always (`timestamp, sensor_id, incoming_inner_count, outgoing_inner_count, incoming_outer_count, outgoing_outer_count, valid` — 41 B/row); no `LIMIT` clamp (no row cap exists; the window+sensor predicate is the bound). No caching layer (the join calls once per recompute; premature).
+
+**What this does NOT do (scope guard tripwires):** no `list_tables` capability framework (one table is read; if `sensor_visits` is missing the query 404s/errors into the typed-error path with a clear message), no pagination machinery, no general query builder (one fixed parameterized SELECT), no dwell/UV reads (nothing consumes them through this seam today), no `sensor_pulses` anywhere.
+
+## Test plan
+
+- **Fast tier (`make test-unit`, network-free — protected):** new `tests/unit/test_live_bluezoo_datasource.py` with a stub HTTP layer (probe-test `FakeProbe` pattern): mapping parse/validation + fail-closed on malformed; missing-credential fail-closed errors (exact messages); Rule R SQL contains `and valid` under default policy and not under `include-all`; policy + row-count logging asserted; window→UTC predicate correctness incl. day boundary; float counts carried; empty result → empty list (no error, no fallback); quota body → `BlueZooQuotaExceeded`; `BAD_TOKEN` → credential error; 5xx retried once then typed error; timeout retried once; real-payload fixture (redacted MO_92 capture) parses into DTOs; existing contract tests extended to run the interface contract against the stubbed live source alongside the synthetic one. DTO change covered by existing suites staying green (golden tests byte-identical).
+- **Live tier (`make test-live`):** new `tests/live/test_live_bluezoo_datasource.py` (marked `live`): one narrow read against MO_92 (2 mapped sensors × 1 recent day ≈ 8 KB scan) asserting non-empty DTOs, valid-only rows under default policy, UTC 15-min grid timestamps; one `include-all` read asserting the policy knob changes the row set. Byte-budget documented per test.
+- **`make test` stays network-free** — verified by running it with network access blocked from the live class (no live test collected outside the `live` marker).
+- **Demo scenarios (mandatory — this workstream changes agent-visible behavior):**
+  - Regression, demo mode: existing **F2 + F3** (`docs/demo-scenarios/fashion.md`) — demo path byte-identical.
+  - New scenario doc **`docs/demo-scenarios/connected-bluezoo.md`** (written per verifying-with-demo-scenarios step 1): `APP_MODE=connected` + `BLUEZOO_SENSOR_MAP` against MO_92 — activate/verify metrics flow where impressions derive from real `sensor_visits` rows; assert the expected tool calls fire and the trace shows the live source (and fail-closed journey: `APP_MODE=connected` with no key → the specific error). Run via `demo-scenario-verifier`, sequentially, port 8501.
+- **DEMO_GUIDE.md**: new "Workstream 11b" journeys (connected-mode setup, happy path, fail-closed, policy knob) added before the PR, per the root-guide rule.
+- Pre-PR: credential/PII sweep of the whole branch diff (key, operator/venue names; numeric sensor ids acceptable per precedent).
+
+## Out of scope
+
+- BigQuery transport (client's decision; second class later if chosen).
+- `CachedBlueZooAudienceDataSource` as a class (dropped per (f), Exit criteria amended; fixture capture replaces it).
+- PoS/revenue side (Phase 12); sub-15-minute apportionment (Q17 — the seam is 15-min-grain; the end-of-day CMS reconciliation job arrives with Phase 12's `AdPlayRecord` feed).
+- In-code Secret Manager SDK reads, identity/audit, signed URLs (Phase 13).
+- Fixing `screens_for_campaign`'s demo convention or the CMS mapping question (Phase 12 confirms with client).
+- Any BlueZoo write, ever. Any use of `sensor_pulses` or BlueZoo's `campaign_id`.
+- README.md untouched.
+
+## Approval (2026-07-27) — conditions binding the plan
+
+Owner approved all three flagged decisions (REST-first as our recorded assumption; cached provider dropped, Exit criteria amended; secrets via app/.env + deploy-time injection, GSM SDK stays Phase 13 Tier B). Conditions:
+
+1. **SETUP_INSTRUCTIONS.md must document the `{base_url, access_key}` secret PAIR explicitly** (per Phase 13's existing amendment — the base URL travels with the credential; separating them turns "wrong host" into a ticket reading "auth is broken") **and include a concrete `gcloud run deploy --set-secrets` line**, not a prose gesture.
+2. **The DTO divergence lives in the model itself:** the six occupancy fields' docstring/field comments state they are demo-populated and left `None` in connected mode because populating them costs a second table scan for values nothing reads.
+3. **DISCOVERY protocol run for the two-query premise** — done at approval time: WORK_LOG DISCOVERY entry; provenance amendments in `11-live-bluezoo-adapter.md` (drift note + Exit criteria), `docs/METRICS.md` (circulation), `99-open-questions.md` (Q5).

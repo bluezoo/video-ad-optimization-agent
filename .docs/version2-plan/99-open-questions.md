@@ -34,6 +34,8 @@ Which point-of-sale or e-commerce system should the first real revenue integrati
 
 This app's `video_metrics.circulation` column has a candidate mapping (broader foot-traffic/opportunity-to-see, possibly BlueZoo's `sensor_visitors` occupancy or an outer-zone visit count, as distinct from `impressions` = inner-zone `sensor_visits`) — but this is **not confirmed** against BlueZoo's docs or the client's own usage. Phase 3's glossary handles this by writing the definition down as "app-local synthetic, BlueZoo mapping unresolved" rather than waiting on this answer — so this question doesn't block Phase 3, only the eventual real-data alignment in Phase 11.
 
+> **Amended (workstream 11b, 2026-07-27):** Phase 11's real-data alignment landed with the *outer-zone visit count* half of this candidate: the live conformer populates `outgoing_outer_count` from `sensor_visits`, which is what circulation's demo derivation already sums — so connected-mode circulation is real without resolving this question. The `sensor_visitors`-occupancy half is now explicitly deferred: the DTO's six occupancy fields are demo-populated only and `None` in connected mode (zero consumers existed; see the 11b amendment in `11-live-bluezoo-adapter.md` and `docs/METRICS.md`). If the client confirms the occupancy interpretation instead, that's when the `sensor_visitors` query gets added.
+
 ## 6. Unique-reach metric (Phase 3 glossary)
 
 Does BlueZoo's `group_uv_*` (unique visitor) concept need to be surfaced as a distinct metric in this app, separate from raw impressions, or is impressions-only sufficient for the RPI use case the client cares about?

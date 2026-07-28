@@ -51,6 +51,8 @@ rpi` total as before.
 
 The `video_metrics.circulation` column exists in this app's schema and is populated by the demo-mode mock generator, but it has **no confirmed BlueZoo counterpart**. Candidate interpretation (unconfirmed): broader foot-traffic / opportunity-to-see near a screen — possibly BlueZoo `sensor_visitors` occupancy or an outer-zone visit count — as distinct from impressions (inner-zone attention). That is a plausible retail-signage-industry pattern (circulation = OTS, impressions = actual attention) but it has **not been confirmed against BlueZoo's docs or the client's own usage**. Do not build anything on the candidate mapping; see open question 5 ("`circulation` metric definition (Phase 3 glossary — does not block Phase 3 itself)") in `.docs/version2-plan/99-open-questions.md`.
 
+> **Amended (workstream 11b, 2026-07-27):** if the candidate `sensor_visitors`-occupancy mapping is ever confirmed, note that `BlueZooVisitInterval`'s six occupancy fields are **demo-populated only** — the live conformer queries `sensor_visits` alone (the fields had zero consumers, and a second table scan for unread values doubles metered cost) and leaves them `None`. Wiring occupancy into a real metric requires adding the `sensor_visitors` query to the live path at that time. Circulation itself is unaffected: its derivation below uses `outgoing_outer_count`, a `sensor_visits` column the live path does populate.
+
 Derivation (demo mode): sum of `outgoing_outer_count` over the creative's
 played slots — still the synthetic demo convention (the term appears nowhere
 in BlueZoo's docs); real semantics deferred to Phase 11.

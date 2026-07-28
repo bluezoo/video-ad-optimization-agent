@@ -475,17 +475,40 @@ byte-identity and that's a regression, not an intentional change.
 
 #### Journey 11a.2 — connected mode fails closed (terminal check, no browser needed)
 
+> **Amended (workstream 11b, 2026-07-28):** this journey originally described
+> the pre-11b placeholder (a `RuntimeError` saying Phase 11b "isn't
+> implemented yet"). Phase 11b landed `LiveBlueZooAudienceDataSource`, so the
+> factory now actually constructs it — and *that* constructor is what fails
+> closed when BlueZoo config is missing. Text below reflects the current
+> behavior; see Workstream 11b's journeys further down for the full
+> connected-mode happy-path/fail-closed/policy-knob set.
+
 ```bash
 APP_MODE=connected .venv/bin/python -c \
   "from app.audience import get_audience_datasource; get_audience_datasource()"
 ```
 
-**Expect:** a `RuntimeError` whose message names `APP_MODE='connected'`, Phase
-11b (the live BlueZoo adapter that isn't implemented yet), and the way back
-(`APP_MODE=demo`, the default). In the app, any flow that derives metrics
-(video activation, demo-data seeding) raises this same error in connected mode
-instead of silently falling back to demo data — the fail-closed principle from
-Phase 6, now real rather than deferred.
+(run with every `BLUEZOO_*` variable unset, e.g. in a shell/`.env` where they
+were never exported — if they ARE set, this constructs
+`LiveBlueZooAudienceDataSource` successfully instead of raising, which is
+correct: fail-closed guards missing config, not connected mode itself.)
+
+**Expect:** a `BlueZooConfigError` (from `app/audience/live_bluezoo.py`,
+raised at datasource construction) whose message names both
+`BLUEZOO_BASE_URL` and `BLUEZOO_ACCESS_KEY` — exact fragments to look for:
+`"APP_MODE=connected requires BLUEZOO_BASE_URL and BLUEZOO_ACCESS_KEY"`,
+`"cluster-scoped pair"`, and a pointer to `SETUP_INSTRUCTIONS.md`. Note that
+importing `app.audience` at all imports the `app` package first, whose
+`app/agent.py` runs demo-data seeding at module level — so this exception
+actually fires during that import, before the explicit
+`get_audience_datasource()` call in the one-liner ever runs; the visible
+effect (same exception, same message) is unchanged. In the running app, any
+launch that reaches demo-data seeding under misconfigured connected mode
+raises this same error instead of silently falling back to demo data — the
+fail-closed principle from Phase 6, now real rather than deferred. See
+Journey 11b.3: because that seeding runs eagerly at `make dev` startup (not
+lazily when a chat query needs metrics), a misconfigured connected mode
+never reaches a chat prompt at all — the server fails to start.
 
 #### Journey 11a.3 — invalid APP_MODE still rejected at startup
 
@@ -494,10 +517,23 @@ APP_MODE=banana make dev
 ```
 
 **Expect:** a `ValueError` at config load (unchanged behavior — predates ws11a).
-These are two different layers: an invalid `APP_MODE` value fails at **config
-load** (`ValueError`), while a valid-but-unimplemented value (`connected`) fails
-at **datasource resolution** (`RuntimeError`) the first time something actually
-needs audience data.
+
+> **Amended (workstream 11b, 2026-07-28):** the paragraph below originally
+> contrasted this with a valid-but-unimplemented `connected` mode failing
+> with `RuntimeError` at datasource resolution — that described the pre-11b
+> placeholder and is superseded; see Journey 11a.2's amendment.
+
+These are two different layers: an invalid `APP_MODE` value (e.g. `banana`)
+fails at **config load** (`app/config.py`, `ValueError`) before the app even
+starts. A *valid* `APP_MODE=connected` loads fine — `connected` is no longer
+unimplemented (Phase 11b) — but a **misconfigured** connected mode (missing
+`BLUEZOO_BASE_URL`/`BLUEZOO_ACCESS_KEY`) fails at **datasource construction**
+(`app/audience/live_bluezoo.py`, `BlueZooConfigError`) — and because
+demo-data seeding reaches that datasource **eagerly, at process/import
+startup** rather than lazily on first use, this failure shows up as `make
+dev` (or any script importing the `app` package) refusing to start at all,
+not as an error surfaced mid-session — see Journey 11a.2's updated text and
+Journey 11b.3 for the exact error fragments and the startup-failure shape.
 
 ### Workstream 15 — local-first storage, gated seeding, product onboarding
 
@@ -693,3 +729,108 @@ existing product, and calls `create_campaign` directly with that product's ID
 existing product rather than creating a duplicate. Before this workstream's
 fix the agent onboarded a brand-new duplicate "Aurora Cold Brew" product
 instead of reusing the existing one.
+
+### Workstream 11b — connected mode (live BlueZoo)
+
+Phase 11b implemented `LiveBlueZooAudienceDataSource`
+(`app/audience/live_bluezoo.py`) — the connected-mode conformer that the ws11a
+seam resolves to when `APP_MODE=connected`, reading real audience-visit rows
+from BlueZoo's MO_92 Data Warehouse (`run_query` over `sensor_visits`) in
+place of the synthetic demo generator. Demo mode (`APP_MODE=demo`/unset) is
+byte-identical — nothing here invalidates any earlier journey; these are
+additive. Full scripted version with per-scene assertions:
+`docs/demo-scenarios/connected-bluezoo.md`.
+
+#### Journey 11b.1 — connected-mode setup: building the sensor map
+
+Connected mode needs three things beyond `app/.env`'s existing Vertex vars:
+`BLUEZOO_BASE_URL` and `BLUEZOO_ACCESS_KEY` (the cluster-scoped MO_92 pair —
+put these in `app/.env`, never on a command line or in a tracked file) and
+`BLUEZOO_SENSOR_MAP` (a `screen_id:sensor_id` list built from a real
+campaign's screen roster).
+
+```bash
+.venv/bin/python -c \
+  "from app.demo_data.attribution import screens_for_campaign; print(screens_for_campaign(1))"
+```
+
+**Expect:** `[101, 102, 103]` — campaign 1's three screens. Map them onto the
+verified, currently-valid, full-coverage BlueZoo sensors from Task 6 Step 0
+(provenance: `tests/unit/data/bluezoo_sensor_visits_sample.md` — sensors
+chosen from evidence of real recent valid rows, not guessed ids, so a scene
+failure means code, not a dark/never-commissioned sensor):
+
+```
+BLUEZOO_SENSOR_MAP=101:77,102:80,103:89
+```
+
+#### Journey 11b.2 — happy path: metrics from real MO_92 rows
+
+```bash
+APP_MODE=connected BLUEZOO_SENSOR_MAP=101:77,102:80,103:89 make dev
+```
+
+(`BLUEZOO_BASE_URL`/`BLUEZOO_ACCESS_KEY` come from `app/.env`.) In the chat:
+activate a pending video for campaign 1 (insert one first if the seeded DB
+has none — see `docs/demo-scenarios/connected-bluezoo.md` Scene 2 for the
+`sqlite3 INSERT`), then ask for that campaign's metrics.
+
+**Expect:** the activation and metrics tools both succeed, and the terminal
+running `make dev` prints a line of this exact shape (logger
+`app.audience.live_bluezoo`):
+
+```
+bluezoo live read: policy=valid-only sensors=[77, 80, 89] window=<from>..<to> rows=<n>
+```
+
+with `rows=` > 0 — that log line is the proof the numbers came from BlueZoo,
+not the synthetic generator. Reported impressions will differ from what the
+same video would show under `APP_MODE=demo`, since they derive from real
+float interval counts joined through attribution rather than the
+deterministic seeded generator.
+
+#### Journey 11b.3 — fail-closed: missing BlueZoo config
+
+> **Amended (workstream 11b, 2026-07-28):** live verification showed this
+> fails earlier than originally documented here — at `make dev` **startup**,
+> not at an in-chat tool call. `app/agent.py` runs demo-data seeding at
+> **module import time** (unconditionally, every launch), which reaches the
+> audience seam before `adk web` ever binds a port — so misconfigured
+> connected mode never gets as far as a chat prompt.
+
+```bash
+APP_MODE=connected BLUEZOO_BASE_URL= BLUEZOO_ACCESS_KEY= make dev
+```
+
+Explicit empty overrides are required, not just unexported variables: the
+`demo-assets` prerequisite's own `.env` loading fills in unset vars from
+`app/.env` (shell-set values, even empty ones, win over it), so leaving them
+merely unexported can still end up BlueZoo-configured if `app/.env` sets
+them.
+
+**Expect:** `make dev` **never starts** — no `adk web` banner, port 8501
+never binds, no chat prompt is ever reachable. The terminal shows a
+`BlueZooConfigError` naming both missing variables — look for these exact
+fragments: `"APP_MODE=connected requires BLUEZOO_BASE_URL and
+BLUEZOO_ACCESS_KEY"`, `"cluster-scoped pair"`, `"SETUP_INSTRUCTIONS.md"` —
+followed by `make: *** [demo-assets] Error 1`. `campaigns.db` is unchanged —
+no metrics rows are silently synthesized from demo data. A server that
+starts successfully despite missing BlueZoo config would mean the
+fail-closed guarantee regressed.
+
+#### Journey 11b.4 — policy knob: `BLUEZOO_VALID_POLICY=include-all`
+
+```bash
+APP_MODE=connected BLUEZOO_SENSOR_MAP=101:77,102:80,103:89 BLUEZOO_VALID_POLICY=include-all make dev
+```
+
+Repeat a metrics-affecting action (activate another pending video, or
+re-generate metrics for the one from Journey 11b.2).
+
+**Expect:** the same server log line, but with `policy=include-all` in place
+of `policy=valid-only` — proof the knob is wired end to end (the SQL drops
+its `and valid` clause). `BLUEZOO_VALID_POLICY` unset (or explicitly
+`valid-only`) is the default; `rows=` may legitimately be unchanged for
+sensors 77/80/89 specifically, since they were selected for having zero
+`valid=false` rows in the verified capture window — this journey checks the
+knob, not a metric delta.

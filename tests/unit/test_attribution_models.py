@@ -55,3 +55,35 @@ class TestBlueZooVisitInterval:
         row["dwell_histogram"] = [1, 2, 3]
         with pytest.raises(ValidationError):
             BlueZooVisitInterval.model_validate(row)
+
+
+class TestOccupancyFieldsOptional:
+    """Phase 11b: occupancy (sensor_visitors) fields are demo-populated only —
+    the live conformer queries sensor_visits alone and leaves them None."""
+
+    FLOW_ONLY = {
+        "timestamp": datetime(2026, 7, 20, 14, 45),
+        "screen_id": 101,
+        "incoming_inner_count": 3.2,
+        "outgoing_inner_count": 2.9,
+        "incoming_outer_count": 8.1,
+        "outgoing_outer_count": 7.7,
+        "valid": True,
+    }
+
+    def test_constructible_without_occupancy_fields(self):
+        iv = BlueZooVisitInterval(**self.FLOW_ONLY)
+        assert iv.minimum_visitors_inner is None
+        assert iv.maximum_visitors_inner is None
+        assert iv.average_visitors_inner is None
+        assert iv.minimum_visitors_outer is None
+        assert iv.maximum_visitors_outer is None
+        assert iv.average_visitors_outer is None
+
+    def test_occupancy_fields_still_accept_floats(self):
+        iv = BlueZooVisitInterval(**self.FLOW_ONLY, average_visitors_inner=4.5)
+        assert iv.average_visitors_inner == 4.5
+
+    def test_extra_forbid_still_enforced(self):
+        with pytest.raises(ValidationError):
+            BlueZooVisitInterval(**self.FLOW_ONLY, not_a_field=1)

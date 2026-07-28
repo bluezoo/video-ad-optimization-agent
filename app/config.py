@@ -56,6 +56,32 @@ except ValueError:
         f"{', '.join(d.value for d in DemoDataset)}; unset defaults to 'fashion'."
     ) from None
 
+# BlueZoo `valid` policy (Phase 11b). Rule R — count only rows BlueZoo marked
+# `valid` (a one-way commissioning-acceptance flag; see docs/METRICS.md) — is
+# OUR recommendation, NOT yet confirmed by BlueZoo. It therefore ships as the
+# DEFAULT of this explicit, configurable knob, never as a silent constant:
+# flipping it requires zero code, and the live conformer logs the active
+# policy + row count on every read. include-all = no filter, for
+# reconciliation/debugging or the day BlueZoo answers differently. Consumed
+# only by app/audience/live_bluezoo.py; demo mode ignores it.
+class BlueZooValidPolicy(StrEnum):
+    VALID_ONLY = "valid-only"
+    INCLUDE_ALL = "include-all"
+
+
+_raw_bluezoo_valid_policy = (os.environ.get("BLUEZOO_VALID_POLICY") or "").strip().lower()
+try:
+    BLUEZOO_VALID_POLICY = (
+        BlueZooValidPolicy(_raw_bluezoo_valid_policy)
+        if _raw_bluezoo_valid_policy
+        else BlueZooValidPolicy.VALID_ONLY
+    )
+except ValueError:
+    raise ValueError(
+        f"Invalid BLUEZOO_VALID_POLICY={_raw_bluezoo_valid_policy!r}. Allowed values: "
+        f"{', '.join(p.value for p in BlueZooValidPolicy)}; unset defaults to 'valid-only'."
+    ) from None
+
 # Model configuration
 # Agent models
 # NOTE: Gemini 3 models require global region. GlobalAdkApp preserves
