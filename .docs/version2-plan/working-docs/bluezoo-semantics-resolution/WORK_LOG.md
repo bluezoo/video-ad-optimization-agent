@@ -56,3 +56,6 @@ Reviewer (fable): zero Critical/Important. Credential/PII verdict CLEAN (indepen
 
 ## 2026-07-27 — checkpoint 6 (partial): PR open
 PR #17 into version_2: https://github.com/bluezoo/video-ad-optimization-agent/pull/17 — awaiting owner confirmation to self-merge (merge vs squash also owner's call).
+
+## 2026-07-27 — owner review fixes (3) before merge
+Owner reviewed PR #17 (independent PII sweep on their side: clean; both magnitude corrections confirmed material). Fixes applied: (1) ws10 carried lint item at 11-*.md restated — make lint PASSES, repo-wide ruff finds 13 (verified: all in scripts/deploy_ae_inline.py, intentionally excluded), "~40 errors" claim false; (2) 99-open-questions.md rolling "what remains" paragraph rewritten (valid rule + day-cut items superseded by this workstream's own findings); (3) 11-*.md "Still open" rolling list rewritten likewise. Owner directive: squash-merge (matching #16 live-verification's shape; #15 was the true-merge exception). Owner updates STATUS.md + scope doc in main checkout post-merge.
