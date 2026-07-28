@@ -1014,6 +1014,23 @@ class TestConnectedFailsClosed:
         reset_audience_datasource()
         assert isinstance(get_audience_datasource(), LiveBlueZooAudienceDataSource)
         reset_audience_datasource()
+
+    def test_construction_failure_is_not_cached(self, monkeypatch):
+        """Owner-named property: a failed _instantiate_for_mode() must leave
+        _singleton None, so fixing the env works WITHOUT a reset."""
+        from app.audience.live_bluezoo import BlueZooConfigError, LiveBlueZooAudienceDataSource
+
+        monkeypatch.setattr(config, "APP_MODE", config.AppMode.CONNECTED)
+        self._clear_bluezoo_env(monkeypatch)
+        reset_audience_datasource()
+        with pytest.raises(BlueZooConfigError):
+            get_audience_datasource()
+        monkeypatch.setenv("BLUEZOO_BASE_URL", "https://stub.invalid/v2/dwh")
+        monkeypatch.setenv("BLUEZOO_ACCESS_KEY", "stub-key")
+        monkeypatch.setenv("BLUEZOO_SENSOR_MAP", "101:87")
+        # Deliberately NO reset between the failure and this call:
+        assert isinstance(get_audience_datasource(), LiveBlueZooAudienceDataSource)
+        reset_audience_datasource()
 ```
 
 (Match the file's existing import style for `config`/factory helpers — read the file's top before editing; it already imports these for `TestDemoMode`.)
@@ -1124,11 +1141,21 @@ git commit -m "feat(11b): LiveBlueZooAudienceDataSource — connected mode goes 
 - Consumes: `scripts/bluezoo_probe.py --sql` (guarded, reads `app/.env`), `_StubbedLive` pattern.
 - Produces: the fast tier parses a genuinely real MO_92 payload on every `make test` run — the owner-approved replacement for `CachedBlueZooAudienceDataSource`.
 
-**This task performs ONE tiny live read (~8 KB scanned vs a 500 GB/sensor-location allowance). Read-only. Never print or commit the key.**
+**This task performs TWO tiny live reads (~30 KB scanned total vs a 500 GB/sensor-location allowance). Read-only. Never print or commit the key.**
+
+- [ ] **Step 0: Pick sensors from evidence, not by assumption (owner condition)**
+
+MO_92's recent grid coverage is only ~34% (≈32 of 96 slots/sensor/day) and 19 live sensors sit at `valid=false` — an unverified id makes downstream scenes fail for a data reason that looks like a code bug. Verify first (last 7 full UTC days; scans sensor_id+timestamp+valid over the window, ~20 KB):
+
+```bash
+python3 scripts/bluezoo_probe.py --sql "select sensor_id, count(*) as n from sensor_visits where timestamp >= '<D1-6d>' and timestamp < '<D2>' and valid group by sensor_id order by n desc"
+```
+
+Pick the top 2–3 sensors by valid-row count. These ids (call them `S1, S2[, S3]`) are THE sensors for everything downstream: this task's capture, Task 7's live test, Task 9's scenario map. Record the chosen ids, their counts, and the selection query in `tests/unit/data/bluezoo_sensor_visits_sample.md` (Step 2) — Task 9 copies the rationale into `connected-bluezoo.md`.
 
 - [ ] **Step 1: Capture the payload**
 
-Pick `D1` = the UTC date 3 days before today, `D2` = the day after `D1`. Run (sensors 87 and 433 are currently-reporting, commissioning-accepted MO_92 sensors — semantics findings):
+Pick `D1` = the UTC date 3 days before today, `D2` = the day after `D1`. Run with `S1, S2` from Step 0 (the plan's examples use 87, 433 — replace with the verified ids):
 
 ```bash
 python3 scripts/bluezoo_probe.py --sql "select timestamp, sensor_id, incoming_inner_count, outgoing_inner_count, incoming_outer_count, outgoing_outer_count, valid from sensor_visits where timestamp >= '<D1>' and timestamp < '<D2>' and sensor_id in (87, 433)" > tests/unit/data/bluezoo_sensor_visits_sample.json
@@ -1147,10 +1174,15 @@ One-time capture from BlueZoo Morpheus/MO_92 (real venue data, redacted by
 construction: only ids/timestamps/counts/valid — the seven named columns of
 the live conformer's fixed SELECT; no venue/operator identifiers, no key).
 
+- Sensor selection (owner condition — evidence, not assumption): sensors
+  <S1>, <S2> chosen as the top valid-row producers over <D1-6d>..<D2>
+  (counts: <n1>, <n2>; selection query in plan.md Task 6 Step 0). MO_92's
+  recent grid coverage is ~34% and 19 live sensors are valid=false, so
+  unverified ids fail downstream for data reasons that look like code bugs.
 - Captured: <capture date>, via `scripts/bluezoo_probe.py --sql` (read-only,
   client-side SELECT + time-constraint guards)
-- Window: <D1> .. <D2> (UTC, half-open); sensors 87, 433; no `valid` filter
-  (policy-neutral capture)
+- Window: <D1> .. <D2> (UTC, half-open); sensors <S1>, <S2>; no `valid`
+  filter (policy-neutral capture)
 - Cost: ~8 KB scanned (~192 rows x 41 B)
 - Purpose: every `make test` run parses a genuinely REAL payload shape —
   the owner-approved replacement for the dropped CachedBlueZooAudienceDataSource
@@ -1216,7 +1248,7 @@ git commit -m "feat(11b): redacted real MO_92 payload as fast-tier fixture (cach
 - Create: `tests/live/test_live_bluezoo_datasource.py`
 
 **Interfaces:**
-- Consumes: `tests/live/conftest.py`'s autouse `live_real_environment` (loads real `app/.env`), `LiveBlueZooAudienceDataSource`, `config.BLUEZOO_VALID_POLICY`.
+- Consumes: `tests/live/conftest.py`'s autouse `live_real_environment` (loads real `app/.env`), `LiveBlueZooAudienceDataSource`, `config.BLUEZOO_VALID_POLICY`, and the **verified sensor ids from Task 6 Step 0** (read them from `tests/unit/data/bluezoo_sensor_visits_sample.md`; replace the literal `87`/`433` below with `S1`/`S2` and update the docstring's watchlist line to name them).
 
 - [ ] **Step 1: Write the test**
 
@@ -1363,7 +1395,7 @@ git commit -m "docs(11b): connected-mode setup — secret pair, concrete deploy 
 
 Create `docs/demo-scenarios/connected-bluezoo.md` in the Act/Scene shape (per `verifying-with-demo-scenarios` — queries + explicit expected-tool-call assertions per scene). Required content:
 
-- **Setup (per scene):** how to launch — `APP_MODE=connected` plus the BLUEZOO_* vars prepended to `make dev`; the sensor map built from campaign 1's actual screen roster mapped onto MO_92 sensors `87,433,324` (compute the roster with the one-liner above and write the literal map into the doc, e.g. `BLUEZOO_SENSOR_MAP=101:87,102:433` — adjust to the actual roster size).
+- **Setup (per scene):** how to launch — `APP_MODE=connected` plus the BLUEZOO_* vars prepended to `make dev`; the sensor map built from campaign 1's actual screen roster mapped onto the **Task 6 Step 0 verified sensors** `S1,S2[,S3]` (compute the roster with the one-liner above and write the literal map into the doc — adjust to the actual roster size). Include a "why these sensors" line quoting the selection evidence from `tests/unit/data/bluezoo_sensor_visits_sample.md` (owner condition: sensors chosen from verified recent valid rows, so a scene failure means code, not a dark or never-commissioned sensor).
 - **Scene 1 — fail-closed (no BlueZoo config):** start with `APP_MODE=connected` and all `BLUEZOO_*` unset. Query: ask the agent to activate a pending video (reuse the F3 activation prompt shape from `docs/demo-scenarios/fashion.md`). Expected: the activation tool call fires and its response/trace carries the `BlueZooConfigError` text naming `BLUEZOO_BASE_URL` and `BLUEZOO_ACCESS_KEY` — and NO metrics rows are silently generated from demo data (no silent fallback). PASS = error named in trace; FAIL = success response or synthetic metrics.
 - **Scene 2 — happy path (real MO_92 rows):** start with full env + map. Query: activate a pending video for campaign 1, then ask for that campaign's video metrics. Expected tool calls: the review/activation tool, then the metrics tool; response reports non-zero impressions. Evidence that data is LIVE, all three checked: (a) the server log (captured `make dev` output) contains `bluezoo live read: policy=valid-only` lines with `rows=` > 0; (b) impressions values differ from the demo-mode values for the same video (they derive from real float counts, not the deterministic synthetic frames); (c) no error in trace. PASS requires (a) — the other two corroborate.
 - **Scene 3 — policy knob:** relaunch with `BLUEZOO_VALID_POLICY=include-all`; repeat a metrics-affecting action; expected: server log shows `policy=include-all`. (Trace-level behavior otherwise identical — this scene verifies the knob is wired, not a metric delta.)
@@ -1407,6 +1439,16 @@ git diff version_2...HEAD --stat   # eyeball: no app/.env, no scan artifacts
 ```
 
 Also manually scan `tests/unit/data/bluezoo_sensor_visits_sample.json` once more: seven columns only, no strings other than timestamps. Expected: CLEAN.
+
+- [ ] **Step 1b: Verify the DISCOVERY amendments shipped (owner condition b)**
+
+The occupancy-fields discovery was amended with provenance at approval time (commit ffdfb43). Confirm all three are in the branch diff before the PR:
+
+```bash
+git diff version_2...HEAD -- .docs/version2-plan/11-live-bluezoo-adapter.md docs/METRICS.md .docs/version2-plan/99-open-questions.md | grep -c "Amended (workstream 11b, 2026-07-27)"
+```
+
+Expected: ≥ 4 (drift note + Exit criteria in `11-*.md`, METRICS.md circulation, Q5), and the WORK_LOG carries the `DISCOVERY` entry.
 
 - [ ] **Step 2: Full gates**
 

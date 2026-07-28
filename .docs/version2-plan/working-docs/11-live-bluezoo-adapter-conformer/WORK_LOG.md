@@ -29,3 +29,10 @@ Owner approved the six-dimension restatement and all three flagged decisions:
 3. Secrets: app/.env + documented deploy-time injection — confirmed; GSM/ADK SDK stays Phase 13 (already Tier B there, not a launch blocker). CONDITION: Phase 13's amendment must require secrets to hold a {base_url, access_key} PAIR per tenant, not a lone key (separating them turns "wrong host" into a support ticket reading "auth is broken"); SETUP_INSTRUCTIONS must document the pair explicitly with a CONCRETE `gcloud run deploy --set-secrets` line, not prose.
 Two conditions on the DTO change (owner-added): (a) the demo-vs-connected divergence documented in the model itself (field comments/docstring: demo-populated, None in connected mode, because populating costs a second table scan for values nothing reads); (b) DISCOVERY protocol run — done, see entry above.
 Reminder restated: demo-scenario verification + DEMO_GUIDE.md journeys are mandatory.
+
+## 2026-07-27 — checkpoint 3: plan approved (with amendments)
+Owner approved the 11-task plan ("Live cost is fine, proceed") with two plan amendments + one property to preserve, all folded in before execution:
+1. Condition (b) DISCOVERY protocol: ALREADY EXECUTED at working-doc approval (commit ffdfb43 — WORK_LOG DISCOVERY entry + provenance amendments in 11-*.md drift note + Exit criteria, METRICS.md circulation, Q5). Added Task 11 Step 1b verifying all amendments are in the branch diff pre-PR, per owner's "add it to the task list explicitly."
+2. BLUEZOO_SENSOR_MAP sensors chosen from EVIDENCE (new Task 6 Step 0): MO_92 recent grid coverage ~34%, 19 live sensors valid=false — select top valid-row producers over the last 7 days via a group-by query (~20 KB), record ids/counts/rationale in the fixture provenance note; Task 7 + Task 9 consume the verified ids.
+3. Singleton must not cache construction failure (owner-named property): new factory test test_construction_failure_is_not_cached — failed connected construction, then fixed env, succeeds WITHOUT reset.
+Plan: working-docs/11-live-bluezoo-adapter-conformer/plan.md. Execution: subagent-driven-development.
