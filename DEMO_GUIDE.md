@@ -693,3 +693,96 @@ existing product, and calls `create_campaign` directly with that product's ID
 existing product rather than creating a duplicate. Before this workstream's
 fix the agent onboarded a brand-new duplicate "Aurora Cold Brew" product
 instead of reusing the existing one.
+
+### Workstream 11b — connected mode (live BlueZoo)
+
+Phase 11b implemented `LiveBlueZooAudienceDataSource`
+(`app/audience/live_bluezoo.py`) — the connected-mode conformer that the ws11a
+seam resolves to when `APP_MODE=connected`, reading real audience-visit rows
+from BlueZoo's MO_92 Data Warehouse (`run_query` over `sensor_visits`) in
+place of the synthetic demo generator. Demo mode (`APP_MODE=demo`/unset) is
+byte-identical — nothing here invalidates any earlier journey; these are
+additive. Full scripted version with per-scene assertions:
+`docs/demo-scenarios/connected-bluezoo.md`.
+
+#### Journey 11b.1 — connected-mode setup: building the sensor map
+
+Connected mode needs three things beyond `app/.env`'s existing Vertex vars:
+`BLUEZOO_BASE_URL` and `BLUEZOO_ACCESS_KEY` (the cluster-scoped MO_92 pair —
+put these in `app/.env`, never on a command line or in a tracked file) and
+`BLUEZOO_SENSOR_MAP` (a `screen_id:sensor_id` list built from a real
+campaign's screen roster).
+
+```bash
+.venv/bin/python -c \
+  "from app.demo_data.attribution import screens_for_campaign; print(screens_for_campaign(1))"
+```
+
+**Expect:** `[101, 102, 103]` — campaign 1's three screens. Map them onto the
+verified, currently-valid, full-coverage BlueZoo sensors from Task 6 Step 0
+(provenance: `tests/unit/data/bluezoo_sensor_visits_sample.md` — sensors
+chosen from evidence of real recent valid rows, not guessed ids, so a scene
+failure means code, not a dark/never-commissioned sensor):
+
+```
+BLUEZOO_SENSOR_MAP=101:77,102:80,103:89
+```
+
+#### Journey 11b.2 — happy path: metrics from real MO_92 rows
+
+```bash
+APP_MODE=connected BLUEZOO_SENSOR_MAP=101:77,102:80,103:89 make dev
+```
+
+(`BLUEZOO_BASE_URL`/`BLUEZOO_ACCESS_KEY` come from `app/.env`.) In the chat:
+activate a pending video for campaign 1 (insert one first if the seeded DB
+has none — see `docs/demo-scenarios/connected-bluezoo.md` Scene 2 for the
+`sqlite3 INSERT`), then ask for that campaign's metrics.
+
+**Expect:** the activation and metrics tools both succeed, and the terminal
+running `make dev` prints a line of this exact shape (logger
+`app.audience.live_bluezoo`):
+
+```
+bluezoo live read: policy=valid-only sensors=[77, 80, 89] window=<from>..<to> rows=<n>
+```
+
+with `rows=` > 0 — that log line is the proof the numbers came from BlueZoo,
+not the synthetic generator. Reported impressions will differ from what the
+same video would show under `APP_MODE=demo`, since they derive from real
+float interval counts joined through attribution rather than the
+deterministic seeded generator.
+
+#### Journey 11b.3 — fail-closed: missing BlueZoo config
+
+```bash
+APP_MODE=connected make dev
+```
+
+(leave every `BLUEZOO_*` var unset). Activate a pending video for campaign 1
+as above.
+
+**Expect:** the activation tool call fires, but its response/trace carries a
+`BlueZooConfigError` naming both missing variables — look for these exact
+fragments: `"APP_MODE=connected requires BLUEZOO_BASE_URL and
+BLUEZOO_ACCESS_KEY"`, `"cluster-scoped pair"`, `"SETUP_INSTRUCTIONS.md"`. The
+video's status stays `generated` in `campaigns.db` — no metrics are silently
+synthesized from demo data. A success response or any metrics numbers here
+would mean the fail-closed guarantee regressed.
+
+#### Journey 11b.4 — policy knob: `BLUEZOO_VALID_POLICY=include-all`
+
+```bash
+APP_MODE=connected BLUEZOO_SENSOR_MAP=101:77,102:80,103:89 BLUEZOO_VALID_POLICY=include-all make dev
+```
+
+Repeat a metrics-affecting action (activate another pending video, or
+re-generate metrics for the one from Journey 11b.2).
+
+**Expect:** the same server log line, but with `policy=include-all` in place
+of `policy=valid-only` — proof the knob is wired end to end (the SQL drops
+its `and valid` clause). `BLUEZOO_VALID_POLICY` unset (or explicitly
+`valid-only`) is the default; `rows=` may legitimately be unchanged for
+sensors 77/80/89 specifically, since they were selected for having zero
+`valid=false` rows in the verified capture window — this journey checks the
+knob, not a metric delta.
