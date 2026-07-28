@@ -17,3 +17,6 @@ Scope-doc claims re-verified against current branch: probe guards/quota model/wi
 
 ## 2026-07-27 — checkpoint 2: working doc approved
 Owner: "lgtm" to the six-dimension restatement (outcome/user/why-now/success/constraints/out-of-scope as stated in working-doc.md). Blocker noted at approval time: BLUEZOO_ACCESS_KEY + BLUEZOO_BASE_URL still to be added to app/.env by owner before live queries. Proceeding to writing-plans.
+
+## 2026-07-27 — checkpoint 3: plan approved
+Owner: "approve" — 12-task plan (plan.md), INCLUDING the execution-mode exception: Task 1 via subagent-driven-development; Tasks 2–11 (live research vs metered customer-confidential MO_92, result-gated query shapes) run inline in the controlling session; Task 12 via requesting-code-review + finishing-a-development-branch. Live tasks stop-and-wait if BLUEZOO_ACCESS_KEY/BLUEZOO_BASE_URL absent from app/.env.
