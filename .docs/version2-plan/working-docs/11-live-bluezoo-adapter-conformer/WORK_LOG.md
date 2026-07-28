@@ -60,3 +60,15 @@ connected-bluezoo scenario doc (3 scenes, map 101:77,102:80,103:89 from evidence
 
 ## 2026-07-28 — checkpoint: Task 10 verification starting
 STATUS → verify in progress (main checkout). Dispatch 1: F2+F3 fashion regression (demo mode). Dispatch 2: connected-bluezoo scenes 1-3. Sequential, port 8501.
+
+## 2026-07-28 — DISCOVERY: misconfigured connected mode fails at STARTUP, and every connected startup scans BlueZoo
+Assumed (Scene 1 as originally written, and the plan's Task 9): connected-mode fail-closed surfaces at the first tool call, visible in the adk web trace.
+Actual (verified live, Task 10): `app/agent.py:117-118` runs `init_database()` + `seed_demo_data()` at module import; seeding derives metrics through `get_audience_datasource()`, so with `APP_MODE=connected` and missing/invalid BlueZoo config the process dies with `BlueZooConfigError` BEFORE adk web binds :8501 — the error surface is the startup log, not a tool response. Two corollaries:
+1. ADK auto-loads `app/.env`, so demonstrating "missing vars" requires explicit empty overrides (`BLUEZOO_BASE_URL= BLUEZOO_ACCESS_KEY=` — empty fails the constructor's `.strip()` check).
+2. `mock_data.py` "Step 4" regenerates active-campaign metrics unconditionally on EVERY `populate_mock_data()` call (confirmed at mock_data.py:316, outside the `campaign_count == 0` branch) — so connected mode scans BlueZoo (read-only, a few hundred KB) on every process (re)start, not just first boot. Flagged for Phase 12/13 awareness (deploy-time restarts have a small recurring metered cost).
+Blast radius (all amended in this branch): connected-bluezoo.md Scene 1 rewritten to the startup surface (40c713e); DEMO_GUIDE 11b journey + 11a.2/11a.3 aligned (40c713e); SETUP_INSTRUCTIONS gained two ops notes — startup fail-fast (40c713e) and per-restart scan cost (9cdf73e, corrected from "fresh-DB only" per review); Scene 1 vestigial setup-video clauses pruned (9cdf73e).
+
+## 2026-07-28 — checkpoint 5: demo-scenario verification PASS (all scenarios)
+Fashion regression (demo mode, F2+F3): 4/4 PASS — demo-mode behavior byte-identical with live credentials present in app/.env (zero BlueZoo mentions in logs; credentials proven inert in demo mode). Evidence: .superpowers/sdd/verify-evidence-fashion/.
+connected-bluezoo (3 scenes): 3/3 PASS. Scene 1: startup fail-closed (BlueZooConfigError in startup log, port 8501 never binds, DB unchanged). Scene 2: `bluezoo live read: policy=valid-only sensors=[77, 80, 89] window=2026-07-02..2026-07-31 rows=7560`; connected impressions clearly differ from demo baseline (69,690/71,269/62,660 vs 47,430/47,456/42,298). Scene 3: `policy=include-all … rows=7572` — positive row delta proves the `and valid` clause dropped. Evidence: .superpowers/sdd/verify-evidence-connected/.
+Verifier note: chrome-devtools screenshots couldn't write to disk (workspace-roots rejection) — textual transcripts in the evidence dirs are the durable record. Scene-1 doc drift found during verification handled per the DISCOVERY entry above (fix commits 40c713e + 9cdf73e, reviewed).
