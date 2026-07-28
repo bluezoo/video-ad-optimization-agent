@@ -102,3 +102,32 @@ class TestAppMode:
         cfg = importlib.reload(config_module)
         assert isinstance(cfg.APP_MODE, cfg.AppMode)
         assert cfg.APP_MODE == "demo"  # str-enum: comparable to its string value
+
+
+class TestBlueZooValidPolicy:
+    """Phase 11b: Rule R as explicit, configurable policy — never baked in."""
+
+    def test_unset_defaults_to_valid_only(self, monkeypatch):
+        monkeypatch.delenv("BLUEZOO_VALID_POLICY", raising=False)
+        cfg = importlib.reload(config_module)
+        assert cfg.BLUEZOO_VALID_POLICY is cfg.BlueZooValidPolicy.VALID_ONLY
+
+    def test_include_all_is_valid(self, monkeypatch):
+        monkeypatch.setenv("BLUEZOO_VALID_POLICY", "include-all")
+        cfg = importlib.reload(config_module)
+        assert cfg.BLUEZOO_VALID_POLICY is cfg.BlueZooValidPolicy.INCLUDE_ALL
+
+    def test_value_is_normalized(self, monkeypatch):
+        monkeypatch.setenv("BLUEZOO_VALID_POLICY", "  Valid-Only ")
+        cfg = importlib.reload(config_module)
+        assert cfg.BLUEZOO_VALID_POLICY is cfg.BlueZooValidPolicy.VALID_ONLY
+
+    def test_empty_value_means_unset(self, monkeypatch):
+        monkeypatch.setenv("BLUEZOO_VALID_POLICY", "")
+        cfg = importlib.reload(config_module)
+        assert cfg.BLUEZOO_VALID_POLICY is cfg.BlueZooValidPolicy.VALID_ONLY
+
+    def test_invalid_value_raises_valueerror_at_load(self, monkeypatch):
+        monkeypatch.setenv("BLUEZOO_VALID_POLICY", "garbage")
+        with pytest.raises(ValueError, match="BLUEZOO_VALID_POLICY"):
+            importlib.reload(config_module)
