@@ -41,3 +41,6 @@ group_sensor_history (ids only, 28 KB): BlueZoo does NOT exclude invalid sensors
 
 ## 2026-07-27 — Task 8 (Test 5) + Task 9 (synthesis) complete
 Test 5: timestamp is UTC — diurnal troughs displaced by exactly each sensor's own offset (east −04:00 trough UTC 04–07, west −07:00 closed block UTC 06–11; May 2024 fallback window since current traffic is single-zone). Side finds: time_zone population is RECENT (null through 2024); time_offset is the historical column. Synthesis: Rule R = include only `valid IS TRUE` (`WHERE valid`), exclusion logged; meaning = "accepted into service" (high confidence), policy pending BlueZoo confirm (medium-high). Impact: keeps 28% of counts full-history but 62% on current fleet (~1.6× go-forward swing, not 4×). ~125 MB total scanned.
+
+## 2026-07-27 — Task 10 (amendments) complete
+Provenance amendments landed: 99-open-questions.md Q18 (valid + day-cut bullets resolved empirically, one confirmation each remains); 11-live-bluezoo-adapter.md (build rules: Rule R as logged default, 1.6× go-forward correction, UTC verdict, outage ≠ valid, groups ≠ filter); docs/METRICS.md valid row (Unresolved → recommended rule R pending confirmation).
