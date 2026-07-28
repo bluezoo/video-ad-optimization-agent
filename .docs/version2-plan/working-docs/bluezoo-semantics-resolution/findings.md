@@ -176,11 +176,116 @@ what matters is that the operator's *accepted* fleet is the `true` set.
 
 ## Test 5 — UTC vs sensor-local (the testable half)
 
-_(pending)_
+**Verdict: `timestamp` is UTC.** Local-day bucketing on our side must apply
+the sensor's offset ourselves.
+
+Getting there took a fallback chain worth recording:
+
+- **Current window:** only America/New_York carries traffic (32 sensors); the
+  2 America/Los_Angeles sensors are health-0.0 invalid units with zero visits
+  → no cross-zone comparison possible on current data.
+- **May 2024** turned out to be the right window: `-04:00` (36 sensors, 5.3 M
+  visits) and `-07:00` (3 sensors, 406 K) both busy.
+- Diurnal curves (hourly means over 4 weeks, busiest sensor per offset,
+  ids 861 east / 865 west):
+  - East (−04:00): overnight trough at **UTC 04–07** = local 00–03.
+  - West (−07:00): hard-zero closed block at **UTC 06–11** = local 23–04.
+  - Each trough is displaced by exactly that sensor's own UTC offset. If
+    timestamps were sensor-local, both hospitality venues' quiet hours would
+    sit at the *same* clock values (~00–04); they don't — they sit at
+    local-midnight *converted to UTC*. Timestamps are UTC. (The 15-minute
+    boundary alignment of every `min/max(timestamp)` at `…T23:45:00+00:00`
+    corroborates: grids align to UTC midnight.)
+
+**Two side findings on the zone columns:**
+
+- `time_zone` (IANA string) is **fully populated in the current window** but
+  **null everywhere in 2023/2024** — its population is a recent change.
+  Historical bucketing must rely on `time_offset`; `time_zone`'s "sparse"
+  reputation (prior findings 5.9) is really "recently introduced."
+- `time_offset` values observed: `-04:00`/`-05:00`/`-07:00`/`+02:00` —
+  DST-varying as documented, so a local-day cut needs the offset *per row*
+  (or an IANA zone), not a per-sensor constant.
+
+**What stays a client question (weaker half, as scoped):** how BlueZoo cut
+*their own* daily aggregates (`group_uv_daily.date` etc.) — UTC days or
+venue-local days — and which of `time_zone`/`time_offset` they intend
+consumers to trust. Moves to the outreach draft, now sharpened by "the raw
+feed is UTC; we've verified it."
+
+Cost: ~25 MB across the fallback chain (zone/offset group-bys ~4 MB each ×
+5 windows, two diurnal curves ~1.5 MB each, sensor pickers ~4 MB).
 
 ## Recommended `valid` rule
 
-_(pending — synthesized after Tests 0–5)_
+**Rule R, for Phase 11b:** when aggregating impressions (or any visit-count
+metric) from `sensor_visits`, **include only rows where `valid IS TRUE`** —
+in BigQuery SQL simply `WHERE valid`, which excludes both `false` and `NULL`.
+Log the exclusion (rows in / rows kept) at query time so the policy is
+visible, per `docs/METRICS.md`'s "explicit and logged" requirement.
+
+**Why exclude `false`:** the flag means "accepted into service after verified
+reporting" (Tests 1+2: one-way commissioning flip, median 21-day probation,
+median pulse-health 0.99 for valid vs 0.00 for invalid). Invalid sensors are
+mostly *not delivering their expected pulses* — and BlueZoo's counts are
+extrapolations from sampled radio traffic, so counts from a sensor failing
+its own health telemetry are not auditable measurements. This holds even
+though the current invalid fleet's counts aren't implausibly high (Test 4):
+"looks plausible" is not "accepted by the operator."
+
+**Why exclude `null`:** it means "before the `valid` column existed"
+(razor cutover 2021-10-14T13:00Z, Test 1) — acceptance is unknowable for
+those rows, and on this tenant they are 1.2% of rows, all pre-2022. Excluding
+them costs nothing and keeps the predicate one word.
+
+**Quantified impact (so nobody is surprised):** full-history, rule R keeps
+28% of summed counts (the famous ~4× swing — prior findings 5.3). But the
+historical bulk of invalid counts came from a fleet retired in late 2022;
+on the **current** fleet the same rule keeps 62% of counts (~1.6× swing).
+The scary historical number overstates the go-forward effect.
+
+**Confidence:** **high** on the *meaning* (commissioning acceptance — the
+one-way flip, the probation window, the health correlation, and the
+no-flip-back-on-degradation behavior all agree; nothing observed
+contradicts it). **Medium-high** on the *policy*, because two things are
+genuinely BlueZoo's to answer: (a) whether they intend consumers to filter
+on it (their own groups don't — Test 3 — and their group-level aggregates
+may or may not filter internally); (b) whether `valid` can ever be revoked
+operationally (we saw one true→false, coincident with decommissioning).
+This is exactly the split the scope doc predicted: data settles the
+semantics; intent needs one confirmation.
+
+**The confirmation question for BlueZoo** (verbatim into the outreach
+draft): *"We observe that `valid` flips one-way false→true after a median
+~21-day period during which the sensor's `pulse_count`/`expected_pulse_count`
+ratio is near zero, and that valid sensors hold ~0.99 pulse health at flip
+time; that `valid` does not flip back when a commissioned sensor later
+degrades; that `NULL` simply predates the column (2021-10-14); and that your
+own sensor groups contain invalid sensors. We read `valid` as 'sensor
+accepted into service' and therefore plan to count impressions only from
+`valid IS TRUE` rows. Please confirm this is the intended consumer behavior —
+and whether your group-level aggregates (`group_uv_daily` etc.) already
+apply the same filter internally."*
+
+**Timestamp verdict (Test 5), for 11b's bucketing:** `timestamp` is UTC;
+any venue-local day cut on our side must apply `time_offset` per row (or
+the IANA `time_zone`, which is only populated on recent data). How BlueZoo
+cut their own `group_*_daily.date` buckets remains an outreach question.
+
+## Scope-doc validation status
+
+- Test 0: **result** (populated, 96/day cadence). Test 1: **result** (one-way
+  flip; null = pre-instrumentation). Test 2: **result** (health-correlated
+  acceptance flag). Test 3: **result** (hypothesis refuted — groups don't
+  filter). Test 4: **result** (current fleet inverts the historical skew).
+  Test 5: **result** (UTC), via historical fallback window; no test
+  documented-impossible.
+- Recommended rule: above, with confidence stated.
+- Amendments + outreach: see the workstream's amendment commits and
+  `outreach-drafts.md`.
+- Total bytes scanned this workstream: **~125 MB** (dominated by Test 1's
+  one full-history 87 MB read; everything else windowed/narrow), against a
+  500 GB/sensor-location ceiling.
 
 ## Outreach drafts
 
