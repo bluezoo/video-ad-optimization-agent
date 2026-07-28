@@ -93,7 +93,38 @@ timestamps only — no name columns were ever selected).
 
 ## Test 2 — does `valid` track sensor health?
 
-_(pending — gated on Test 0)_
+30-day equi-join `sensor_visits` × `sensor_pulses` on `(sensor_id,
+timestamp)` (15-min grids match, Test 0), health =
+`pulse_count / expected_pulse_count`. 34 sensors joined — 15 valid-only, 19
+invalid-only, 0 mixed (as Test 1 predicts: the flag is per-sensor and stable).
+
+| Fleet | mean health | min | median | max |
+|---|---|---|---|---|
+| `valid=true` (15) | **0.773** | 0.0 | **0.99** | 0.994 |
+| `valid=false` (19) | **0.128** | 0.0 | **0.00** | 0.991 |
+
+**Strong correlation, with exceptions that sharpen the meaning rather than
+blur it:**
+
+- 12/15 valid sensors sit at ≥ 0.74 (mostly ≈ 0.99); 18/19 invalid sensors sit
+  ≤ 0.42 (13 of them at exactly 0.0 — delivering none of their expected
+  pulses despite emitting grid rows).
+- **3 valid sensors currently run health 0.0** (ids 343/855/865) — and their
+  `valid` did *not* flip back. So `valid` is **not** a live health flag; a
+  commissioned sensor that later degrades keeps `valid=true`.
+- **1 invalid sensor is healthy (0.991, id 866)** — reporting perfectly but
+  not (yet) accepted; exactly what a sensor inside Test 1's median-21-day
+  pre-commissioning window looks like.
+
+**Combined with Test 1, this names the flag:** `valid` ≈ **"accepted into
+service after verified reporting"** — set once at commissioning (which is why
+it correlates with health so strongly), one-way in practice, and not
+maintained as ongoing health state. Ongoing outage shows up as missing rows /
+zero counts (prior findings 5.4: grids are dense, absence = outage), not as a
+`valid` flip.
+
+Secondary corroboration (mac/rssi) not needed — the pulse ratio is
+conclusive. Cost: ~5 MB. Evidence: `/tmp/bluezoo-semantics/test2.json`.
 
 ## Test 3 — what BlueZoo themselves do with invalid sensors
 

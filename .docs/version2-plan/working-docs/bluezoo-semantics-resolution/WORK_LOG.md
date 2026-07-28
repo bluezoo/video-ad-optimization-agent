@@ -32,3 +32,6 @@ Full-history flip shape (87 MB read): flip is ONE-WAY false→true (23 sensors, 
 
 ## 2026-07-27 — Task 5 (Test 4) complete
 30d distribution: false mean 16.0 / p50 0.0 vs true mean 33.1 / p50 2.1 — historical "invalid counts higher" INVERTS in current fleet (was driven by retired 2022 sensors). Current invalid = quiet, unvetted placements, not over-counters. ~1.7 MB.
+
+## 2026-07-27 — Task 6 (Test 2) complete
+Health join (30d, equi-join, 34 sensors): valid median health 0.99 vs invalid median 0.00 — strong correlation. Exceptions name the semantics: 3 valid sensors at 0.0 health WITHOUT flip-back (not a live health flag); 1 healthy-but-invalid sensor (pre-acceptance). Verdict: valid = "accepted into service after verified reporting", set once at commissioning. ~5 MB.
