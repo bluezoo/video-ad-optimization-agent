@@ -47,3 +47,6 @@ Provenance amendments landed: 99-open-questions.md Q18 (valid + day-cut bullets 
 
 ## 2026-07-27 — Task 11 (outreach drafts) complete
 outreach-drafts.md: Draft A to BlueZoo (6 items — Rule R confirm-or-correct with evidence summary, day-cut + zone-column authority, quota accounting/persistence/estimability, campaign_id confirm, per-minute feed status, docs bug) + Draft B to retailer (PoS system + product↔SKU join, Q3/Q4). Redaction check: no identifiers, no keys, no venue names in drafts.
+
+## 2026-07-27 — checkpoint 5: verification
+make test green (unit 350 + e2e 25, 0 fail), make lint clean. Credential/PII sweep over full branch diff: no key-shaped tokens, no customer names (name columns never selected; numeric ids only, per bluezoo-live-verification precedent), morpheus/hermes hits are doc-context only. Demo scenario SKIPPED BY DESIGN: zero agent-visible change — no tools, prompts, routing, instructions or artifacts touched; branch is scripts/bluezoo_probe.py extension + docs/research records only (same justification as bluezoo-live-verification). No DEMO_GUIDE.md journeys invalidated.
