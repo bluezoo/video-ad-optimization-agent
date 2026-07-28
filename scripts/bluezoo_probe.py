@@ -24,7 +24,17 @@ Environment
     BLUEZOO_BASE_URL     optional. Defaults to the Apollo cluster host.
                          The hostname is CLUSTER-scoped, not global: a key
                          from cluster A returns BAD_TOKEN against cluster B's
-                         host. The dashboard Profile screen names the cluster.
+                         host. The dashboard Profile screen names the cluster,
+                         and each cluster issues its own AccessKey.
+
+Cost
+----
+BlueZoo meters a monthly BYTES-SCANNED allowance (BigQuery style). It is small
+— roughly a gigabyte — and once spent, EVERY `run_query` fails until it resets,
+including single-day ones. Metadata (`list_tables`, `desc_table`) and the
+Real-time API are exempt. This probe therefore counts over the last
+DEFAULT_WINDOW_DAYS by default; `--full-history` is an explicit opt-in and is
+only safe on a tenant known to be empty.
 """
 
 from __future__ import annotations
@@ -35,14 +45,29 @@ import os
 import sys
 import urllib.error
 import urllib.request
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 DEFAULT_BASE_URL = "https://hermes.apollo.bluezoo.io/v2/dwh"
 
 # BlueZoo rejects any run_query without a constraint on one of these columns.
 # Undocumented (their own published example would fail), enforced server-side.
+# The likely reason is partition pruning: these tables appear to be time-
+# partitioned, and a query with no time predicate would scan all of history.
 TIME_CONSTRAINT_COLUMNS = ("timestamp", "date_start", "date_end", "date")
+
+# BlueZoo bills a monthly BYTES-SCANNED quota (BigQuery style), stated as "1GB
+# per sensor" — and on a tenant with ~5M rows/table, ~735MB of full-history
+# aggregates was enough to exhaust it, after which EVERY run_query fails,
+# including single-day ones. Hence: count over a narrow recent window by
+# default, and make full history an explicit opt-in.
+DEFAULT_WINDOW_DAYS = 30
+
+# Approximate on-disk width per BigQuery's documented type sizes, used to warn
+# before a query rather than discover the cost by hitting the wall.
+TYPE_BYTES = {"INT64": 8, "FLOAT64": 8, "NUMERIC": 16, "BOOL": 1,
+              "TIMESTAMP": 8, "DATE": 8, "DATETIME": 8}
+STRING_BYTES = 20  # 2 bytes + UTF-8 length; observed values run ~6-20 chars
 
 # Tables worth sampling for row counts, if the tenant has them. Everything
 # else is schema-only — this list exists to keep the probe cheap, not to
@@ -56,11 +81,21 @@ COUNT_TABLES = (
     "group_sensor_history",
 )
 
-WIDE_WINDOW = (date(2020, 1, 1), date(2030, 12, 31))
+FULL_HISTORY = (date(2020, 1, 1), date(2030, 12, 31))  # opt-in only: --full-history
 
 
 class BlueZooError(RuntimeError):
     """An API call failed or the response was not usable."""
+
+
+class QuotaExceeded(BlueZooError):
+    """The tenant's monthly bytes-scanned allowance is spent.
+
+    Distinct from a generic 400 because the remedy is completely different:
+    nothing you can do to the query helps, every `run_query` fails until the
+    allowance resets or BlueZoo raises it, and metadata plus the Real-time API
+    keep working meanwhile.
+    """
 
 
 class BlueZooProbe:
@@ -88,6 +123,12 @@ class BlueZooProbe:
                 body = response.read()
         except urllib.error.HTTPError as exc:  # 400/403 carry a JSON body
             detail = exc.read().decode(errors="replace")[:300]
+            if "fair use limit" in detail or "data scanned" in detail:
+                raise QuotaExceeded(
+                    f"{path}: monthly bytes-scanned allowance exhausted — every run_query "
+                    f"will fail until it resets or BlueZoo raises it. Metadata and the "
+                    f"Real-time API still work. Server said: {detail}"
+                ) from exc
             raise BlueZooError(f"{path}: HTTP {exc.code} {detail}") from exc
         except urllib.error.URLError as exc:
             raise BlueZooError(f"{path}: {exc.reason}") from exc
@@ -150,8 +191,33 @@ def time_column_for(columns: list[dict]) -> str | None:
     return None
 
 
-def scan(probe: BlueZooProbe, count_tables: tuple[str, ...] = COUNT_TABLES) -> dict:
-    """Full read-only scan: entitlements, every table's schema, row counts."""
+def row_width_bytes(columns: list[dict], selected: list[str] | None = None) -> int:
+    """Approximate bytes read per scanned row for `selected` columns.
+
+    BigQuery bills columns actually read, so `select *` on a wide table is the
+    expensive mistake: `sensor_dwell` is 120 columns / ~1 KB per row, which
+    over 5M rows is ~5 GB — several times a tenant's whole monthly allowance
+    in one statement. Call this before writing a query, not after.
+    """
+    wanted = set(selected) if selected is not None else None
+    return sum(
+        TYPE_BYTES.get(c["data_type"], STRING_BYTES)
+        for c in columns
+        if wanted is None or c["column_name"] in wanted
+    )
+
+
+def scan(
+    probe: BlueZooProbe,
+    count_tables: tuple[str, ...] = COUNT_TABLES,
+    window: tuple[date, date] | None = None,
+) -> dict:
+    """Read-only scan: entitlements, every table's schema, row counts.
+
+    `window` defaults to the last DEFAULT_WINDOW_DAYS rather than all history,
+    because the counting queries read the time column of every row they span —
+    cheap on an empty tenant, expensive on a populated one.
+    """
     tables = probe.list_tables()
     schemas: dict[str, list[dict]] = {}
     errors: dict[str, str] = {}
@@ -162,7 +228,8 @@ def scan(probe: BlueZooProbe, count_tables: tuple[str, ...] = COUNT_TABLES) -> d
             errors[table] = str(exc)
 
     counts: dict[str, object] = {}
-    start, end = WIDE_WINDOW
+    start, end = window or (datetime.now(UTC).date() - timedelta(days=DEFAULT_WINDOW_DAYS),
+                            datetime.now(UTC).date() + timedelta(days=1))
     for table in count_tables:
         if table not in schemas:
             continue  # not entitled on this tenant — expected, not an error
@@ -194,6 +261,9 @@ def scan(probe: BlueZooProbe, count_tables: tuple[str, ...] = COUNT_TABLES) -> d
         "schemas": schemas,
         "schema_errors": errors,
         "row_counts": counts,
+        # What a `select *` would read per row. Recorded so the next person
+        # can see which tables are expensive before writing a query.
+        "select_star_bytes_per_row": {t: row_width_bytes(c) for t, c in schemas.items()},
     }
 
 
@@ -251,11 +321,24 @@ def main() -> int:
         default=os.environ.get("BLUEZOO_BASE_URL", DEFAULT_BASE_URL),
         help="Cluster-specific Data Warehouse base URL",
     )
+    parser.add_argument(
+        "--full-history",
+        action="store_true",
+        help=(
+            f"Count over {FULL_HISTORY[0]}..{FULL_HISTORY[1]} instead of the last "
+            f"{DEFAULT_WINDOW_DAYS} days. EXPENSIVE on a populated tenant: the counting "
+            "queries read the time column of every row they span, and the monthly "
+            "bytes-scanned allowance is small. Use only on a tenant known to be empty."
+        ),
+    )
     args = parser.parse_args()
 
     try:
         probe = BlueZooProbe(load_access_key(), args.base_url)
-        result = scan(probe)
+        result = scan(probe, window=FULL_HISTORY if args.full_history else None)
+    except QuotaExceeded as exc:
+        print(f"QUOTA EXHAUSTED: {exc}", file=sys.stderr)
+        return 2
     except BlueZooError as exc:
         print(f"FAILED: {exc}", file=sys.stderr)
         return 1
@@ -272,8 +355,18 @@ def main() -> int:
     empty = [t for t, n in result["row_counts"].items() if n == 0]
     if empty:
         print(
-            f"\nNOTE: {len(empty)} sampled table(s) returned zero rows — schema is "
+            f"\nNOTE: {len(empty)} sampled table(s) returned zero rows in "
+            f"{result['count_window'][0]}..{result['count_window'][1]} — schema is "
             "verifiable, values are not.",
+            file=sys.stderr,
+        )
+    widest = sorted(result["select_star_bytes_per_row"].items(), key=lambda kv: -kv[1])[:1]
+    if widest:
+        table, width = widest[0]
+        print(
+            f"\nCOST NOTE: `select * from {table}` reads ~{width} bytes/row. Against a "
+            "monthly bytes-scanned allowance of roughly a gigabyte, name your columns "
+            "explicitly and keep time windows narrow.",
             file=sys.stderr,
         )
     return 0

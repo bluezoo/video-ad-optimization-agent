@@ -6,7 +6,14 @@ left one item explicitly open: *"no authenticated call was made (no AccessKey);
 … a live `desc_table`/`run_query` round-trip should re-confirm column lists."*
 This document closes that item.
 
-**Account:** org "Walmart Demo", Cluster/Account **Apollo / AP_599**, Super Admin.
+**Accounts:** two, deliberately.
+**AP_599** — org "Walmart Demo", cluster **Apollo**, Super Admin, `hermes.apollo.bluezoo.io`.
+Empty; proves schema and entitlements (Parts 1–4).
+**MO_92** — org "Hotels International", cluster **Morpheus** (staging),
+`hermes.morpheus.bluezoo.io`, its own AccessKey. Real data from real customer
+venues; proves semantics, magnitudes and the cost model (**Part 5**, added
+2026-07-27). Read Part 5 before designing any live query — it contains the
+quota constraint that shapes the whole adapter.
 **Method:** read-only calls via `scripts/bluezoo_probe.py`; full scan artifact in
 `scan/scan.json` + `scan/scan.md` (19 tables, every column, row counts over a
 2020-01-01…2030-12-31 window). Everything about *schemas, entitlements and row
@@ -210,25 +217,264 @@ derived from a finding above rather than from a guess.
 9. **Prefer BlueZoo's own scalars** where they exist (dwell average/median)
    over deriving our own from distributions.
 
+---
+
+# Part 5 — second tenant, with real data (MO_92, 2026-07-27)
+
+Everything above was learned from **AP_599 (Apollo)**, which has zero rows.
+BlueZoo then granted access to **MO_92 (Morpheus), org "Hotels International"** —
+their staging environment, carrying real sensor data from real customer venues.
+Base URL `https://hermes.morpheus.bluezoo.io/v2/dwh`, **its own AccessKey**.
+Artifact: `scan-mo92/`.
+
+This closes almost every value-level question Part 2 #7 had to leave open.
+
+> **A note on customer data.** MO_92 contains a real hotel operator's venue
+> names and traffic. This document quotes two venue names that BlueZoo
+> themselves put in writing when granting access, plus numeric magnitudes, and
+> deliberately does **not** reproduce the full 93-sensor inventory. The
+> committed scan artifacts are schema and row counts only — no venue names, no
+> traffic. Treat MO_92 credentials and any extract as customer-confidential.
+
+## 5.0 The cluster finding, confirmed the hard way
+
+Our Apollo key returned `BAD_TOKEN` against the Morpheus host. **Each cluster
+issues its own AccessKey**, so credentials are cluster-scoped, not user-scoped —
+a stronger version of Part 2 #1. Base URL and key travel together as one
+credential pair, which is now a Phase 13 requirement.
+
+Entitlements on MO_92 are **identical** to AP_599: the same 19 tables, same
+`group_dwell` absence. Two independent tenants agreeing is decent evidence that
+this 19-table shape is a common default rather than bespoke per customer.
+
+## 5.1 THE OPERATIONAL CONSTRAINT: a metered bytes-scanned quota
+
+Not documented anywhere, and the most consequential finding of the whole
+workstream.
+
+```
+HTTP 400  You've reached your monthly fair use limit of 1GB data scanned per
+          sensor. Please contact customer support (support@bluezoo.io) to
+          upgrade your plan or consider optimizing your queries to scan less data.
+```
+
+This answers Q18's "row caps / rate limits" — and the premise was wrong again.
+There is **no row cap**. There is a monthly **bytes-scanned** allowance, billed
+BigQuery-style on columns read × rows scanned.
+
+What we learned by hitting it:
+
+- **It is small.** Roughly **735 MB** of full-history aggregate queries
+  exhausted it. Whatever "per sensor" means in their message, it did *not*
+  behave like 1 GB × 101 sensors.
+- **Exhaustion is total.** Afterwards *every* `run_query` failed, including a
+  single-sensor single-day one. There is no degraded mode.
+- **Metadata and Real-time are exempt.** `list_tables`, `desc_table`,
+  `get_occupancy_count` and `get_visits` all kept working throughout.
+- **There is no way to check remaining allowance.** No endpoint, and responses
+  carry no bytes-scanned metadata. You discover the limit by hitting it.
+
+**Where the 735 MB went** — not row count, but *columns × history*. A single
+`select distinct time_zone, time_offset` over full history cost ~245 MB; the
+probe's own 2020–2030 `count(*)` sweep cost ~147 MB. Meanwhile the entire
+second round — every finding in Part 5 below — cost **under 3 MB**, because it
+used narrow windows and explicit column lists.
+
+**The trap to design against:** `sensor_dwell` is 120 columns, **1,013 bytes
+per row**. A `select *` over its 5.1M rows is **~5.2 GB — several times a
+tenant's whole monthly allowance in one statement.**
+
+Consequences for Phase 11b, which are architectural rather than cosmetic:
+
+1. Never `select *`. Name columns; the query builder should require them.
+2. Narrow time predicates always — which is very likely *why* BlueZoo mandates
+   a time constraint at all (partition pruning).
+3. An end-of-day reconciliation job issuing per-ad-play queries across many
+   sensors is a plausible way to exhaust a customer's monthly allowance. Budget
+   the access pattern before building it; consider one windowed bulk read per
+   day over per-play queries.
+4. `QuotaExceeded` needs distinct handling: unfixable by retry or narrowing,
+   and it disables the whole warehouse path until reset. A live conformer
+   should surface it as a named operational state, not a generic 5xx.
+
+## 5.2 Dwell — Q18 answered, and METRICS.md's deferred rule is now settled
+
+Sampled `sensor_dwell` rows (one venue, 2026-07-26):
+
+| ts | total_visits | weight | avg_dur | median_dur | bin 0-1m | 1-2m | 2-3m | 5-6m |
+|---|---|---|---|---|---|---|---|---|
+| 00:00 | 8.613 | **0.0** | **null** | **null** | 0.0 | 0.0 | 0.0 | 0.0 |
+| 17:15 | 7.623 | 2.2 | 260 | 260 | 8.65 | 12.37 | 10.46 | 14.42 |
+| 22:00 | 40.004 | 3.0 | 402 | 441 | 5.77 | 8.25 | 6.97 | 5.19 |
+| 01:45 | 40.800 | 0.8 | 160 | 142 | 17.30 | 24.75 | 20.92 | 6.22 |
+
+- **Bins are 0–100 percentages, not 0–1 shares.** The 01:45 row's first three
+  bins alone total 62.9. Getting this wrong would have been a 100× error.
+- **`distribution_average_duration` / `_median_duration` are integer SECONDS** —
+  260 s, 402 s, 160 s. That is a **direct 1:1 mapping onto our
+  `dwell_time_seconds` column.** `docs/METRICS.md`'s deferred aggregation rule
+  resolves to *read BlueZoo's scalar; do not weight bins.*
+- **`distribution_weight` is a sample/confidence weight**, and the critical
+  detail: **when it is 0.0, every bin is 0 and both scalars are NULL** — while
+  `total_visits` is still non-zero. A live conformer **must handle null dwell**;
+  it is not an error, it is "no distribution was derivable for this slot."
+- `total_visits` is FLOAT (8.613, 40.800) — extrapolated, never an integer.
+
+## 5.3 `valid` — half the data, and it decides a 4× swing
+
+Across full history on `sensor_visits`:
+
+| `valid` | rows | Σ `incoming_inner_count` | avg | sensors |
+|---|---|---|---|---|
+| `false` | 2,544,033 | 196,962,769 | 77.4 | 93 |
+| `true` | 2,499,495 | 77,845,697 | 31.1 | 29 |
+| `null` | 63,242 | 1,377,292 | 21.8 | 6 |
+
+- **`valid=false` is not rare and not empty.** It is half the rows and **72% of
+  all counts**, with a *higher* average than valid rows. Excluding it is a 4×
+  change to any impressions figure.
+- **`null` is an undocumented third state.**
+- It is **per-sensor, not per-slot**: for one sensor over one day, 96 rows /
+  96 distinct timestamps / **1 distinct `valid` value**. Some sensors do carry
+  more than one value across history (128 sensor-appearances vs 101 sensors),
+  so it looks like a commissioning/calibration status that flips over time.
+- **`(sensor_id, timestamp)` is unique — no versioning, so no double-count
+  risk** from summing across states. That was worth ruling out.
+
+Q18's "should `valid=false` be excluded?" was filed as a small confirmation. It
+is the single most consequential open question we have, and it still needs
+BlueZoo's answer.
+
+## 5.4 Tables are dense: 96 slots per sensor per day, zeros included
+
+One sensor / one day = exactly 96 rows = 96 × 15 minutes, including all-zero
+overnight slots. Confirmed across a whole day at tenant scale: 1,440 rows for
+15 valid sensors = 96 each.
+
+Useful because it means **absence of a row is not absence of traffic** — a gap
+is a sensor outage, not a quiet period. A conformer can treat missing slots as
+a data-quality signal rather than silently zero-filling.
+
+## 5.5 `group_sensor_history` — Q11's answer, with real contents
+
+75 groups, 93 sensors, 1,181 rows, spanning 2021-08-02 → 2025-12-02.
+
+Many rows share a single identical timestamp, so the table is **snapshot- /
+revision-versioned**: each membership change writes a fresh set of rows stamped
+with that revision time (~12.7 revisions per sensor on average). Groups are
+human-named (e.g. `hotel-downtown`) and map to venue-level sensor sets — for a
+hotel, individual rooms such as the bar's dining room and named ballrooms.
+
+**Read it as-of a date** (`max(timestamp) <= D`), never as a static lookup, and
+never assume the newest revision applied to historical traffic.
+
+## 5.6 `group_uv_daily.campaign_id` — the Q6 reversal, now fully resolved
+
+**9,480 of 10,075 rows (94%) carry both `campaign_id` and `campaign_name`**,
+across 13 distinct campaigns. So the column is not vestigial — it is in active
+use, which settles the caveat Part 2 #6 had to leave open.
+
+And we can now see *what it means*. Sample rows (2026-07-26):
+
+| campaign_id | campaign_name | group_id | cuv | target_uv | actual_accuracy |
+|---|---|---|---|---|---|
+| 1301 | Hotel Olympus | 2194 | 82.81 | 2000 | 100.0 |
+| 1303 | Hotel Downtown | 2196 | 959.46 | 2000 | 99.99999997 |
+| 1325 | `Lobbies ` | 2212 | 179.98 | 2000 | 99.99999999 |
+
+`campaign_id` is effectively **1:1 with `group_id`** (campaign 1303 "Hotel
+Downtown" ↔ group 2196 `hotel-downtown`) and carries `target_uv` and
+`actual_accuracy`. It is a **BlueZoo unique-visitor *measurement* campaign over
+a sensor group — not an advertising campaign.**
+
+So: the donor spec was right that the column exists, our docs-based correction
+was wrong to deny it, **and the `ad_campaign_id` rename is more necessary than
+ever** — the name now collides on the UV tables too, with a concept that means
+something entirely different. (Note also the trailing space in `"Lobbies "` —
+campaign names are free text and need trimming.)
+
+`cuv` is FLOAT (82.81, 959.46): extrapolated from sampled MACs, never a count.
+
+## 5.7 Magnitudes, for demo calibration
+
+One real venue (a hotel bar/dining room, America/New_York), 2026-07-26, busiest
+15-minute slots — `incoming_inner` / `incoming_outer`:
+
+| slot (UTC) | inner | outer |
+|---|---|---|
+| 20:45 | 26.80 | 40.19 |
+| 17:45 | 20.42 | 24.88 |
+| 18:15 | 18.50 | 29.99 |
+| 21:30 | 17.23 | 25.52 |
+
+Tenant-wide for that day, valid sensors only: **12,280 inner visits across 15
+sensors** (~800/sensor/day), peak single slot **113.6**.
+
+**Inner is consistently below outer** (~0.67 at this venue), matching the
+inner=engaged / outer=passersby model our impressions definition rests on.
+These are plausible real-world figures for a demo to be calibrated against.
+
+## 5.8 `sensor_visitors_per_minute` is entitled but DORMANT
+
+2.8M rows historically — and **zero rows in all of 2026** (`max(timestamp)`
+returns null for 2026). The feed is switched on as an entitlement but is not
+currently producing data on this tenant.
+
+Directly narrows **Q17**: fallback (b), per-minute occupancy as a sub-15-minute
+proxy, is *entitled* here but has no current data to validate against. And the
+general lesson for the connector: **entitlement ≠ population.** Checking
+`list_tables` is necessary but not sufficient; a capability probe must also
+confirm recent rows exist before relying on a feed.
+
+## 5.9 What Part 2 #7 said we couldn't verify — status now
+
+| Was unverifiable on AP_599 | Status on MO_92 |
+|---|---|
+| Dwell bin scale (0–1 vs 0–100) | **Answered** — percentages (5.2) |
+| `distribution_weight` semantics | **Answered** — sample weight; 0 ⇒ null scalars (5.2) |
+| `valid=false` semantics | **Quantified**, not settled — needs BlueZoo's rule (5.3) |
+| Row caps / rate limits | **Answered** — bytes-scanned quota, not row caps (5.1) |
+| Realistic magnitudes | **Answered** (5.7) |
+| UTC vs sensor-local day cut | **Still open** — see below |
+
+**UTC vs sensor-local remains genuinely open.** `time_zone` is *sparsely
+populated* (mostly null); `time_offset` is better but also has nulls, and
+varies with DST (`-04:00`/`-05:00` for New York). The tenant spans
+America/New_York, America/Los_Angeles and offsets from `-08:00` to `+03:00`, so
+a multi-region deployment cannot assume one timezone — and neither column can
+be relied on to tell you which. This needs BlueZoo's answer, and it is now a
+sharper question than before.
+
 ## Remaining asks for BlueZoo / the client
 
-Reduced from the earlier list — most of Q18 is now answered empirically.
+**Rewritten 2026-07-27 after MO_92.** The old #1 ask — "give us a tenant with
+real data" — is **granted and closed**. Most of the rest resolved empirically.
+What remains is genuinely theirs to answer:
 
-1. **A tenant with real historical data, or a seed of AP_599.** Without rows,
-   every value-level question below stays open, and 11b would ship an adapter
-   that is structurally correct but empirically unproven. *Highest priority.*
-2. Dwell bin values: 0–1 shares or 0–100 percentages? (`distribution_weight`
-   semantics likewise.)
-3. Should `valid=false` rows be excluded when aggregating impressions?
-4. Are daily buckets cut on UTC or sensor-local days — and what is the
-   relationship between the undocumented `time_zone` and documented
-   `time_offset` columns?
-5. `run_query` row caps and rate limits.
-6. Q17 still needs their answer for *other* tenants: is
-   `sensor_visitors_per_minute` generally available, or per-account opt-in? (On
-   AP_599 it is enabled.)
-7. Q2(a) transport decision — REST (now proven working) vs BigQuery
-   dataset-share — and Q1's repo-convergence question, both unchanged.
+1. **Should `valid=false` rows be excluded when aggregating impressions?** The
+   single highest-value open question: it is half the rows and 72% of counts
+   (5.3). We cannot guess this — the answer changes every impressions number by
+   ~4×. Also: what does `valid = null` mean, and what makes a sensor flip?
+2. **The quota.** Is the allowance 1 GB total or 1 GB × sensor count, and how is
+   it charged for a query spanning many sensors? Is there any way to check
+   remaining consumption? Are the tables partitioned/clustered on
+   `timestamp`/`sensor_id`, so we can predict cost? And what allowance would a
+   production end-of-day reconciliation job need? (5.1)
+3. **Day-cut timezone.** UTC or sensor-local? What is the intended relationship
+   between `time_zone` (sparse) and `time_offset` (DST-varying, also nullable),
+   and which should a multi-region consumer trust? (5.9)
+4. **`group_uv_daily.campaign_id`** — confirm it is a UV-measurement campaign
+   over a group, as the data suggests, and that it will never carry an
+   advertiser's campaign. (5.6)
+5. **`sensor_visitors_per_minute`** — dormant on MO_92 since 2025. Is it
+   generally available, opt-in, or being retired? This decides whether Q17's
+   fallback (b) is real. (5.8)
+6. **A docs bug to report back:** every `run_query` requires a time constraint,
+   which is undocumented, and their own published example
+   (`select * from sensor_visitors limit 1`) fails against the live API.
+7. Q2(a) transport decision — REST (now proven working end-to-end against real
+   data) vs BigQuery dataset-share — and Q1's repo-convergence question, both
+   unchanged and both decisions rather than unknowns.
 
 ## Where this landed
 

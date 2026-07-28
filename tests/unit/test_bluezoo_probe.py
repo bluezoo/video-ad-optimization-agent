@@ -7,7 +7,11 @@ per account, and a missing key failing loudly instead of silently.
 """
 
 import importlib.util
+import io
 import json
+import urllib.error
+import urllib.request
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -168,6 +172,75 @@ class TestTenantVariability:
         )
         bluezoo_probe.scan(probe, count_tables=("sensor_visits",))
         assert "where timestamp >=" in probe.queries[0]
+
+
+class TestScanCost:
+    """BlueZoo meters a small monthly bytes-scanned allowance, and exhausting
+    it disables run_query entirely. Cost control is a correctness concern for
+    this script, not a nicety — 735 MB of full-history aggregates spent a real
+    tenant's whole month."""
+
+    def test_default_window_is_recent_not_all_history(self):
+        probe = FakeProbe(
+            tables=["sensor_visits"], schemas={"sensor_visits": _cols("sensor_id", "timestamp")}
+        )
+        result = bluezoo_probe.scan(probe, count_tables=("sensor_visits",))
+        start, end = result["count_window"]
+        assert start > "2024", f"default window reaches back to {start} — too expensive"
+        span = date.fromisoformat(end) - date.fromisoformat(start)
+        assert span <= timedelta(days=bluezoo_probe.DEFAULT_WINDOW_DAYS + 1)
+
+    def test_full_history_is_available_but_only_when_asked_for(self):
+        probe = FakeProbe(
+            tables=["sensor_visits"], schemas={"sensor_visits": _cols("sensor_id", "timestamp")}
+        )
+        result = bluezoo_probe.scan(
+            probe, count_tables=("sensor_visits",), window=bluezoo_probe.FULL_HISTORY
+        )
+        assert result["count_window"] == ["2020-01-01", "2030-12-31"]
+
+    def test_row_width_flags_the_wide_table_trap(self):
+        """sensor_dwell's 106 float bins are why `select *` is dangerous."""
+        wide = _cols("timestamp") + [
+            {"column_name": f"distribution_bin_{i}", "data_type": "FLOAT64"} for i in range(106)
+        ]
+        assert bluezoo_probe.row_width_bytes(wide) == 107 * 8
+        # Naming columns explicitly is the mitigation, and it must be dramatic.
+        assert bluezoo_probe.row_width_bytes(wide, ["timestamp"]) == 8
+
+    def test_strings_are_costed_above_fixed_width_types(self):
+        cols = [{"column_name": "sensor_name", "data_type": "STRING"}]
+        assert bluezoo_probe.row_width_bytes(cols) == bluezoo_probe.STRING_BYTES > 8
+
+    def test_quota_exhaustion_is_its_own_error_type(self, monkeypatch):
+        """A spent allowance is unfixable by retrying or narrowing, so callers
+        need to tell it apart from an ordinary bad request."""
+        probe = BlueZooProbe(access_key="fake-key")
+
+        def raise_quota(*a, **k):
+            raise urllib.error.HTTPError(
+                "u", 400, "Bad Request", {},
+                io.BytesIO(b'{"message":"You\'ve reached your monthly fair use limit of 1GB '
+                           b'data scanned per sensor."}'),
+            )
+
+        monkeypatch.setattr(urllib.request, "urlopen", raise_quota)
+        with pytest.raises(bluezoo_probe.QuotaExceeded, match="allowance exhausted"):
+            probe.query("select 1 from t where timestamp >= '2026-01-01'")
+
+    def test_ordinary_400_is_not_mistaken_for_quota(self, monkeypatch):
+        probe = BlueZooProbe(access_key="fake-key")
+
+        def raise_bad_sql(*a, **k):
+            raise urllib.error.HTTPError(
+                "u", 400, "Bad Request", {},
+                io.BytesIO(b'{"message":"invalidQuery: Unrecognized name: nope at [1:8]"}'),
+            )
+
+        monkeypatch.setattr(urllib.request, "urlopen", raise_bad_sql)
+        with pytest.raises(BlueZooError) as caught:
+            probe.query("select nope from t where timestamp >= '2026-01-01'")
+        assert not isinstance(caught.value, bluezoo_probe.QuotaExceeded)
 
 
 class TestRendering:

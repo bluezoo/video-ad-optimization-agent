@@ -69,8 +69,38 @@ python scripts/bluezoo_probe.py               # markdown digest to stdout
 Read-only by construction: `list_tables`, `desc_table`, and SELECT-only counts,
 with non-SELECT statements refused client-side before transmission.
 
-Findings and the saved scan of the Apollo / AP_599 account:
-`.docs/version2-plan/working-docs/bluezoo-live-verification/`.
+### Cost — read before running any query of your own
+
+**BlueZoo meters a monthly bytes-scanned allowance** (BigQuery style),
+undocumented and small. Roughly **735 MB of full-history aggregate queries
+exhausted a real tenant's month**, after which *every* `run_query` fails —
+including single-sensor, single-day ones — until it resets. There is **no
+endpoint to check remaining consumption**; you find the limit by hitting it.
+`list_tables`, `desc_table` and the Real-time API are exempt.
+
+Practical rules:
+
+- **Never `select *`.** `sensor_dwell` is 120 columns / ~1 KB per row; a full
+  scan is ~5 GB, several times a tenant's whole month in one statement.
+- **Name columns explicitly and keep time windows narrow.** The probe counts
+  over the last 30 days by default for this reason; `--full-history` is an
+  explicit opt-in and is only safe on a tenant known to be empty.
+- The probe prints a `COST NOTE` naming the widest table, records
+  `select_star_bytes_per_row` in `scan.json`, and raises a distinct
+  `QuotaExceeded` (exit code 2) rather than a generic failure.
+
+### Saved scans
+
+- `working-docs/bluezoo-live-verification/scan/` — **AP_599** (Apollo, org
+  "Walmart Demo"): empty tenant; proves schema and entitlements.
+- `working-docs/bluezoo-live-verification/scan-mo92/` — **MO_92** (Morpheus
+  *staging*, org "Hotels International"): 5.1M rows of **real customer venue
+  data**. Its AccessKey and any extract are customer-confidential; the
+  committed artifacts are schema and row counts only.
+
+Each cluster issues its **own** AccessKey — an Apollo key returns `BAD_TOKEN`
+against the Morpheus host. Findings for both:
+`.docs/version2-plan/working-docs/bluezoo-live-verification/findings.md`.
 
 ## Run locally
 

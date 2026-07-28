@@ -221,3 +221,98 @@ Not actioned: the reviewer flagged a missing `STATUS.md` row, but the row exists
 on `version_2` (`192dd40`) — STATUS.md is single-writer in the main checkout, so
 the worktree's copy is simply behind. 11b's note there does need refreshing;
 done in the main checkout, not on this branch.
+
+## 2026-07-27 — checkpoint 7: second tenant WITH REAL DATA (MO_92)
+
+Scope extension, owner-approved mid-PR. BlueZoo granted access to a second
+account after we raised the zero-data ask: org "Hotels International",
+cluster/account **Morpheus / MO_92**, their **staging** environment at
+`https://hermes.morpheus.bluezoo.io/v2/dwh`. 5.1M rows in `sensor_visits`, 101
+sensors, 2021-03 → current. Owner directive: fold it into this PR, keep the
+docs current.
+
+**Cluster-scoping confirmed the hard way:** the Apollo AccessKey returns
+`BAD_TOKEN` on Morpheus; each cluster issues its own key. Credentials are
+cluster-scoped, not user-scoped — stronger than what Part 2 #1 claimed.
+Entitlements are *identical* across the two tenants (same 19 tables, same
+`group_dwell` absence), which strengthens the tenant-genericity rules.
+
+### DISCOVERY (the big one): a metered bytes-scanned quota, and I exhausted it
+
+Round 1 ran full-history aggregates across all 101 sensors — the habit formed
+on AP_599, where scans were free because the tenant was empty. On a populated
+tenant that cost an estimated **735 MB** and hit:
+
+> `You've reached your monthly fair use limit of 1GB data scanned per sensor.`
+
+Afterwards *every* `run_query` failed, including a single-sensor single-day
+one. Metadata and the Real-time API stayed up. There is no endpoint to check
+remaining allowance and no bytes-scanned metadata in responses.
+
+Reported to the owner immediately; BlueZoo reset it. **This is the most
+consequential finding of the workstream** — it is an architectural constraint
+on Phase 11b's access pattern, not a footnote. Amended into `11-*.md` (build
+rules), `13-*.md` (new Tier B operational state + runbook), Q18,
+`SETUP_INSTRUCTIONS.md`, and the probe itself.
+
+### Owner challenge, and a course correction worth recording
+
+Owner asked, in substance: *why are we fetching data at all — isn't the goal to
+understand the schema, and isn't schema free?* Largely right, and the answer
+sharpened the plan:
+
+- Schema **is** free (`desc_table`) and we already had it; the workstream's
+  original goal was met before any `run_query`.
+- A narrow band of questions genuinely needs *values*, not schema — bin scale,
+  `valid` semantics, whether `campaign_id` is populated. Schema gives the field,
+  not its meaning, and these change computed numbers rather than field names.
+- **The real error was running a census where a specimen would do.** Every one
+  of those questions was answerable from a few hundred rows.
+
+Owner approved a bounded plan: four small samples, ~1 MB expected. Executed
+cheapest-risk-first with a 0.08 MB canary query after each risky one. **Round 2
+cost under 3 MB and answered more than round 1's 735 MB did.**
+
+### What round 2 established (full detail in `findings.md` Part 5)
+
+- **Dwell: bins are 0–100 percentages**, not 0–1 shares (a 100× error avoided);
+  `distribution_average_duration`/`_median_duration` are **integer seconds**, a
+  1:1 map onto `dwell_time_seconds`; **when `distribution_weight = 0.0` both
+  scalars are NULL** while `total_visits` is non-zero, so null dwell is
+  legitimate and must be carried, not coerced to 0. `docs/METRICS.md`'s
+  long-deferred aggregation rule is now settled.
+- **`valid` is half the data and 72% of all counts**, with a *higher* average
+  than valid rows, plus an undocumented `null` third state. Per-sensor, not
+  per-slot, and it flips over a sensor's lifetime. `(sensor_id, timestamp)` is
+  unique so there is no double-count risk. Excluding it swings impressions ~4× —
+  now the highest-value question for BlueZoo, and explicitly *not* something to
+  default silently.
+- **Tables are dense**: exactly 96 slots/sensor/day including zeros, so a
+  missing row is a sensor outage rather than a quiet period.
+- **`group_sensor_history`** (Q11): 75 groups / 93 sensors / 1,181 rows,
+  snapshot-versioned — read as-of a date, never static.
+- **`group_uv_daily.campaign_id`** (Q6): populated in 94% of rows, ~1:1 with
+  `group_id`, with `target_uv`/`actual_accuracy` — a BlueZoo *UV-measurement*
+  campaign, not an advertising one. Settles the caveat the Q6 reversal left
+  open and makes `ad_campaign_id` unambiguous.
+- **`sensor_visitors_per_minute` is entitled but DORMANT** — 2.8M historical
+  rows, zero in all of 2026. Weakens Q17 fallback (b), and yields a connector
+  rule: **entitlement ≠ population.**
+- **Magnitudes** captured for demo calibration.
+
+### Decisions recorded
+
+1. **Customer-data restraint.** MO_92 holds a real hotel operator's venues and
+   traffic. `findings.md` quotes two venue names BlueZoo themselves disclosed in
+   writing plus numeric magnitudes, and deliberately does **not** reproduce the
+   93-sensor inventory. Committed artifacts (`scan-mo92/`) are schema and row
+   counts only — verified to contain no venue names, no traffic, no key.
+2. **Probe hardened so this cannot recur**: default count window is the last 30
+   days (`--full-history` is opt-in and documented as unsafe on a populated
+   tenant); `QuotaExceeded` is its own exception with exit code 2;
+   `row_width_bytes()` exposes the `select *` trap; the scan records
+   `select_star_bytes_per_row`; a `COST NOTE` names the widest table. Tests
+   20 → 26.
+3. The old top-priority client ask ("give us real data") is **granted and
+   closed**; `findings.md`'s asks section was rewritten around what actually
+   remains.
