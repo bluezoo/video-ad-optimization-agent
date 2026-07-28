@@ -44,3 +44,6 @@ Test 5: timestamp is UTC — diurnal troughs displaced by exactly each sensor's 
 
 ## 2026-07-27 — Task 10 (amendments) complete
 Provenance amendments landed: 99-open-questions.md Q18 (valid + day-cut bullets resolved empirically, one confirmation each remains); 11-live-bluezoo-adapter.md (build rules: Rule R as logged default, 1.6× go-forward correction, UTC verdict, outage ≠ valid, groups ≠ filter); docs/METRICS.md valid row (Unresolved → recommended rule R pending confirmation).
+
+## 2026-07-27 — Task 11 (outreach drafts) complete
+outreach-drafts.md: Draft A to BlueZoo (6 items — Rule R confirm-or-correct with evidence summary, day-cut + zone-column authority, quota accounting/persistence/estimability, campaign_id confirm, per-minute feed status, docs bug) + Draft B to retailer (PoS system + product↔SKU join, Q3/Q4). Redaction check: no identifiers, no keys, no venue names in drafts.
