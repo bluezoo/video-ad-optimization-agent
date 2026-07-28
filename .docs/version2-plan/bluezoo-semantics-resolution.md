@@ -2,7 +2,24 @@
 
 **Type:** non-numbered workstream (precedent: `replan-data-track`, `bluezoo-live-verification`). Not a phase in `00-overview.md`'s numbered sequence, but it **runs before Phase 11b** — see Dependencies.
 
-**Status:** not started. Registered 2026-07-27.
+**Status:** **DONE — superseded by its own results.** Merged 2026-07-27 as `b0d739e` (PR #17).
+
+> **Read `working-docs/bluezoo-semantics-resolution/findings.md` instead of this doc.** What follows is
+> the *brief* — what we believed going in and what we set out to test. Two of its framing claims were
+> disproved by the work itself and are left here only as the record of why the tests were designed as
+> they were:
+>
+> - **"~4× swing" (below) is wrong for practical purposes.** That figure is a full-history artifact
+>   inflated by a sensor fleet retired in late 2022. On the current fleet the rule keeps **62% of
+>   counts — a ~1.6× swing.**
+> - **"`time_zone` is sparsely populated" is wrong.** It is *recently introduced*: fully populated in
+>   current data, null through 2024. `time_offset` is the historical column.
+>
+> Outcomes: `valid` is a **one-way commissioning-acceptance flag** (pulse-health ~0.99 valid vs ~0.00
+> invalid, zero interleaving, no flip-back); `null` predates the column; **Rule R — count only
+> `valid IS TRUE`, exclusion logged**; and **`timestamp` is UTC**, proven by diurnal troughs displaced
+> by exactly each sensor's own offset. Test 3's hypothesis failed honestly: BlueZoo's own groups do
+> **not** exclude invalid sensors. All five tests plus Test 0 produced results, for ~125 MB scanned.
 
 ## Goal
 
