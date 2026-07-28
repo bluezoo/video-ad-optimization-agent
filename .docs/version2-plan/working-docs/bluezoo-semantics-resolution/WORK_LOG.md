@@ -23,3 +23,6 @@ Owner: "approve" — 12-task plan (plan.md), INCLUDING the execution-mode except
 
 ## 2026-07-27 — Task 1 complete (mirrors .superpowers/sdd/progress.md)
 Probe extension: load_env_var (BLUEZOO_BASE_URL now read from app/.env, env wins) + guarded --sql runner. commits 365cf79..def074f, 31/31 probe tests, make test-unit 350 pass, lint clean, review approved (spec ✅, zero findings).
+
+## 2026-07-27 — Task 2 (preflight) + Task 3 (Test 0) complete
+Preflight: creds present, list_tables = 19 (sensor_pulses entitled, group_dwell absent — matches scan). Test 0: sensor_pulses POPULATED — 101,136 rows/30d, 34 sensors, cadence exactly 96/sensor/day (15-min grid) → Test 2 viable, equi-join on (sensor_id,timestamp). Caveat: pulses cover 34 currently-reporting sensors vs 101 historical. ~2 MB scanned.

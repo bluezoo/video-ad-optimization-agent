@@ -30,7 +30,23 @@ server-side), with named columns and a stated byte budget — never `select *`.
 
 ## Test 0 — is `sensor_pulses` populated, and at what cadence?
 
-_(pending)_
+**POPULATED — Test 2 is viable.** 30-day window (2026-06-27 → 2026-07-28):
+**101,136 rows, 34 distinct sensors**, first/last timestamps on exact
+15-minute boundaries (`…T23:45:00`).
+
+**Cadence: exactly 96 rows per sensor per day** (top-10 sensors all at 96 on
+2026-07-26) — the same dense 15-minute grid as `sensor_visits` (findings 5.4),
+zeros-included. **Test 2 therefore equi-joins on `(sensor_id, timestamp)`**;
+no bucketing needed.
+
+One coverage caveat for Test 2's interpretation: only **34 sensors** report
+pulses in the current window, versus 101 sensors across `sensor_visits`
+history — the health join covers the currently-reporting subset, not every
+sensor that ever existed. (34 ≈ the currently-active fleet; consistent with
+96×34×31 ≈ 101k rows.)
+
+Cost: ~1.6 MB (count over `timestamp`+`sensor_id`) + ~0.5 MB (one-day cadence
+group-by). Evidence: `/tmp/bluezoo-semantics/test0-*.json` (uncommitted).
 
 ## Test 1 — the shape of the `valid` flip, and what `null` is
 
