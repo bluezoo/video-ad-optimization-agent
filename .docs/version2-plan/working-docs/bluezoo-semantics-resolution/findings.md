@@ -182,8 +182,9 @@ the sensor's offset ourselves.
 Getting there took a fallback chain worth recording:
 
 - **Current window:** only America/New_York carries traffic (32 sensors); the
-  2 America/Los_Angeles sensors are health-0.0 invalid units with zero visits
-  → no cross-zone comparison possible on current data.
+  2 America/Los_Angeles sensors (ids 800/859 — both in Test 2's invalid,
+  health-0.0 set; distinct from the May-2024 west sensor 865 below) have zero
+  visits → no cross-zone comparison possible on current data.
 - **May 2024** turned out to be the right window: `-04:00` (36 sensors, 5.3 M
   visits) and `-07:00` (3 sensors, 406 K) both busy.
 - Diurnal curves (hourly means over 4 weeks, busiest sensor per offset,
@@ -258,8 +259,10 @@ semantics; intent needs one confirmation.
 **The confirmation question for BlueZoo** (verbatim into the outreach
 draft): *"We observe that `valid` flips one-way false→true after a median
 ~21-day period during which the sensor's `pulse_count`/`expected_pulse_count`
-ratio is near zero, and that valid sensors hold ~0.99 pulse health at flip
-time; that `valid` does not flip back when a commissioned sensor later
+ratio is near zero, and that currently-valid sensors hold ~0.99 pulse health
+while never-accepted ones sit near 0.00 (current-fleet cross-section — one
+not-yet-accepted sensor reporting at 0.99 looks like a pre-acceptance
+snapshot); that `valid` does not flip back when a commissioned sensor later
 degrades; that `NULL` simply predates the column (2021-10-14); and that your
 own sensor groups contain invalid sensors. We read `valid` as 'sensor
 accepted into service' and therefore plan to count impressions only from

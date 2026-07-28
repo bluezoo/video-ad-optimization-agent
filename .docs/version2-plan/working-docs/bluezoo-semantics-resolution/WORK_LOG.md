@@ -50,3 +50,6 @@ outreach-drafts.md: Draft A to BlueZoo (6 items — Rule R confirm-or-correct wi
 
 ## 2026-07-27 — checkpoint 5: verification
 make test green (unit 350 + e2e 25, 0 fail), make lint clean. Credential/PII sweep over full branch diff: no key-shaped tokens, no customer names (name columns never selected; numeric ids only, per bluezoo-live-verification precedent), morpheus/hermes hits are doc-context only. Demo scenario SKIPPED BY DESIGN: zero agent-visible change — no tools, prompts, routing, instructions or artifacts touched; branch is scripts/bluezoo_probe.py extension + docs/research records only (same justification as bluezoo-live-verification). No DEMO_GUIDE.md journeys invalidated.
+
+## 2026-07-27 — final whole-branch review: READY TO MERGE (3 minors, fixed)
+Reviewer (fable): zero Critical/Important. Credential/PII verdict CLEAN (independent sweep); consistency verdict CONSISTENT (rule + numbers identical across findings/Q18/11b/METRICS/Draft A; 62% arithmetic independently verified). Minors fixed inline: (1) "~0.99 at flip" softened to current-fleet cross-section phrasing in all 4 places incl. Draft A; (2) Test 5 LA-sensor ids (800/859) disambiguated from May-2024 west sensor 865; (3) METRICS.md row provenance style accepted as-is (table cell, precedent-matching).

@@ -23,9 +23,10 @@ From the data we observe that:
 
 - `valid` flips one-way `false` → `true` per sensor (never back and forth),
   typically after a ~3-week initial period;
-- during that initial `false` period a sensor's `pulse_count /
-  expected_pulse_count` ratio is near zero, while sensors flip to `true` at
-  ~0.99 — so the flip looks like an acceptance/commissioning event;
+- currently-valid sensors hold a `pulse_count / expected_pulse_count` ratio
+  of ~0.99 while never-accepted ones sit near zero (and the one not-yet-
+  accepted sensor we see reporting at 0.99 looks like a pre-acceptance
+  snapshot) — so the flip looks like an acceptance/commissioning event;
 - a commissioned sensor that later degrades keeps `valid = true` (we found
   several currently at zero pulse health that remain valid);
 - `NULL` values simply predate the column's introduction (2021-10-14); and
