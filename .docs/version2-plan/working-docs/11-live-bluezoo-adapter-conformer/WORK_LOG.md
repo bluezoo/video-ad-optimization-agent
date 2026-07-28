@@ -51,3 +51,12 @@ Real MO_92 payload fixture (192 rows, seven named columns, sensors 77+80 chosen 
 
 ## 2026-07-28 — Task 7 complete (mirrors .superpowers/sdd/progress.md)
 Live-tier MO_92 test (sensors 77/80, yesterday-UTC window, valid-only + include-all superset): 2/2 PASS against real MO_92 (~25 KB scanned). Fast-tier non-collection independently re-verified by reviewer. commit 4b539a4, review clean. Minor noted for Task 8: SETUP_INSTRUCTIONS live-tier section doesn't yet mention the BlueZoo test — Task 8 adds it.
+
+## 2026-07-28 — Task 8 complete (mirrors .superpowers/sdd/progress.md)
+SETUP_INSTRUCTIONS connected-mode section: env table, {base_url, access_key} pair rule, concrete gcloud secrets/deploy block (owner condition), ops notes, watchlist line (sensors 77/80). commit 4c41710, review clean — reviewer independently re-verified every claim against code. Minor items for final review triage: watchlist addendum formatting (paragraph vs bullet); pre-existing probe-section wording "BLUEZOO_BASE_URL optional, defaults to Apollo" reads oddly next to the new no-default rule (predates this task).
+
+## 2026-07-28 — Task 9 complete (mirrors .superpowers/sdd/progress.md)
+connected-bluezoo scenario doc (3 scenes, map 101:77,102:80,103:89 from evidence) + DEMO_GUIDE Workstream 11b journeys. commits 0f534f2 + c4fbc50 + 246644f, review approved after two fixes. DISCOVERY-adjacent plan correction: the plan's "prune nothing" claim was wrong — Journeys 11a.2 and 11a.3 asserted the pre-11b connected RuntimeError and were both updated to the real BlueZooConfigError fail-closed behavior (CLAUDE.md's prune-invalidated-journeys rule governs). Reviewer independently verified error/log fragments against code, sensor provenance, make dev env shape, and the F3→F6 substitution.
+
+## 2026-07-28 — checkpoint: Task 10 verification starting
+STATUS → verify in progress (main checkout). Dispatch 1: F2+F3 fashion regression (demo mode). Dispatch 2: connected-bluezoo scenes 1-3. Sequential, port 8501.
