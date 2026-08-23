@@ -38,6 +38,18 @@ The first draft of this phase (and the overview's "What changed" item 4) claimed
 > surface. Steps 1 (polling consolidation, with tests) and 3 (prototype) are
 > done in workstream 14.
 
+> **Amended (workstream 14c, 2026-08-23):** this NO-GO is narrower than it
+> reads — it covers `previous_interaction_id`-based chained revision against
+> `text_to_video`/`image_to_video` tasks specifically. A separate, simpler
+> capability was not tested here and turns out to work: a **single-shot
+> `edit`-task call** against an already-generated video (no
+> `previous_interaction_id` involved) succeeded live on Vertex AI, verified
+> by frame-level before/after comparison. **"Revision via lineage": still
+> NO-GO. "Single-shot visual edit": now GO, narrowly.** See
+> `.docs/version2-plan/14c-omni-video-editing.md` for the new workstream
+> built on this narrower finding, and its own explicit rejection of dubbing/
+> translation via the same mechanism (confirmed broken, out of scope there).
+
 ## Steps
 
 1. **Consolidate Veo's three duplicated polling loops on their own, as a standalone cleanup, independent of Omni Flash.** Replace the blocking `time.sleep()` with `asyncio.sleep()` in one shared helper for Veo's `client.operations.get()` polling, used by all three current call sites. Do this regardless of whether Omni Flash is ever adopted — it's a real, low-risk bug fix (blocking sleep inside `async def`) on its own merits.
