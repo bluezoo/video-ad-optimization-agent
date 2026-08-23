@@ -70,3 +70,24 @@ def test_review_agent_tools_unchanged_when_omni_edit_disabled(monkeypatch):
         monkeypatch.delenv("ENABLE_OMNI_EDIT", raising=False)
         importlib.reload(config)
         importlib.reload(agent)
+
+
+def test_review_agent_tools_include_omni_edit_when_enabled(monkeypatch):
+    """ws14c: with ENABLE_OMNI_EDIT=true, edit_video_with_omni must be
+    registered on review_agent AND the instruction text must reference it --
+    the two are separate conditionals in app/agent.py and must not drift."""
+    monkeypatch.setenv("ENABLE_OMNI_EDIT", "true")
+    import importlib
+
+    from app import agent, config
+    importlib.reload(config)
+    importlib.reload(agent)
+    try:
+        tool_names = {t.__name__ for t in agent.review_agent.tools}
+        assert "edit_video_with_omni" in tool_names
+        assert "Omni Flash" in agent.REVIEW_AGENT_INSTRUCTION
+    finally:
+        # Restore module state for subsequent tests in the same process.
+        monkeypatch.delenv("ENABLE_OMNI_EDIT", raising=False)
+        importlib.reload(config)
+        importlib.reload(agent)

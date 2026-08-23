@@ -9,19 +9,6 @@ import pytest
 from app.tools import video_edit_tools
 
 
-def _fake_video_row(video_id=1):
-    return {
-        "id": video_id,
-        "campaign_id": 1,
-        "product_id": 1,
-        "video_filename": "some-video.mp4",
-        "duration_seconds": 8,
-        "aspect_ratio": "9:16",
-        "scene_prompt": "a scene",
-        "status": "generated",
-    }
-
-
 def _completed_interaction(video_b64):
     """A minimal stand-in for a completed google.genai Interaction object."""
     content = MagicMock()
@@ -115,6 +102,55 @@ class TestEditVideoWithOmni:
 
         assert result["success"] is False
         assert result["error_type"] == "unsupported_edit"
+
+    @pytest.mark.asyncio
+    async def test_missing_source_file_returns_storage_error_dict(self, test_db):
+        """A DB row whose asset isn't on disk must return an error dict, not
+        raise storage.read_video()'s FileNotFoundError to the agent."""
+        from app.database.db import get_db_cursor
+
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO campaign_videos (campaign_id, product_id, video_filename, status, duration_seconds, aspect_ratio) "
+                "VALUES (1, 1, 'missing-on-disk.mp4', 'generated', 8, '9:16')"
+            )
+            source_id = cursor.lastrowid
+
+        with patch(
+            "app.tools.video_edit_tools.storage.read_video",
+            side_effect=FileNotFoundError("missing-on-disk.mp4"),
+        ):
+            result = await video_edit_tools.edit_video_with_omni(source_id, "change the color")
+
+        assert result["success"] is False
+        assert result["error_type"] == "storage_error"
+
+    @pytest.mark.asyncio
+    async def test_cancelled_status_returns_api_error_not_unsupported(self, test_db):
+        """cancelled/budget_exceeded are not content-support problems --
+        they must not be reported to the agent as 'unsupported edit'."""
+        from app.database.db import get_db_cursor
+
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO campaign_videos (campaign_id, product_id, video_filename, status, duration_seconds, aspect_ratio) "
+                "VALUES (1, 1, 'source2b.mp4', 'generated', 8, '9:16')"
+            )
+            source_id = cursor.lastrowid
+
+        interaction = MagicMock()
+        interaction.status = "cancelled"
+
+        with patch("app.tools.video_edit_tools.storage.read_video", return_value=b"x"), \
+             patch("app.tools.video_edit_tools._build_client") as mock_build_client:
+            mock_client = MagicMock()
+            mock_client.interactions.create.return_value = interaction
+            mock_build_client.return_value = mock_client
+
+            result = await video_edit_tools.edit_video_with_omni(source_id, "change the color")
+
+        assert result["success"] is False
+        assert result["error_type"] == "api_error"
 
     @pytest.mark.asyncio
     async def test_timeout_returns_timeout_error_type(self, test_db):

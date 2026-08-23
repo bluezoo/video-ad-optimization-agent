@@ -17,6 +17,7 @@ sharing a polling helper between them (14b's own finding).
 
 import asyncio
 import base64
+import binascii
 import logging
 import tempfile
 import time
@@ -61,22 +62,25 @@ def _build_client() -> genai.Client:
 
 def _extract_video_bytes(interaction) -> bytes:
     """Pull the model_output step's video content and base64-decode it."""
-    for step in getattr(interaction, "steps", None) or []:
-        if getattr(step, "type", None) != "model_output":
-            continue
-        for content in getattr(step, "content", None) or []:
-            if getattr(content, "type", None) == "video":
-                data_b64 = getattr(content, "data", None)
-                if data_b64:
-                    return base64.b64decode(data_b64)
-                uri = getattr(content, "uri", None)
-                if uri:
-                    raise OmniEditError(f"Video delivered as uri, not inline: {uri}")
-    output_video = getattr(interaction, "output_video", None)
-    if output_video:
-        data_b64 = getattr(output_video, "data", None)
-        if data_b64:
-            return base64.b64decode(data_b64)
+    try:
+        for step in getattr(interaction, "steps", None) or []:
+            if getattr(step, "type", None) != "model_output":
+                continue
+            for content in getattr(step, "content", None) or []:
+                if getattr(content, "type", None) == "video":
+                    data_b64 = getattr(content, "data", None)
+                    if data_b64:
+                        return base64.b64decode(data_b64, validate=True)
+                    uri = getattr(content, "uri", None)
+                    if uri:
+                        raise OmniEditError(f"Video delivered as uri, not inline: {uri}")
+        output_video = getattr(interaction, "output_video", None)
+        if output_video:
+            data_b64 = getattr(output_video, "data", None)
+            if data_b64:
+                return base64.b64decode(data_b64, validate=True)
+    except binascii.Error as e:
+        raise OmniEditError(f"Omni Flash returned undecodable video data: {e}") from e
     raise OmniEditError("Omni Flash response completed but contained no video content")
 
 
@@ -122,12 +126,16 @@ async def edit_video_with_omni(
             "source_video_id": video_id, "video_filename": ...,
             "backend": "omni_flash", "interaction_id": ..., "duration_seconds": ...}
         On failure: {"success": False, "error": <message>,
-            "error_type": "not_found" | "unsupported_edit" | "timeout" | "api_error"}
+            "error_type": "not_found" | "storage_error" | "unsupported_edit"
+                | "timeout" | "api_error"}
     """
     try:
         video_bytes, row = _load_video_bytes_for_edit(video_id)
     except OmniEditError as e:
         return {"success": False, "error": str(e), "error_type": "not_found"}
+    except Exception as e:
+        logger.exception("Failed to load source video bytes for video_id=%s", video_id)
+        return {"success": False, "error": str(e), "error_type": "storage_error"}
 
     with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
         tmp.write(video_bytes)
@@ -159,11 +167,17 @@ async def edit_video_with_omni(
             logger.exception("Omni Flash edit call failed for video_id=%s", video_id)
             return {"success": False, "error": str(e), "error_type": "api_error"}
 
-        if interaction.status != "completed":
+        if interaction.status not in ("completed",):
+            if interaction.status in ("failed", "incomplete"):
+                error_type = "unsupported_edit"
+            else:
+                # cancelled, budget_exceeded: not a content/support problem --
+                # don't mislead the agent into telling the user "unsupported."
+                error_type = "api_error"
             return {
                 "success": False,
                 "error": f"Omni Flash interaction ended with status={interaction.status}",
-                "error_type": "unsupported_edit",
+                "error_type": error_type,
             }
 
         try:
@@ -173,30 +187,35 @@ async def edit_video_with_omni(
     finally:
         tmp_path.unlink(missing_ok=True)
 
-    new_filename = f"omni-edit-{int(time.time() * 1000)}.mp4"
-    storage.save_video(new_filename, edited_bytes)
+    try:
+        new_filename = f"omni-edit-{int(time.time() * 1000)}.mp4"
+        local_path = storage.save_video(new_filename, edited_bytes)
 
-    with get_db_cursor() as cursor:
-        cursor.execute(
-            """
-            INSERT INTO campaign_videos
-                (campaign_id, product_id, video_filename, status,
-                 duration_seconds, aspect_ratio, source_video_id,
-                 scene_prompt, video_prompt, pipeline_type)
-            VALUES (?, ?, ?, 'generated', ?, ?, ?, ?, ?, 'omni-edit')
-            """,
-            (
-                row["campaign_id"],
-                row["product_id"],
-                new_filename,
-                row["duration_seconds"],
-                row["aspect_ratio"],
-                video_id,
-                row.get("scene_prompt"),
-                edit_instruction,
-            ),
-        )
-        new_video_id = cursor.lastrowid
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO campaign_videos
+                    (campaign_id, product_id, video_filename, local_path, status,
+                     duration_seconds, aspect_ratio, source_video_id,
+                     scene_prompt, video_prompt, pipeline_type)
+                VALUES (?, ?, ?, ?, 'generated', ?, ?, ?, ?, ?, 'omni-edit')
+                """,
+                (
+                    row["campaign_id"],
+                    row["product_id"],
+                    new_filename,
+                    local_path,
+                    row["duration_seconds"],
+                    row["aspect_ratio"],
+                    video_id,
+                    row.get("scene_prompt"),
+                    edit_instruction,
+                ),
+            )
+            new_video_id = cursor.lastrowid
+    except Exception as e:
+        logger.exception("Failed to persist Omni-edited video for source_video_id=%s", video_id)
+        return {"success": False, "error": str(e), "error_type": "storage_error"}
 
     logger.info(
         "omni edit: source_video_id=%s new_video_id=%s interaction_id=%s",

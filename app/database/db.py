@@ -343,7 +343,7 @@ def run_migrations() -> None:
         print("[DB Migration] Adding source_video_id column to campaign_videos...")
         cursor.execute(
             "ALTER TABLE campaign_videos ADD COLUMN source_video_id INTEGER "
-            "REFERENCES campaign_videos(id)"
+            "REFERENCES campaign_videos(id) ON DELETE SET NULL"
         )
         conn.commit()
         print("[DB Migration] source_video_id column added successfully.")

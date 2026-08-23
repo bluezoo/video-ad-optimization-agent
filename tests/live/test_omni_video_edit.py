@@ -39,20 +39,25 @@ id 1, campaign_id 1 -- verified present in this worktree's seeded DB and its
 
 import pytest
 
+from app import storage
 from app.database.db import get_db_cursor
 from app.tools.video_edit_tools import edit_video_with_omni
 
 pytestmark = pytest.mark.live
+
+_SEED_FILENAME = "blue-floral-maxi-dress-122025-asian-beach-romantic.mp4"
 
 
 @pytest.fixture
 def seeded_video_id():
     """Resolve the id of a real, on-disk seeded video from the isolated live DB.
 
-    Picks the first campaign_videos row for an active campaign whose
-    video_filename actually exists in ``REAL_VIDEOS`` territory (fashion demo
-    assets) -- see module docstring for why this is the least-friction real
-    fixture rather than a freshly generated one.
+    Picks the campaign_videos row for an active campaign whose video_filename
+    actually exists in ``REAL_VIDEOS`` territory (fashion demo assets) -- see
+    module docstring for why this is the least-friction real fixture rather
+    than a freshly generated one. Skips (rather than fails) when this
+    worktree has no generated demo assets yet -- see SETUP_INSTRUCTIONS.md's
+    workstream 14c flakiness-watchlist addendum.
     """
     with get_db_cursor() as cursor:
         cursor.execute(
@@ -60,18 +65,24 @@ def seeded_video_id():
             SELECT cv.id FROM campaign_videos cv
             JOIN campaigns c ON cv.campaign_id = c.id
             WHERE c.status = 'active'
-              AND cv.video_filename = 'blue-floral-maxi-dress-122025-asian-beach-romantic.mp4'
+              AND cv.video_filename = ?
             LIMIT 1
-            """
+            """,
+            (_SEED_FILENAME,),
         )
         row = cursor.fetchone()
-    assert row is not None, (
-        "expected seeded video "
-        "'blue-floral-maxi-dress-122025-asian-beach-romantic.mp4' "
-        "(campaign_videos row) in the isolated live DB -- check "
-        "app/database/mock_data.py's REAL_VIDEOS and that the matching "
-        "asset exists in this worktree's generated/ directory"
-    )
+    if row is None:
+        pytest.skip(
+            f"no seeded '{_SEED_FILENAME}' campaign_videos row in the isolated "
+            "live DB -- run `make dev` once to repopulate demo data"
+        )
+    try:
+        storage.read_video(_SEED_FILENAME)
+    except Exception:
+        pytest.skip(
+            f"seeded DB row exists but '{_SEED_FILENAME}' is not on disk under "
+            "generated/ -- see SETUP_INSTRUCTIONS.md's workstream 14c flakiness watchlist"
+        )
     return row["id"]
 
 
