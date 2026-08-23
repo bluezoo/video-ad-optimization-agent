@@ -44,7 +44,7 @@ from google.adk.agents import LlmAgent
 # NOTE: BuiltInCodeExecutor cannot be used with function calling tools
 # It's mutually exclusive - you get either tools OR code execution, not both
 # For chart generation, consider a separate visualization agent without tools
-from .config import APP_DESCRIPTION, APP_NAME, DB_PATH, MODEL
+from .config import APP_DESCRIPTION, APP_NAME, DB_PATH, ENABLE_OMNI_EDIT, MODEL
 from .database.db import init_database
 from .database.mock_data import seed_demo_data
 
@@ -97,6 +97,7 @@ from .tools.review_tools import (
     list_pending_videos,
     pause_video,
 )
+from .tools.video_edit_tools import edit_video_with_omni
 from .tools.video_tools import (
     analyze_video,
     apply_winning_formula,
@@ -518,25 +519,51 @@ When a video is activated, the system generates 30 days of realistic mock metric
 - For detailed video info, use get_video_details(video_id)
 """
 
+_OMNI_EDIT_INSTRUCTION_SECTION = """
+
+## Experimental: Visual Video Editing (Omni Flash)
+
+**edit_video_with_omni(video_id, edit_instruction)** - Request a targeted
+visual edit to an existing generated video (e.g. "change the shirt color to
+red", "remove the coffee cup from the counter"). This is an EXPERIMENTAL,
+opt-in capability backed by Gemini Omni Flash, separate from the standard
+Veo generation pipeline:
+- Only single-attribute visual edits are verified to work well; avoid
+  combining multiple unrelated changes in one instruction.
+- Do NOT use this for audio, dialogue, music, or language changes -- Omni
+  Flash does not support voice/audio editing. If asked for something like
+  that, explain plainly that it isn't supported rather than attempting the
+  tool.
+- The edit produces a NEW video (a new video_id) and leaves the original
+  untouched; mention both ids in your response so the user can compare.
+"""
+
+if ENABLE_OMNI_EDIT:
+    REVIEW_AGENT_INSTRUCTION = REVIEW_AGENT_INSTRUCTION + _OMNI_EDIT_INSTRUCTION_SECTION
+
+_review_agent_tools = [
+    # New review table tools (PRIMARY)
+    get_video_review_table,
+    get_video_details,
+    # Legacy and activation tools
+    list_pending_videos,
+    activate_video,
+    activate_batch,
+    pause_video,
+    archive_video,
+    get_video_status,
+    get_activation_summary,
+    generate_additional_metrics,
+]
+if ENABLE_OMNI_EDIT:
+    _review_agent_tools.append(edit_video_with_omni)
+
 review_agent = LlmAgent(
     model=MODEL,
     name="review_agent",
     description="Manages HITL video activation workflow: lists pending videos, activates videos to push live (generates metrics), pauses/archives videos, checks status. Videos must be activated before metrics appear.",
     instruction=REVIEW_AGENT_INSTRUCTION,
-    tools=[
-        # New review table tools (PRIMARY)
-        get_video_review_table,
-        get_video_details,
-        # Legacy and activation tools
-        list_pending_videos,
-        activate_video,
-        activate_batch,
-        pause_video,
-        archive_video,
-        get_video_status,
-        get_activation_summary,
-        generate_additional_metrics,
-    ],
+    tools=_review_agent_tools,
 )
 
 # =============================================================================
