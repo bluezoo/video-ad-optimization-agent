@@ -45,3 +45,6 @@ Full suite re-verified green after fixes: `make lint` clean, `make test` 417 uni
 
 ## 2026-08-23 — owner-directed addition: AGENT_MODEL bump to gemini-3.7-flash
 Bundled into this workstream at the owner's explicit direction (not part of the original approved scope) rather than spun out as its own workstream, given the small size of the change (config.py default only, GA/global-region contract unaffected). commit a08083f: `app/config.py` MODEL default gemini-3.6-flash -> gemini-3.7-flash, matching `tests/unit/test_config.py` assertion, comment updates in `tests/live/judge.py`/`scripts/deploy_ae_inline.py`, `DEMO_GUIDE.md` Journey 14.1 expected value, new `SETUP_INSTRUCTIONS.md` bullet (kept separate from the Phase 14a/14b historical bullet). Full suite re-verified green (`make lint`, `make test`).
+
+## 2026-08-23 — checkpoint 6: finish (merged)
+PR #19 squash-merged into `version_2` (1a947d7), remote and local `version_2_omni-video-editing` branches deleted, worktree removed. `STATUS.md` updated to `merged`. Workstream complete.
