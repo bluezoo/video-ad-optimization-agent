@@ -49,7 +49,8 @@ async def edit_video_with_omni(
             "source_video_id": video_id, "video_path" | "gcs_uri": ...,
             "backend": "omni_flash", "interaction_id": ..., "duration_seconds": ...}
         On failure: {"success": False, "error": <message>,
-            "error_type": "unsupported_edit" | "timeout" | "api_error"}.
+            "error_type": "not_found" | "storage_error" | "unsupported_edit"
+                | "timeout" | "api_error"}.
     """
 ```
 

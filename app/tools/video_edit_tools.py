@@ -79,7 +79,7 @@ def _extract_video_bytes(interaction) -> bytes:
             data_b64 = getattr(output_video, "data", None)
             if data_b64:
                 return base64.b64decode(data_b64, validate=True)
-    except binascii.Error as e:
+    except (binascii.Error, ValueError, TypeError) as e:
         raise OmniEditError(f"Omni Flash returned undecodable video data: {e}") from e
     raise OmniEditError("Omni Flash response completed but contained no video content")
 
@@ -142,17 +142,16 @@ async def edit_video_with_omni(
         tmp_path = Path(tmp.name)
 
     try:
-        client = _build_client()
-        user_step = im.UserInputStep(
-            content=[
-                im.VideoContent(data=tmp_path, mime_type="video/mp4"),
-                im.TextContent(text=edit_instruction),
-            ]
-        )
-        generation_config = im.GenerationConfig(video_config=im.VideoConfig(task="edit"))
-        response_format = im.VideoResponseFormat(type="video", delivery="inline")
-
         try:
+            client = _build_client()
+            user_step = im.UserInputStep(
+                content=[
+                    im.VideoContent(data=tmp_path, mime_type="video/mp4"),
+                    im.TextContent(text=edit_instruction),
+                ]
+            )
+            generation_config = im.GenerationConfig(video_config=im.VideoConfig(task="edit"))
+            response_format = im.VideoResponseFormat(type="video", delivery="inline")
             interaction = client.interactions.create(
                 model=OMNI_EDIT_MODEL,
                 input=[user_step],
