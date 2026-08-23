@@ -135,8 +135,10 @@ def init_database() -> None:
             activated_by TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             generation_time_seconds INTEGER,
+            source_video_id INTEGER,
             FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
-            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
+            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL,
+            FOREIGN KEY (source_video_id) REFERENCES campaign_videos(id) ON DELETE SET NULL
         )
     ''')
 
@@ -332,6 +334,19 @@ def run_migrations() -> None:
         cursor.execute("ALTER TABLE campaign_metrics ADD COLUMN circulation INTEGER DEFAULT 0")
         conn.commit()
         print("[DB Migration] Retail media columns added successfully.")
+
+    # Migration N: Add source_video_id to campaign_videos (Phase 14c lineage)
+    cursor.execute("PRAGMA table_info(campaign_videos)")
+    video_columns = [column[1] for column in cursor.fetchall()]
+
+    if "source_video_id" not in video_columns:
+        print("[DB Migration] Adding source_video_id column to campaign_videos...")
+        cursor.execute(
+            "ALTER TABLE campaign_videos ADD COLUMN source_video_id INTEGER "
+            "REFERENCES campaign_videos(id)"
+        )
+        conn.commit()
+        print("[DB Migration] source_video_id column added successfully.")
 
     conn.close()
 

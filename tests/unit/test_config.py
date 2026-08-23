@@ -131,3 +131,17 @@ class TestBlueZooValidPolicy:
         monkeypatch.setenv("BLUEZOO_VALID_POLICY", "garbage")
         with pytest.raises(ValueError, match="BLUEZOO_VALID_POLICY"):
             importlib.reload(config_module)
+
+
+class TestOmniEditConfig:
+    def test_defaults_to_disabled(self, monkeypatch):
+        monkeypatch.delenv("ENABLE_OMNI_EDIT", raising=False)
+        monkeypatch.delenv("OMNI_EDIT_MODEL", raising=False)
+        cfg = importlib.reload(config_module)
+        assert cfg.ENABLE_OMNI_EDIT is False
+        assert cfg.OMNI_EDIT_MODEL == "gemini-omni-flash-preview"
+
+    def test_enabled_via_env(self, monkeypatch):
+        monkeypatch.setenv("ENABLE_OMNI_EDIT", "true")
+        cfg = importlib.reload(config_module)
+        assert cfg.ENABLE_OMNI_EDIT is True

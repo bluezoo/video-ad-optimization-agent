@@ -23,7 +23,7 @@ gdown>=5.2.0
 python-dotenv>=1.0.0
 
 # Google Gen AI SDK
-google-genai>=1.55.0
+google-genai>=2.14.0
 
 # =============================================================================
 # Feature Dependencies
