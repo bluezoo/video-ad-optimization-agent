@@ -21,3 +21,8 @@ Plan saved to working-docs/14c-omni-video-editing/plan.md (3 tasks: SDK bump + c
 
 ## 2026-08-23 — Task 1 complete (mirrors .superpowers/sdd/progress.md)
 google-genai bumped to >=2.14.0 (worktree installed 2.19.0); OMNI_EDIT_MODEL + ENABLE_OMNI_EDIT added to app/config.py; source_video_id lineage column added to campaign_videos (fresh CREATE TABLE + run_migrations() migration block, both directions verified by the reviewer). commit 045bdf0, review clean, 433 tests green (408 unit + 25 e2e).
+
+## 2026-08-23 — Task 2 complete (mirrors .superpowers/sdd/progress.md)
+video_edit_tools.py: edit_video_with_omni + translate_video_dialogue placeholder + 8 network-free unit tests (every call site mocks _build_client). commit 58be26c, review clean, 441 tests green (416 unit + 25 e2e).
+
+DISCOVERY (implementation-level, no blast radius beyond this task): the plan's Task 2 test brief assumed VideoContent's constructed `.data` attribute would still be a `pathlib.Path` after construction. Verified against the installed google-genai 2.19.0 SDK source: `VideoContent.data` is typed with a pydantic `BeforeValidator` that unconditionally coerces the constructor argument to base64 `str` before validation completes — so `.data` is always `str` post-construction regardless of what was passed in. Fixed by spying on the `VideoContent` constructor call itself (captures the pre-validation kwarg type) rather than reading the built instance back — reviewer independently verified this still fails when the call site is regressed to a bare str. No change to the module's actual behavior or the phase doc's contract-detail #1 (the call site still must pass a Path); this only affects how the regression test proves it.
