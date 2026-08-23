@@ -90,6 +90,7 @@ Each phase has its own file with Goal / Current State / Steps / Validation / Exi
 | 13 | `13-production-hardening-live-mode.md` | Auth, signed URLs, identity-backed audit trail — the connected-mode launch gate (minimum live-secret handling moves into Phases 11b/12 themselves, see those docs) | Medium | Phases 11b, 12 |
 | 14a | `14a-image-model-upgrade-nano-banana.md` | Config-driven image model swap + evaluate Nano Banana 2 Lite | Medium | Phase 1 (decoupled from everything else) |
 | 14b | `14b-video-model-upgrade-omni-flash.md` | Evaluate Gemini Omni Flash (experimental Interactions API) as an optional second video backend | Large | Phase 1, ideally after 14a |
+| 14c | `14c-omni-video-editing.md` | Opt-in `edit_video_with_omni` tool on the Review Agent for single-shot visual edits on an already-generated video, via Omni Flash's Interactions API (`ENABLE_OMNI_EDIT`, default off) | Small | Phase 14b (narrower single-shot-edit finding, not the chained-revision NO-GO) |
 | 15 | `15-product-onboarding.md` | From-scratch onboarding: local-first storage, gated/selectable seeding, product+image ingestion via agent tools (+ CLI wrapper), auto-attaching deterministic analytics | Medium | Phases 8, 9, 11a |
 | 16 | `16-live-api-testing.md` | Live-API test tier (owner directive 2026-07-22, resolves Q19): un-vacuous the integration evals, `gemini-3.6-flash` default, live Veo/image-gen tests + Gemini-judge review of generated media; fast tier stays LLM-free | Medium | Phase 9 |
 

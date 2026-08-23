@@ -139,6 +139,20 @@ Is Nano Banana 2 Lite's 1K resolution cap acceptable for this app's actual displ
 
 **Corrected framing after Codex review:** the Interactions API and Omni Flash model are both currently labeled experimental/preview by Google's own primary sources — not GA, as an earlier draft of this plan assumed. Given that, is it worth investing engineering time in this integration now, or should Phase 14b wait for either surface to reach GA? If pursued now, once (if) it reaches GA, should it become the *default* video backend, or does this app's specific demo needs (duration/resolution constraints) argue for keeping Veo as default regardless?
 
+> **Amended (workstream 14c, 2026-08-23):** the NO-GO above is narrower than
+> it reads — it covers `previous_interaction_id`-based chained revision
+> against `text_to_video`/`image_to_video` tasks specifically. A separate,
+> simpler capability was live-verified to work: a single-shot `edit`-task
+> call against an already-generated video (no `previous_interaction_id`
+> involved). "Revision via lineage": still NO-GO. "Single-shot visual edit":
+> now GO, narrowly, and shipped as an opt-in tool
+> (`ENABLE_OMNI_EDIT`, default off) — see
+> `.docs/version2-plan/14c-omni-video-editing.md`. Veo 3.1 remains the
+> default generation backend; this does not reopen Q15's default-backend
+> question. EN→ES dialogue translation via the same API was also live-tested
+> this workstream and confirmed **not supported** (code-switched, unsynced
+> output) — out of scope, do not revisit without a different model/product.
+
 ## 16. Is "zero external accounts for demo mode" actually a requirement? (Phase 6/philosophy) — RESOLVED 2026-07-16
 
 ~~Is "no BlueZoo/PoS credentials required" the actual bar, or does "zero external accounts" need to be taken literally?~~ **Resolved by the owner: local-first.** The bar is: GCP credentials are needed **only for model calls** (Gemini/Veo/image generation); product images and generated videos save/load locally with no GCS bucket required, and GCS becomes an explicit opt-in for cloud deploys. The local storage backend (and removal of the personal-bucket default at `app/config.py:52-53`, which `app/storage.py:189/208/224` currently hard-depend on) is Phase 15, `15-product-onboarding.md`, step 1. No client input required.
@@ -227,3 +241,11 @@ None of these block starting the plan — Phase 1 through Phase 10, Phase 11a, a
 > What remains BlueZoo's to answer *(rolling summary — rewritten by workstream bluezoo-semantics-resolution, 2026-07-27, whose evidence superseded two of the original three items)*: **(1) the quota's remaining unknowns** — its size is known (500 GB/sensor-location, raised on request, abuse guard not billing), but *not* how "per sensor location" is charged when one query spans many locations, whether the raise persists past "this month," whether consumption can be checked, or whether the tables are partitioned; **(2) confirmation of Rule R for `valid`** — the exclusion rule is no longer an open unknown: it was resolved empirically (one-way commissioning-acceptance flag; count only `valid IS TRUE`; go-forward impact ~1.6×, not the historical ~4×) and needs only BlueZoo's confirm-or-correct (see the Q18 amendment); **(3) how BlueZoo cut their own daily aggregates** — the raw `timestamp` is now proven UTC, and `time_zone` turned out to be *recently introduced* rather than sparse (fully populated on current rows, null through 2024), so only their `group_*_daily` bucketing convention remains to ask. Q1 and Q2 remain decisions, not unknowns — REST is now proven end-to-end against real data.
 >
 > **Amended (workstream bluezoo-live-verification, 2026-07-25).** A live account (Apollo / AP_599) has changed which of the above are still questions. **Answered from the live schema:** Q11 (`group_sensor_history` is BlueZoo's mapping table), Q17's fallback-(b) availability, and most of Q18 (dialect, hostname premise, `group_convert` schema). **Q12 is answered but inverted** — access is granted; the account has **zero rows**, so no value-level question can be settled and Phase 11b's `CachedBlueZooAudienceDataSource` cannot be built at all. That makes **"give us a tenant with real data, or seed AP_599" the single highest-priority ask** — Q18's remaining bullets and Q6's campaign-column semantics all sit behind it. Q1 and Q2 are unchanged in status but changed in character: REST is now *proven working*, so what's left is the client's transport decision, not a capability unknown.
+
+## 20. Omni Flash single-shot edit: chaining, multi-attribute, and GCS support (Phase 14c)
+
+Carried over from `.docs/version2-plan/14c-omni-video-editing.md`'s own "Open questions" section, unresolved by that workstream (all three were explicitly out of scope for its narrow ship):
+
+1. Does `previous_interaction_id` work for `edit`-task chaining specifically (as opposed to the `text_to_video`/`image_to_video` generation tasks Phase 14b tested it against)? Not probed by anyone in this repo — worth one bounded reprobe before ever proposing iterative "refine this edit" UX.
+2. Multi-attribute edit instructions — untested; only single-attribute was verified. Could silently degrade quality or apply only one change.
+3. Does the edit call behave identically when the source video is stored in GCS rather than read from a local path? `_load_video_bytes_for_edit` (`app/tools/video_edit_tools.py`) needs to handle both; only local storage mode was exercised.
