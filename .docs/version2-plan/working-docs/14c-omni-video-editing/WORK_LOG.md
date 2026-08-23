@@ -18,3 +18,6 @@ Owner approved the six-dimension restatement as-is ("Yes, proceed"): opt-in edit
 
 ## 2026-08-23 — checkpoint 3: plan approved
 Plan saved to working-docs/14c-omni-video-editing/plan.md (3 tasks: SDK bump + config + DB lineage column; video_edit_tools.py module + network-free unit tests; Review Agent wiring + live test + demo scenario + docs). Owner's earlier "Yes, proceed" explicitly covered "write the plan now and start subagent-driven-development for this exact scope" — treated as covering plan approval too, not re-asked separately, per the owner's "real quick" framing.
+
+## 2026-08-23 — Task 1 complete (mirrors .superpowers/sdd/progress.md)
+google-genai bumped to >=2.14.0 (worktree installed 2.19.0); OMNI_EDIT_MODEL + ENABLE_OMNI_EDIT added to app/config.py; source_video_id lineage column added to campaign_videos (fresh CREATE TABLE + run_migrations() migration block, both directions verified by the reviewer). commit 045bdf0, review clean, 433 tests green (408 unit + 25 e2e).
