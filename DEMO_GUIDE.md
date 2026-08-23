@@ -619,13 +619,13 @@ the bundle (`make demo-assets-build SRC=<folder>`) is documented in
 
 ### Workstream 14
 
-#### Journey 14.1 — agent default model is gemini-3.6-flash
+#### Journey 14.1 — agent default model is gemini-3.7-flash
 
 ```bash
 .venv/bin/python -c "from app import config; print(config.MODEL)"
 ```
 
-**Expect:** `gemini-3.6-flash` (override still via `AGENT_MODEL` in `app/.env`).
+**Expect:** `gemini-3.7-flash` (override still via `AGENT_MODEL` in `app/.env`; bumped from `gemini-3.6-flash` in workstream 14c).
 Then in the web UI ask: **"Show me all my campaigns"** — expect routing to the
 Campaign Agent's `list_campaigns` exactly as before (the flip changes the
 model, not the routing contract; F1 Scene 1 is the full check).

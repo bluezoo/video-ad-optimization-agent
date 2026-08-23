@@ -87,7 +87,7 @@ except ValueError:
 # NOTE: Gemini 3 models require global region. GlobalAdkApp preserves
 # GOOGLE_CLOUD_LOCATION=global after Agent Engine setup.
 # See: app/agent_engine_app.py and https://github.com/google/adk-python/issues/3628
-MODEL = os.environ.get("AGENT_MODEL", "gemini-3.6-flash")  # Main agent model (GA; global region supported)
+MODEL = os.environ.get("AGENT_MODEL", "gemini-3.7-flash")  # Main agent model (GA; global region supported)
 
 # Media generation models — GA IDs as defaults, env-overridable so preview
 # models (e.g. Nano Banana 2 Lite, Gemini Omni Flash) can be swapped in for

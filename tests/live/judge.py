@@ -16,7 +16,7 @@
 
 A rubric reviewer, NOT a generator. Given a generated image/video and the
 archetype + request context it was made for, it asks ``config.MODEL``
-(gemini-3.6-flash on Vertex, global endpoint) whether the media obeys the
+(gemini-3.7-flash on Vertex, global endpoint) whether the media obeys the
 repo's ad-style policy, and returns a structured per-check verdict.
 
 The rubric is derived from the code that produces the media, so judge and
