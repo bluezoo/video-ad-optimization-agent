@@ -21,7 +21,7 @@ def test_media_model_defaults_are_ga_ids(monkeypatch):
     monkeypatch.delenv("IMAGE_GENERATION_MODEL", raising=False)
     monkeypatch.delenv("VIDEO_GEN_MODEL", raising=False)
     cfg = importlib.reload(config_module)
-    assert cfg.MODEL == "gemini-3.6-flash"
+    assert cfg.MODEL == "gemini-3.7-flash"
     assert cfg.IMAGE_GENERATION == "gemini-3-pro-image"
     assert cfg.VIDEO_GEN_MODEL == "veo-3.1-generate-001"
 
@@ -131,3 +131,17 @@ class TestBlueZooValidPolicy:
         monkeypatch.setenv("BLUEZOO_VALID_POLICY", "garbage")
         with pytest.raises(ValueError, match="BLUEZOO_VALID_POLICY"):
             importlib.reload(config_module)
+
+
+class TestOmniEditConfig:
+    def test_defaults_to_disabled(self, monkeypatch):
+        monkeypatch.delenv("ENABLE_OMNI_EDIT", raising=False)
+        monkeypatch.delenv("OMNI_EDIT_MODEL", raising=False)
+        cfg = importlib.reload(config_module)
+        assert cfg.ENABLE_OMNI_EDIT is False
+        assert cfg.OMNI_EDIT_MODEL == "gemini-omni-flash-preview"
+
+    def test_enabled_via_env(self, monkeypatch):
+        monkeypatch.setenv("ENABLE_OMNI_EDIT", "true")
+        cfg = importlib.reload(config_module)
+        assert cfg.ENABLE_OMNI_EDIT is True

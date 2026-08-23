@@ -619,13 +619,13 @@ the bundle (`make demo-assets-build SRC=<folder>`) is documented in
 
 ### Workstream 14
 
-#### Journey 14.1 — agent default model is gemini-3.6-flash
+#### Journey 14.1 — agent default model is gemini-3.7-flash
 
 ```bash
 .venv/bin/python -c "from app import config; print(config.MODEL)"
 ```
 
-**Expect:** `gemini-3.6-flash` (override still via `AGENT_MODEL` in `app/.env`).
+**Expect:** `gemini-3.7-flash` (override still via `AGENT_MODEL` in `app/.env`; bumped from `gemini-3.6-flash` in workstream 14c).
 Then in the web UI ask: **"Show me all my campaigns"** — expect routing to the
 Campaign Agent's `list_campaigns` exactly as before (the flip changes the
 model, not the routing contract; F1 Scene 1 is the full check).
@@ -834,3 +834,57 @@ its `and valid` clause). `BLUEZOO_VALID_POLICY` unset (or explicitly
 sensors 77/80/89 specifically, since they were selected for having zero
 `valid=false` rows in the verified capture window — this journey checks the
 knob, not a metric delta.
+
+### Workstream 14c — experimental visual video editing (Omni Flash)
+
+Phase 14c added `edit_video_with_omni(video_id, edit_instruction)` to the
+Review Agent's tool list — a targeted, single-attribute visual edit against
+an already-generated video (e.g. "make the background warmer", "change the
+shirt color to red"), backed by Gemini Omni Flash's Interactions API
+(`gemini-omni-flash-preview`), NOT the standard Veo generation pipeline. It
+is opt-in and gated by `ENABLE_OMNI_EDIT` (default off/unset — the tool is
+absent from the Review Agent's tool list and its instruction text in that
+default configuration; agent behavior is unchanged from before this
+workstream). Explicitly out of scope: audio/dialogue/language editing (a
+researched-and-rejected `translate_video_dialogue` placeholder exists in
+`app/tools/video_edit_tools.py` but is never wired into any agent) and
+multi-attribute or chained edits (unverified). Full scripted version with
+per-scene assertions: `docs/demo-scenarios/fashion.md` Scenario F7.
+
+#### Journey 14c.1 — request a visual edit (flag on)
+
+```bash
+ENABLE_OMNI_EDIT=true make dev
+```
+
+Ask: **"Show me the pending or activated videos for campaign 1, then request
+an edit on the first one: change the background color tone to be warmer."**
+
+**Expect:** `get_video_review_table` (or `get_video_details`) followed by
+`edit_video_with_omni(video_id=<id>, edit_instruction=...)`. The tool call
+succeeds (takes roughly 1-2 minutes — a real Omni Flash interaction, not
+mocked) and the response references **both** video ids: the original
+(e.g. `video_id=1`) and a new one for the edited result (e.g. `video_id=11`)
+— the original is left untouched. A follow-up `get_video_review_table()`
+call shows the new video row. **Lineage check** (verifier runs via Bash
+against the local `campaigns.db`):
+
+```bash
+sqlite3 campaigns.db "SELECT source_video_id FROM campaign_videos WHERE id = <new_video_id>;"
+```
+
+**Expect:** the original video's id (e.g. `1`), proving the new row traces
+back to the video it was edited from.
+
+#### Journey 14c.2 — regression: flag off (default), tool never appears
+
+```bash
+make dev
+```
+
+(no `ENABLE_OMNI_EDIT` set, or explicitly `ENABLE_OMNI_EDIT=false make dev`.)
+Ask the same query as Journey 14c.1. **Expect:** `edit_video_with_omni` is
+never called — it isn't registered on the Review Agent in this configuration
+— and the agent doesn't claim to have performed a visual edit. This is the
+regression this journey exists to catch: the tool appearing here with the
+flag off/unset would mean the `ENABLE_OMNI_EDIT` gate broke.

@@ -37,3 +37,57 @@ def test_no_stale_product_counts():
     source = inspect.getsource(agent_module)
     assert "22 pre-loaded products" not in source
     assert "28 pre-loaded products" not in source
+
+
+def test_review_agent_tools_unchanged_when_omni_edit_disabled(monkeypatch):
+    """ws14c: with ENABLE_OMNI_EDIT unset/false, review_agent's tool list
+    must be byte-identical to the pre-14c list -- no edit_video_with_omni,
+    no instruction section appended."""
+    monkeypatch.setenv("ENABLE_OMNI_EDIT", "false")
+    import importlib
+
+    from app import agent, config
+    importlib.reload(config)
+    importlib.reload(agent)
+    try:
+        tool_names = {t.__name__ for t in agent.review_agent.tools}
+        assert "edit_video_with_omni" not in tool_names
+        assert tool_names == {
+            "get_video_review_table",
+            "get_video_details",
+            "list_pending_videos",
+            "activate_video",
+            "activate_batch",
+            "pause_video",
+            "archive_video",
+            "get_video_status",
+            "get_activation_summary",
+            "generate_additional_metrics",
+        }
+        assert "Omni Flash" not in agent.REVIEW_AGENT_INSTRUCTION
+    finally:
+        # Restore module state for subsequent tests in the same process.
+        monkeypatch.delenv("ENABLE_OMNI_EDIT", raising=False)
+        importlib.reload(config)
+        importlib.reload(agent)
+
+
+def test_review_agent_tools_include_omni_edit_when_enabled(monkeypatch):
+    """ws14c: with ENABLE_OMNI_EDIT=true, edit_video_with_omni must be
+    registered on review_agent AND the instruction text must reference it --
+    the two are separate conditionals in app/agent.py and must not drift."""
+    monkeypatch.setenv("ENABLE_OMNI_EDIT", "true")
+    import importlib
+
+    from app import agent, config
+    importlib.reload(config)
+    importlib.reload(agent)
+    try:
+        tool_names = {t.__name__ for t in agent.review_agent.tools}
+        assert "edit_video_with_omni" in tool_names
+        assert "Omni Flash" in agent.REVIEW_AGENT_INSTRUCTION
+    finally:
+        # Restore module state for subsequent tests in the same process.
+        monkeypatch.delenv("ENABLE_OMNI_EDIT", raising=False)
+        importlib.reload(config)
+        importlib.reload(agent)

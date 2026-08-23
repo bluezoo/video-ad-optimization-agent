@@ -268,3 +268,61 @@ then `activate_video` (for the setup video's id).
 **Checks:**
 - Success response.
 - DB assertion: the same rows from F6.1 now all have `active_to` NOT NULL.
+
+## Scenario F7: Experimental visual video edit (Omni Flash, workstream 14c)
+
+Covers Phase 14c: the opt-in `edit_video_with_omni` tool on the Review Agent,
+gated by `ENABLE_OMNI_EDIT` (default off — this scenario only applies when
+explicitly enabled). Backed by Gemini Omni Flash's Interactions API, separate
+from the standard Veo generation pipeline.
+
+### Scene F7.1 — edit fires and produces a new, traceable video
+
+**Setup (required):** `ENABLE_OMNI_EDIT=true make dev` — the flag must be set
+before the server starts (the review_agent's tool list and instruction are
+built at import time).
+
+**Query:** "Show me the pending or activated videos for campaign 1, then
+request an edit on the first one: change the background color tone to be
+warmer."
+
+**Expected tool calls:** `get_video_review_table` (or `get_video_details`)
+followed by `edit_video_with_omni(video_id=<id>, edit_instruction=...)`.
+
+**Pass criteria:**
+- The edit tool fires with a plausible single-attribute instruction and
+  returns `success: true`.
+- The response references both the original `video_id` and a new `video_id`
+  (the edited result) — the tool never overwrites the original.
+- A follow-up `get_video_review_table()` call shows the new video row; **DB
+  assertion** (verifier runs via Bash against the local `campaigns.db`):
+  `SELECT source_video_id FROM campaign_videos WHERE id = <new_video_id>`
+  returns the original video's id.
+
+**Fail criteria:**
+- The edit instruction bundles multiple unrelated changes (e.g. "change the
+  background AND swap the shirt color AND remove the cup") — this phase only
+  verified single-attribute edits; a bundled instruction is not this scene's
+  pass path.
+- The tool is invoked for an audio/dialogue/language request — Omni Flash
+  does not support voice editing; the agent should decline plainly instead of
+  calling the tool.
+- Any exception/traceback in the trace, or a timeout.
+
+### Scene F7.2 — regression: tool absent when the flag is off (default)
+
+**Setup:** default `make dev` (no `ENABLE_OMNI_EDIT` set, or explicitly
+`ENABLE_OMNI_EDIT=false make dev`).
+
+**Query:** "Show me the pending or activated videos for campaign 1, then
+request an edit on the first one: change the background color tone to be
+warmer."
+
+**Expected:** the agent does NOT call `edit_video_with_omni` (it isn't in the
+Review Agent's tool list in this configuration) and does not claim to have
+performed a visual edit — it should explain the capability isn't available,
+or route to Media Agent's standard video generation instead.
+
+**Pass criteria:** no `edit_video_with_omni` call anywhere in the trace.
+**Fail criteria:** the tool is invoked despite the flag being unset/false —
+this would be the regression this scene exists to catch.

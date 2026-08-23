@@ -16,7 +16,7 @@
 """Deploy Ad Campaign Agent to Agent Engine using Python SDK (Inline Deployment).
 
 This script uses "inline deployment" to set location='global',
-which is required for Gemini 3.x models (gemini-3.6-flash, etc.).
+which is required for Gemini 3.x models (gemini-3.7-flash, etc.).
 
 The Python SDK allows vertexai.init(location='global') which bypasses
 the CLI limitation where --region=global throws errors.
@@ -292,7 +292,7 @@ Examples:
             "google-cloud-aiplatform[adk,agent_engines]>=1.79.0",
             "google-adk>=1.21.0",
             "google-cloud-storage>=2.19.0",
-            "google-genai>=1.55.0",
+            "google-genai>=2.14.0",
             "googlemaps>=4.10.0",
             "Pillow>=10.2.0",
             "pydantic>=2.11.7",
