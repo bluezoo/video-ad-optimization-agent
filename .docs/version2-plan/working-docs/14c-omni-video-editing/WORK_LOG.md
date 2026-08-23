@@ -15,3 +15,6 @@ Owner directive for this workstream (verbatim intent): translation/dubbing is ex
 
 ## 2026-08-23 — checkpoint 2: working doc approved
 Owner approved the six-dimension restatement as-is ("Yes, proceed"): opt-in edit_video_with_omni tool on the existing Review Agent, gated by ENABLE_OMNI_EDIT (default off); google-genai bump to >=2.14.0 as its own isolated step; unit (network-free) + live-tier + demo-scenario verification; translation/dubbing and chained/multi-attribute edits stay explicitly out of scope.
+
+## 2026-08-23 — checkpoint 3: plan approved
+Plan saved to working-docs/14c-omni-video-editing/plan.md (3 tasks: SDK bump + config + DB lineage column; video_edit_tools.py module + network-free unit tests; Review Agent wiring + live test + demo scenario + docs). Owner's earlier "Yes, proceed" explicitly covered "write the plan now and start subagent-driven-development for this exact scope" — treated as covering plan approval too, not re-asked separately, per the owner's "real quick" framing.
