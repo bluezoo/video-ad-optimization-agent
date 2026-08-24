@@ -296,10 +296,37 @@ Use list_campaign_videos(status='generated') to see pending videos.
 - Guide users to Review Agent for activation
 """
 
+_OMNI_EDIT_MEDIA_AGENT_SECTION = """
+
+## Experimental: Editing an EXISTING Video -- NOT Your Job
+
+If the user asks to EDIT, TWEAK, ADJUST, or CHANGE something about an
+ALREADY-GENERATED video -- referenced by id ("edit video 5"), by reference
+("edit the video I just made", "edit the first one"), or by describing a
+targeted visual tweak to it ("make the background warmer", "change the
+lighting on that video") -- this is the Review Agent's job via its
+experimental edit_video_with_omni tool, NOT yours. Call
+transfer_to_agent("review_agent") for these requests instead of calling
+generate_video_with_variation or generate_video_from_product.
+
+Only generate a NEW video yourself when the user actually wants a different
+take from scratch (a new setting, model, mood, or a video that doesn't exist
+yet) rather than a small tweak to one that already exists. If genuinely
+unsure which the user means, ask; do not silently treat an edit request as a
+request for a brand-new video.
+"""
+
+if ENABLE_OMNI_EDIT:
+    MEDIA_AGENT_INSTRUCTION = MEDIA_AGENT_INSTRUCTION + _OMNI_EDIT_MEDIA_AGENT_SECTION
+
+_MEDIA_AGENT_DESCRIPTION = "Browses the multi-vertical product catalog and generates ad videos (product-centric shots, or human-model shots for wearables) using the two-stage pipeline (scene image → video animation) with creative variations (setting, mood, lighting, etc.), and lists generated videos. Videos start with status='generated' and must be activated by Review Agent."
+if ENABLE_OMNI_EDIT:
+    _MEDIA_AGENT_DESCRIPTION += " Does NOT edit existing videos -- edit/tweak requests on an already-generated video go to Review Agent instead."
+
 media_agent = LlmAgent(
     model=MODEL,
     name="media_agent",
-    description="Browses the multi-vertical product catalog and generates ad videos (product-centric shots, or human-model shots for wearables) using the two-stage pipeline (scene image → video animation) with creative variations (setting, mood, lighting, etc.), and lists generated videos. Videos start with status='generated' and must be activated by Review Agent.",
+    description=_MEDIA_AGENT_DESCRIPTION,
     instruction=MEDIA_AGENT_INSTRUCTION,
     tools=[
         # Product browsing (NEW)
@@ -536,6 +563,13 @@ Veo generation pipeline:
   tool.
 - The edit produces a NEW video (a new video_id) and leaves the original
   untouched; mention both ids in your response so the user can compare.
+- When the user asks you to "apply", "make", or "do" an edit on a video you
+  already showed them (from get_video_review_table / get_video_details, or
+  from a prior turn in this conversation) -- including a short follow-up
+  like "yes, apply that" or "do it" -- call edit_video_with_omni YOURSELF.
+  Do NOT transfer to Media Agent to generate a new video in response to an
+  edit request; generating a new video is not the same thing as editing an
+  existing one, and Media Agent's tools cannot fulfill this.
 """
 
 if ENABLE_OMNI_EDIT:
@@ -558,10 +592,14 @@ _review_agent_tools = [
 if ENABLE_OMNI_EDIT:
     _review_agent_tools.append(edit_video_with_omni)
 
+_REVIEW_AGENT_DESCRIPTION = "Manages HITL video activation workflow: lists pending videos, activates videos to push live (generates metrics), pauses/archives videos, checks status. Videos must be activated before metrics appear."
+if ENABLE_OMNI_EDIT:
+    _REVIEW_AGENT_DESCRIPTION += " Also handles EDITING an existing generated video (a targeted visual tweak, e.g. 'edit video 5', 'make the background warmer') via the experimental edit_video_with_omni tool -- this is different from generating a brand-new video, which is Media Agent's job."
+
 review_agent = LlmAgent(
     model=MODEL,
     name="review_agent",
-    description="Manages HITL video activation workflow: lists pending videos, activates videos to push live (generates metrics), pauses/archives videos, checks status. Videos must be activated before metrics appear.",
+    description=_REVIEW_AGENT_DESCRIPTION,
     instruction=REVIEW_AGENT_INSTRUCTION,
     tools=_review_agent_tools,
 )
@@ -648,6 +686,22 @@ User: "Create a campaign for the Aurora cold brew at Target Downtown in Austin"
 - Remind: videos need activation before metrics appear
 - For same product at new store → create new campaign
 """
+
+_OMNI_EDIT_COORDINATOR_SECTION = """
+
+## Experimental: Editing an Existing Video (Omni Flash)
+
+If the user asks to EDIT, TWEAK, or CHANGE something about an
+ALREADY-GENERATED video (referenced by id, "the video I just made", "the
+first one", etc.) -- as opposed to creating a brand-new video -- route this
+to the Review Agent (its edit_video_with_omni tool), NOT the Media Agent.
+Generating a brand-new video and editing an existing one are different
+requests: only Media Agent creates brand-new videos; only Review Agent edits
+existing ones.
+"""
+
+if ENABLE_OMNI_EDIT:
+    COORDINATOR_INSTRUCTION = COORDINATOR_INSTRUCTION + _OMNI_EDIT_COORDINATOR_SECTION
 
 # Define the root coordinator agent with sub-agents
 root_agent = LlmAgent(

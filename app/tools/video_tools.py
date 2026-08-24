@@ -366,6 +366,8 @@ async def animate_scene_with_veo(
         config=types.GenerateVideosConfig(
             number_of_videos=1,
             duration_seconds=duration_seconds,
+            resolution="1080p",
+            generate_audio=True,
         ),
     )
 
@@ -643,6 +645,8 @@ async def generate_video_from_product(
                 config=types.GenerateVideosConfig(
                     number_of_videos=1,
                     duration_seconds=duration_seconds,
+                    resolution="1080p",
+                    generate_audio=True,
                 ),
             )
 
@@ -1002,6 +1006,8 @@ async def generate_video_ad(
             config=types.GenerateVideosConfig(
                 number_of_videos=1,
                 duration_seconds=duration_seconds,
+                resolution="1080p",
+                generate_audio=True,
                 # Note: enhance_prompt is NOT supported by the Veo 3.1 models
             ),
         )
