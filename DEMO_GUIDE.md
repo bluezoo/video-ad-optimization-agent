@@ -37,7 +37,7 @@ This demo showcases an **AI-powered in-store retail media platform** built with 
 
 ## Pre-Demo Checklist
 
-- [ ] ADK Web UI running (`adk web app` or Cloud Run URL)
+- [ ] ADK Web UI running (`make dev` on :8501 or Cloud Run URL) OR REST API Gateway (`make api` on :8000)
 - [ ] Product images available in GCS at `product-images/`
 - [ ] `GOOGLE_MAPS_API_KEY` set (for static maps)
 - [ ] Test one video generation to warm up models
@@ -434,10 +434,10 @@ Get video properties for video 5
 
 | Purpose | Model |
 |---------|-------|
-| All Agents | `gemini-2.5-pro` |
-| Scene Images | `gemini-2.5-flash-image` |
-| Video Animation | `veo-3.1-generate-preview` |
-| Charts/Maps | `gemini-2.5-flash-image` |
+| All Agents | `gemini-3.5-flash` |
+| Scene Images | `gemini-3-pro-image` |
+| Video Animation | `veo-3.1-generate-001` |
+| Charts/Maps | `gemini-3-pro-image` |
 
 ---
 
@@ -448,3 +448,482 @@ Get video properties for video 5
 | `GOOGLE_CLOUD_PROJECT` | GCP project | Yes |
 | `GCS_BUCKET` | Cloud Storage bucket | Yes |
 | `GOOGLE_MAPS_API_KEY` | Static Maps API | Optional |
+
+---
+
+## Workstream Testing Journeys
+
+Owner manual-testing journeys for changes landed by version-2 workstreams (rule as of 2026-07-22: every workstream that changes agent-visible behavior adds its journeys here, in the root demo guide). Copy-paste prompts/commands + expected results.
+
+### Workstream 11a — APP_MODE and the audience-data seam
+
+Phase 11a put demo-data generation behind a real seam: an `AudienceDataSource`
+interface with `SyntheticAudienceDataSource` (the demo generator, wrapped as-is)
+as the only registered implementation, resolved by `APP_MODE` through a
+fail-closed factory. This is a refactor, not a behavior change — demo mode's
+output is byte-identical by design (golden-pinned against the pre-refactor join).
+
+#### Journey 11a.1 — demo mode unchanged
+
+```bash
+make dev
+```
+
+Re-run any metrics journey (e.g. Act 4 Scene 4.1) — expect **identical numbers**
+to before this workstream. If anything differs, the seam refactor broke
+byte-identity and that's a regression, not an intentional change.
+
+#### Journey 11a.2 — connected mode fails closed (terminal check, no browser needed)
+
+> **Amended (workstream 11b, 2026-07-28):** this journey originally described
+> the pre-11b placeholder (a `RuntimeError` saying Phase 11b "isn't
+> implemented yet"). Phase 11b landed `LiveBlueZooAudienceDataSource`, so the
+> factory now actually constructs it — and *that* constructor is what fails
+> closed when BlueZoo config is missing. Text below reflects the current
+> behavior; see Workstream 11b's journeys further down for the full
+> connected-mode happy-path/fail-closed/policy-knob set.
+
+```bash
+APP_MODE=connected .venv/bin/python -c \
+  "from app.audience import get_audience_datasource; get_audience_datasource()"
+```
+
+(run with every `BLUEZOO_*` variable unset, e.g. in a shell/`.env` where they
+were never exported — if they ARE set, this constructs
+`LiveBlueZooAudienceDataSource` successfully instead of raising, which is
+correct: fail-closed guards missing config, not connected mode itself.)
+
+**Expect:** a `BlueZooConfigError` (from `app/audience/live_bluezoo.py`,
+raised at datasource construction) whose message names both
+`BLUEZOO_BASE_URL` and `BLUEZOO_ACCESS_KEY` — exact fragments to look for:
+`"APP_MODE=connected requires BLUEZOO_BASE_URL and BLUEZOO_ACCESS_KEY"`,
+`"cluster-scoped pair"`, and a pointer to `SETUP_INSTRUCTIONS.md`. Note that
+importing `app.audience` at all imports the `app` package first, whose
+`app/agent.py` runs demo-data seeding at module level — so this exception
+actually fires during that import, before the explicit
+`get_audience_datasource()` call in the one-liner ever runs; the visible
+effect (same exception, same message) is unchanged. In the running app, any
+launch that reaches demo-data seeding under misconfigured connected mode
+raises this same error instead of silently falling back to demo data — the
+fail-closed principle from Phase 6, now real rather than deferred. See
+Journey 11b.3: because that seeding runs eagerly at `make dev` startup (not
+lazily when a chat query needs metrics), a misconfigured connected mode
+never reaches a chat prompt at all — the server fails to start.
+
+#### Journey 11a.3 — invalid APP_MODE still rejected at startup
+
+```bash
+APP_MODE=banana make dev
+```
+
+**Expect:** a `ValueError` at config load (unchanged behavior — predates ws11a).
+
+> **Amended (workstream 11b, 2026-07-28):** the paragraph below originally
+> contrasted this with a valid-but-unimplemented `connected` mode failing
+> with `RuntimeError` at datasource resolution — that described the pre-11b
+> placeholder and is superseded; see Journey 11a.2's amendment.
+
+These are two different layers: an invalid `APP_MODE` value (e.g. `banana`)
+fails at **config load** (`app/config.py`, `ValueError`) before the app even
+starts. A *valid* `APP_MODE=connected` loads fine — `connected` is no longer
+unimplemented (Phase 11b) — but a **misconfigured** connected mode (missing
+`BLUEZOO_BASE_URL`/`BLUEZOO_ACCESS_KEY`) fails at **datasource construction**
+(`app/audience/live_bluezoo.py`, `BlueZooConfigError`) — and because
+demo-data seeding reaches that datasource **eagerly, at process/import
+startup** rather than lazily on first use, this failure shows up as `make
+dev` (or any script importing the `app` package) refusing to start at all,
+not as an error surfaced mid-session — see Journey 11a.2's updated text and
+Journey 11b.3 for the exact error fragments and the startup-failure shape.
+
+### Workstream 15 — local-first storage, gated seeding, product onboarding
+
+Phase 15 made the app local-first (GCS is now an explicit opt-in: `GCS_BUCKET`
+unset ⇒ every asset lives under the project root and tool responses never
+contain `storage.googleapis.com` URLs), added `DEMO_DATASET=fashion|none` to
+gate demo seeding, and put three product-onboarding tools on the Campaign agent
+(`create_product`, `import_products_from_folder`, `generate_product_image`)
+plus a CLI twin (`scripts/onboard_products.py`) and a Drive-hosted demo-asset
+bundle (`scripts/demo_assets.py`). **Check your `app/.env` first:** if it still
+sets `GCS_BUCKET`, you are in GCS mode — comment that line out for these
+journeys.
+
+#### Journey 15.1 — from-scratch onboarding on an empty catalog
+
+```bash
+make reset-db
+DEMO_DATASET=none make dev
+```
+
+Then in the chat, in order:
+
+1. `Show me all products in the catalog` — **expect** `list_products` reports
+   **0 products** (empty catalog, nothing seeded).
+2. `Add a new product: Aurora Cold Brew 330ml, category beverage, a nitro cold
+   brew in a slim can, 330ml volume` — **expect** routing to the **Campaign
+   agent** and `create_product` returning success with
+   `image_status: "pending"`.
+3. `Generate a product image for Aurora Cold Brew` — **expect**
+   `generate_product_image` to run (real image-model call, ~30–90s), the image
+   to render inline as an artifact, and `image_status: "available"` — with
+   **no** `image_url` field (local mode has no public URLs).
+4. `Create a campaign for Aurora Cold Brew at Demo Store in Austin, Texas` —
+   **expect** a campaign named like "Aurora Cold Brew 330Ml - Demo Store".
+
+Full scripted version with per-scene assertions:
+`docs/demo-scenarios/from-scratch-onboarding.md`.
+
+#### Journey 15.2 — default demo unchanged, minus dead links
+
+```bash
+make reset-db
+make dev
+```
+
+**Expect:** the full fashion demo seeds as always (22 fashion + 6 retail-core
+products, 4 campaigns) — `DEMO_DATASET` defaults to `fashion`. Browse products:
+each item now carries `image_status` (`"available"`/`"missing"`); locally the
+seeded catalog shows `"missing"` until you install the demo-asset bundle
+(Journey 15.4) — what's gone is the old behavior of emitting
+`storage.googleapis.com` links that may or may not resolve. Metrics journeys
+(e.g. Act 4) are numerically unchanged.
+
+#### Journey 15.3 — CLI onboarding (terminal, no browser needed)
+
+```bash
+.venv/bin/python -m scripts.onboard_products create \
+  --name "Trail Shoe X" --category footwear --attr weight_grams=240
+.venv/bin/python -m scripts.onboard_products import-folder ~/my-product-photos \
+  --category homeware
+```
+
+**Expect:** JSON results identical in shape to the agent tools' responses (the
+CLI calls the very same functions); duplicates are skipped with a message, and
+imported images land under `product-images/` in the project root.
+
+#### Journey 15.4 — demo-asset bundle install (and graceful skip)
+
+```bash
+make demo-assets
+```
+
+(`make dev` also runs this automatically before starting the server; a local
+zip installs via `make demo-assets-from-file FILE=<bundle.zip>`.)
+
+**Expect (today, no Drive ID configured):** a graceful skip —
+`"Demo asset bundle not configured"` — and the app keeps working. Once a
+bundle is published and `DEMO_ASSETS_DRIVE_ID` is set in `app/.env`, the same
+command downloads, sha256-verifies, and installs the demo product images into
+`product-images/`; a second run reports already-installed. Building/publishing
+the bundle (`make demo-assets-build SRC=<folder>`) is documented in
+`SETUP_INSTRUCTIONS.md` ("Demo asset bundle").
+
+### Workstream 14
+
+#### Journey 14.1 — agent default model is gemini-3.7-flash
+
+```bash
+.venv/bin/python -c "from app import config; print(config.MODEL)"
+```
+
+**Expect:** `gemini-3.7-flash` (override still via `AGENT_MODEL` in `app/.env`; bumped from `gemini-3.6-flash` in workstream 14c).
+Then in the web UI ask: **"Show me all my campaigns"** — expect routing to the
+Campaign Agent's `list_campaigns` exactly as before (the flip changes the
+model, not the routing contract; F1 Scene 1 is the full check).
+
+### Workstream 16 — live-API test tier, dup-product fix, Maps-routing fix
+
+Phase 16 added a second, real-money test tier (`make test-live`: agent-routing
+evals + live Veo/image-gen media + a Gemini multimodal judge) alongside two
+agent-behavior fixes it surfaced and fixed along the way: campaign creation no
+longer onboards a duplicate product when the requested product already exists
+in the catalog, and Google-Maps-link queries now route to the Analytics Agent
+instead of the Campaign Agent. See `CLAUDE.md`'s Commands tier map and
+`SETUP_INSTRUCTIONS.md`'s "Live tier" section for setup/cost/flakiness notes.
+
+#### Journey 16.1 — fast tier still seconds, zero LLM calls
+
+```bash
+make test
+```
+
+**Expect:** unit + e2e only (integration moved out of the default target this
+workstream) — hundreds of tests, seconds, zero network/LLM calls. This is the
+loop that runs after every edit (the `PostToolUse` hook runs `make test-unit`
+specifically).
+
+#### Journey 16.2 — live tier, real APIs, ~11 minutes
+
+```bash
+make test-live
+```
+
+**Expect:** requires `app/.env` with working Vertex credentials (the target
+exits with an error if the file is missing) and `google-adk[eval]==2.5.0`
+installed into `.venv` (`SETUP_INSTRUCTIONS.md` has the install command — this
+extra is not in `app/requirements.txt`). A clean run is **26 passed / 0
+failed** in roughly **11 minutes**, and makes real Vertex/Veo/image-model
+calls the whole way — expect real billing. If a case fails, rerun once before
+treating it as a regression: the "Live tier" section in
+`SETUP_INSTRUCTIONS.md` documents three known flaky (not broken) surfaces —
+a transient Vertex `400`, LLM-judge nondeterminism, and a transient Veo
+generation error.
+
+#### Journey 16.3 — deliberate-break check (proves the live tier actually catches regressions)
+
+```bash
+# Corrupt an eval set's expected tool name, e.g. in
+# tests/integration/eval_sets/coordinator.test.json change
+# "list_campaigns" to "list_campaignsX" in one case's tool_uses, then:
+.venv/bin/pytest tests/integration -k coordinator -v --tb=short
+# Expect: that case FAILS on the tools and trajectory dimensions.
+# Revert the edit and re-run — expect it passes again.
+```
+
+This is the check that originally exposed the pre-ws16 vacuity (a "pass" was
+possible with zero real inferences); it must now be impossible to fake — a
+wrong expectation always fails the live run.
+
+#### Journey 16.4 — reading a judge/grade report (informational, not a gate)
+
+```bash
+make test-live-report
+```
+
+**Expect:** requires `agents-cli` on PATH (`uv tool install google-agents-cli`)
+in addition to the live-tier prerequisites above. Records fresh actuals for
+`tests/integration/eval_sets/review_agent.test.json` (override with
+`EVAL_SET=...`), converts them to an `agents-cli eval grade` trace, and writes
+a report under `artifacts/grade_results/` (gitignored). This is a secondary,
+**informational** cross-check over the same live traces the harness already
+gates on — `tool_use_quality_v1` agrees with the harness's tools/trajectory
+verdicts; `final_response_quality_v1` is not reliable yet (recorder doesn't
+capture tool return values) and isn't a pass/fail signal. See
+`.docs/version2-plan/working-docs/16-live-api-testing/research/agents-cli-architecture.md`
+for the full fit verdict.
+
+#### Journey 16.5 — Maps-link queries route to the Analytics Agent
+
+```bash
+make dev
+```
+
+Ask: **"Show me all campaign locations with Google Maps links"** (this is
+Act 5 Scene 5.1's query, unchanged). **Expect:** routing to the **Analytics
+Agent**'s `get_campaign_map_data` (not the Campaign Agent) — the response
+lists each campaign's store with a clickable Google Maps link. Contrast with
+**"Show me all store locations"** (no "Maps"/"links" wording), which still
+routes to the **Campaign Agent**'s `get_campaign_locations` and answers with
+plain city/state, no map links — that split is the fix.
+
+#### Journey 16.6 — creating a campaign for a product that already exists reuses it
+
+```bash
+make dev
+```
+
+Ask: **"Create a campaign for the Aurora cold brew at Target Downtown in
+Austin, Texas"** (Aurora Cold Brew 330ml is one of the seeded retail-core
+products). **Expect:** the agent calls `list_products` first, finds the
+existing product, and calls `create_campaign` directly with that product's ID
+— **no** `create_product` call, and the confirmation notes it reused the
+existing product rather than creating a duplicate. Before this workstream's
+fix the agent onboarded a brand-new duplicate "Aurora Cold Brew" product
+instead of reusing the existing one.
+
+### Workstream 11b — connected mode (live BlueZoo)
+
+Phase 11b implemented `LiveBlueZooAudienceDataSource`
+(`app/audience/live_bluezoo.py`) — the connected-mode conformer that the ws11a
+seam resolves to when `APP_MODE=connected`, reading real audience-visit rows
+from BlueZoo's MO_92 Data Warehouse (`run_query` over `sensor_visits`) in
+place of the synthetic demo generator. Demo mode (`APP_MODE=demo`/unset) is
+byte-identical — nothing here invalidates any earlier journey; these are
+additive. Full scripted version with per-scene assertions:
+`docs/demo-scenarios/connected-bluezoo.md`.
+
+#### Journey 11b.1 — connected-mode setup: building the sensor map
+
+Connected mode needs three things beyond `app/.env`'s existing Vertex vars:
+`BLUEZOO_BASE_URL` and `BLUEZOO_ACCESS_KEY` (the cluster-scoped MO_92 pair —
+put these in `app/.env`, never on a command line or in a tracked file) and
+`BLUEZOO_SENSOR_MAP` (a `screen_id:sensor_id` list built from a real
+campaign's screen roster).
+
+```bash
+.venv/bin/python -c \
+  "from app.demo_data.attribution import screens_for_campaign; print(screens_for_campaign(1))"
+```
+
+**Expect:** `[101, 102, 103]` — campaign 1's three screens. Map them onto the
+verified, currently-valid, full-coverage BlueZoo sensors from Task 6 Step 0
+(provenance: `tests/unit/data/bluezoo_sensor_visits_sample.md` — sensors
+chosen from evidence of real recent valid rows, not guessed ids, so a scene
+failure means code, not a dark/never-commissioned sensor):
+
+```
+BLUEZOO_SENSOR_MAP=101:77,102:80,103:89
+```
+
+#### Journey 11b.2 — happy path: metrics from real MO_92 rows
+
+```bash
+APP_MODE=connected BLUEZOO_SENSOR_MAP=101:77,102:80,103:89 make dev
+```
+
+(`BLUEZOO_BASE_URL`/`BLUEZOO_ACCESS_KEY` come from `app/.env`.) In the chat:
+activate a pending video for campaign 1 (insert one first if the seeded DB
+has none — see `docs/demo-scenarios/connected-bluezoo.md` Scene 2 for the
+`sqlite3 INSERT`), then ask for that campaign's metrics.
+
+**Expect:** the activation and metrics tools both succeed, and the terminal
+running `make dev` prints a line of this exact shape (logger
+`app.audience.live_bluezoo`):
+
+```
+bluezoo live read: policy=valid-only sensors=[77, 80, 89] window=<from>..<to> rows=<n>
+```
+
+with `rows=` > 0 — that log line is the proof the numbers came from BlueZoo,
+not the synthetic generator. Reported impressions will differ from what the
+same video would show under `APP_MODE=demo`, since they derive from real
+float interval counts joined through attribution rather than the
+deterministic seeded generator.
+
+#### Journey 11b.3 — fail-closed: missing BlueZoo config
+
+> **Amended (workstream 11b, 2026-07-28):** live verification showed this
+> fails earlier than originally documented here — at `make dev` **startup**,
+> not at an in-chat tool call. `app/agent.py` runs demo-data seeding at
+> **module import time** (unconditionally, every launch), which reaches the
+> audience seam before `adk web` ever binds a port — so misconfigured
+> connected mode never gets as far as a chat prompt.
+
+```bash
+APP_MODE=connected BLUEZOO_BASE_URL= BLUEZOO_ACCESS_KEY= make dev
+```
+
+Explicit empty overrides are required, not just unexported variables: the
+`demo-assets` prerequisite's own `.env` loading fills in unset vars from
+`app/.env` (shell-set values, even empty ones, win over it), so leaving them
+merely unexported can still end up BlueZoo-configured if `app/.env` sets
+them.
+
+**Expect:** `make dev` **never starts** — no `adk web` banner, port 8501
+never binds, no chat prompt is ever reachable. The terminal shows a
+`BlueZooConfigError` naming both missing variables — look for these exact
+fragments: `"APP_MODE=connected requires BLUEZOO_BASE_URL and
+BLUEZOO_ACCESS_KEY"`, `"cluster-scoped pair"`, `"SETUP_INSTRUCTIONS.md"` —
+followed by `make: *** [demo-assets] Error 1`. `campaigns.db` is unchanged —
+no metrics rows are silently synthesized from demo data. A server that
+starts successfully despite missing BlueZoo config would mean the
+fail-closed guarantee regressed.
+
+#### Journey 11b.4 — policy knob: `BLUEZOO_VALID_POLICY=include-all`
+
+```bash
+APP_MODE=connected BLUEZOO_SENSOR_MAP=101:77,102:80,103:89 BLUEZOO_VALID_POLICY=include-all make dev
+```
+
+Repeat a metrics-affecting action (activate another pending video, or
+re-generate metrics for the one from Journey 11b.2).
+
+**Expect:** the same server log line, but with `policy=include-all` in place
+of `policy=valid-only` — proof the knob is wired end to end (the SQL drops
+its `and valid` clause). `BLUEZOO_VALID_POLICY` unset (or explicitly
+`valid-only`) is the default; `rows=` may legitimately be unchanged for
+sensors 77/80/89 specifically, since they were selected for having zero
+`valid=false` rows in the verified capture window — this journey checks the
+knob, not a metric delta.
+
+### Workstream 14c — experimental visual video editing (Omni Flash)
+
+Phase 14c added `edit_video_with_omni(video_id, edit_instruction)` to the
+Review Agent's tool list — a targeted, single-attribute visual edit against
+an already-generated video (e.g. "make the background warmer", "change the
+shirt color to red"), backed by Gemini Omni Flash's Interactions API
+(`gemini-omni-flash-preview`), NOT the standard Veo generation pipeline. It
+is opt-in and gated by `ENABLE_OMNI_EDIT` (default off/unset — the tool is
+absent from the Review Agent's tool list and its instruction text in that
+default configuration; agent behavior is unchanged from before this
+workstream). Explicitly out of scope: audio/dialogue/language editing (a
+researched-and-rejected `translate_video_dialogue` placeholder exists in
+`app/tools/video_edit_tools.py` but is never wired into any agent) and
+multi-attribute or chained edits (unverified). Full scripted version with
+per-scene assertions: `docs/demo-scenarios/fashion.md` Scenario F7.
+
+#### Journey 14c.1 — request a visual edit (flag on)
+
+```bash
+ENABLE_OMNI_EDIT=true make dev
+```
+
+Ask: **"Show me the pending or activated videos for campaign 1, then request
+an edit on the first one: change the background color tone to be warmer."**
+
+**Expect:** `get_video_review_table` (or `get_video_details`) followed by
+`edit_video_with_omni(video_id=<id>, edit_instruction=...)`. The tool call
+succeeds (takes roughly 1-2 minutes — a real Omni Flash interaction, not
+mocked) and the response references **both** video ids: the original
+(e.g. `video_id=1`) and a new one for the edited result (e.g. `video_id=11`)
+— the original is left untouched. A follow-up `get_video_review_table()`
+call shows the new video row. **Lineage check** (verifier runs via Bash
+against the local `campaigns.db`):
+
+```bash
+sqlite3 campaigns.db "SELECT source_video_id FROM campaign_videos WHERE id = <new_video_id>;"
+```
+
+**Expect:** the original video's id (e.g. `1`), proving the new row traces
+back to the video it was edited from.
+
+#### Journey 14c.2 — regression: flag off (default), tool never appears
+
+```bash
+make dev
+```
+
+(no `ENABLE_OMNI_EDIT` set, or explicitly `ENABLE_OMNI_EDIT=false make dev`.)
+Ask the same query as Journey 14c.1. **Expect:** `edit_video_with_omni` is
+never called — it isn't registered on the Review Agent in this configuration
+— and the agent doesn't claim to have performed a visual edit. This is the
+regression this journey exists to catch: the tool appearing here with the
+flag off/unset would mean the `ENABLE_OMNI_EDIT` gate broke.
+
+---
+
+## Act 7: Web Application & REST API Gateway Walkthrough
+
+For technical stakeholders, front-end developers, or UX teams integrating the agent into digital signage CMS or custom portals:
+
+### Scene 7.1: Start the API Gateway & Explore Interactive OpenAPI/Swagger Docs
+
+```bash
+make api
+```
+
+Navigate to `http://localhost:8000/docs` to demonstrate interactive execution across all endpoints.
+
+### Scene 7.2: Frontend UX Designer Object Model (`object.js`)
+
+Demonstrate how the backend natively satisfies the frontend UX schema:
+
+1. **Query Status Enums**:
+   `GET /api/v1/ux/enums`
+   Shows `Status` (0-8) and `ApprovalStatus` (0-2) enumerations.
+
+2. **Query Formatted Campaigns with Nested Video Collections**:
+   `GET /api/v1/ux/campaigns`
+   Shows `UXCampaign` objects with 6-digit IDs (`"000001"`), status metadata, complete generation settings (`overall`, `items`, `people`, `performance`, `setting`, `audio`, `format`, `testing`), and child `videos`.
+
+3. **1-Click Human-in-the-Loop Approval**:
+   `POST /api/v1/ux/videos/1/approval` with body `{"approval_status": 1}`.
+   Activates the video for in-store testing immediately (`status: 6` / `TESTING_ACTIVE`).
+
+4. **Multi-Agent Natural Language Querying via REST**:
+   `POST /api/v1/agents/chat` with body:
+   ```json
+   {
+     "prompt": "Which videos have the highest RPI?"
+   }
+   ```
+   Inspect the structured routing to `analytics_agent` with response metrics and data.

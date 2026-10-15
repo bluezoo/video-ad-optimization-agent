@@ -27,11 +27,20 @@ Video Lifecycle:
 """
 
 import json
-from datetime import datetime, date, timedelta
-from typing import List, Optional
-import random
+import logging
+from datetime import date, datetime, timedelta
 
-from ..database.db import get_db_cursor
+from ..database.db import get_db_cursor, get_demo_anchor_date, set_demo_anchor_date
+from ..demo_data.attribution import screens_for_campaign
+from ..demo_data.constants import DEMO_WINDOW_DAYS
+from ..demo_data.derive import derive_video_metrics_rows
+
+# Shared with mock_data (ws10 carried item 2); the underscore alias keeps
+# the historical import site (tests import it from here) working.
+from ..demo_data.windows import load_attribution_windows as _load_attribution_windows
+from .metrics_shared import compute_rpi
+
+logger = logging.getLogger(__name__)
 
 
 def list_pending_videos(
@@ -108,6 +117,72 @@ def list_pending_videos(
         }
 
 
+def _open_attribution_windows(cursor, video_id, ad_campaign_id, active_from) -> int:
+    """Open one window per campaign screen (skip screens already open).
+
+    Reactivation after a pause intentionally opens fresh windows alongside
+    the closed history row left by the pause, even though their date
+    coverage can overlap — the join (attribution.derive_rows_from_windows)
+    is responsible for deduping that overlap, not this bridge."""
+    opened = 0
+    for screen_id in screens_for_campaign(ad_campaign_id):
+        cursor.execute(
+            "SELECT 1 FROM video_attribution "
+            "WHERE video_id = ? AND screen_id = ? AND active_to IS NULL",
+            (video_id, screen_id),
+        )
+        if cursor.fetchone():
+            continue
+        cursor.execute(
+            "INSERT INTO video_attribution "
+            "(video_id, ad_campaign_id, screen_id, active_from, active_to) "
+            "VALUES (?, ?, ?, ?, NULL)",
+            (video_id, ad_campaign_id, screen_id, active_from.isoformat()),
+        )
+        opened += 1
+    return opened
+
+
+def _close_attribution_windows(cursor, video_id, active_to, expect_open: bool) -> int:
+    """Close all open windows. Unlike the donor bridge's silent no-op, a miss
+    where windows were expected logs a warning."""
+    cursor.execute(
+        "UPDATE video_attribution SET active_to = ? "
+        "WHERE video_id = ? AND active_to IS NULL",
+        (active_to.isoformat(), video_id),
+    )
+    closed = cursor.rowcount
+    if closed == 0 and expect_open:
+        logger.warning("no open attribution window to close for video %s", video_id)
+    return closed
+
+
+def _insert_derived_metrics(cursor, ad_campaign_id, video_ids, date_from, date_to) -> int:
+    """Insert join-derived deterministic rows; INSERT OR IGNORE keeps
+    overlapping regeneration idempotent (UNIQUE(video_id, metric_date)).
+    Videos with no stored windows (pre-bridge rows) fall back to the
+    facade's synthesized always-open windows."""
+    windows = _load_attribution_windows(cursor, video_ids)
+    inserted = 0
+    for row in derive_video_metrics_rows(
+        ad_campaign_id, video_ids, date_from, date_to, windows=windows
+    ):
+        cursor.execute('''
+            INSERT OR IGNORE INTO video_metrics
+            (video_id, metric_date, impressions, dwell_time_seconds, circulation, revenue)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (
+            row["video_id"],
+            row["metric_date"],
+            row["impressions"],
+            row["dwell_time_seconds"],
+            row["circulation"],
+            row["revenue"]
+        ))
+        inserted += cursor.rowcount if cursor.rowcount > 0 else 0
+    return inserted
+
+
 def activate_video(
     video_id: int,
     activated_by: str = "user"
@@ -163,18 +238,29 @@ def activate_video(
             WHERE id = ?
         ''', (now, activated_by, video_id))
 
-        # Generate mock metrics for this video
-        # Start from today, generate 30 days of data
-        metrics_generated = _generate_mock_video_metrics(
-            cursor=cursor,
-            video_id=video_id,
-            start_date=date.today(),
-            days=30
+        # Open attribution windows across the campaign's screens for the
+        # whole demo history window (the 30-day backfill fiction), THEN
+        # derive metrics through them — the join only accrues where a
+        # window covers.
+        anchor = date.fromisoformat(get_demo_anchor_date(cursor))
+        window_start = anchor - timedelta(days=DEMO_WINDOW_DAYS - 1)
+        _open_attribution_windows(
+            cursor,
+            video_id,
+            video["campaign_id"],
+            datetime.combine(window_start, datetime.min.time()),
+        )
+        metrics_generated = _insert_derived_metrics(
+            cursor,
+            video["campaign_id"],
+            [video_id],
+            window_start,
+            anchor,
         )
 
         return {
             "status": "success",
-            "message": f"Video activated successfully and is now live",
+            "message": "Video activated successfully and is now live",
             "video": {
                 "id": video_id,
                 "video_filename": video["video_filename"],
@@ -189,7 +275,7 @@ def activate_video(
 
 
 def activate_batch(
-    video_ids: List[int],
+    video_ids: list[int],
     activated_by: str = "user"
 ) -> dict:
     """Activate multiple videos at once.
@@ -267,9 +353,11 @@ def pause_video(video_id: int) -> dict:
             WHERE id = ?
         ''', (video_id,))
 
+        _close_attribution_windows(cursor, video_id, datetime.now(), expect_open=True)
+
         return {
             "status": "success",
-            "message": f"Video paused successfully",
+            "message": "Video paused successfully",
             "video": {
                 "id": video_id,
                 "video_filename": video["video_filename"],
@@ -321,9 +409,15 @@ def archive_video(
             WHERE id = ?
         ''', (video_id,))
 
+        # Only an activated video is expected to have open windows; archiving
+        # a never-activated or paused video closes nothing, silently.
+        _close_attribution_windows(
+            cursor, video_id, datetime.now(), expect_open=(video["status"] == "activated")
+        )
+
         return {
             "status": "success",
-            "message": f"Video archived" + (f": {reason}" if reason else ""),
+            "message": "Video archived" + (f": {reason}" if reason else ""),
             "video": {
                 "id": video_id,
                 "video_filename": video["video_filename"],
@@ -447,72 +541,6 @@ def get_activation_summary(campaign_id: int = None) -> dict:
         }
 
 
-# =============================================================================
-# Mock Metrics Generation (only called on activation)
-# =============================================================================
-
-def _generate_mock_video_metrics(
-    cursor,
-    video_id: int,
-    start_date: date,
-    days: int = 30
-) -> int:
-    """Generate mock metrics for an activated video.
-
-    Creates realistic in-store retail media metrics:
-    - Impressions: 800-2000 per day (with weekly patterns)
-    - Dwell time: 3-8 seconds average
-    - Circulation: 1500-4000 foot traffic
-    - Revenue: Based on impressions and RPI
-
-    Args:
-        cursor: Database cursor
-        video_id: The video ID to generate metrics for
-        start_date: Start date for metrics
-        days: Number of days of metrics to generate
-
-    Returns:
-        Number of metric records created
-    """
-    metrics_created = 0
-
-    # Base performance (varies by video for diversity)
-    base_impressions = random.randint(800, 1500)
-    base_dwell = random.uniform(4.0, 6.5)
-    base_rpi = random.uniform(0.08, 0.15)  # Revenue per impression
-
-    for day_offset in range(days):
-        metric_date = start_date + timedelta(days=day_offset)
-
-        # Day of week multiplier (weekends higher)
-        dow = metric_date.weekday()
-        if dow >= 5:  # Weekend
-            dow_multiplier = random.uniform(1.3, 1.6)
-        elif dow == 0 or dow == 4:  # Monday, Friday
-            dow_multiplier = random.uniform(1.0, 1.2)
-        else:  # Tue-Thu
-            dow_multiplier = random.uniform(0.85, 1.05)
-
-        # Add some random variation
-        daily_variation = random.uniform(0.85, 1.15)
-
-        # Calculate metrics
-        impressions = int(base_impressions * dow_multiplier * daily_variation)
-        dwell_time = round(base_dwell * random.uniform(0.9, 1.1), 2)
-        circulation = int(impressions * random.uniform(1.8, 2.5))  # More foot traffic than impressions
-        revenue = round(impressions * base_rpi * random.uniform(0.9, 1.1), 2)
-
-        cursor.execute('''
-            INSERT OR IGNORE INTO video_metrics
-            (video_id, metric_date, impressions, dwell_time_seconds, circulation, revenue)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (video_id, metric_date.isoformat(), impressions, dwell_time, circulation, revenue))
-
-        metrics_created += 1
-
-    return metrics_created
-
-
 def generate_additional_metrics(
     video_id: int,
     days: int = 7
@@ -547,31 +575,37 @@ def generate_additional_metrics(
                 "message": f"Video {video_id} is not activated (metrics only for live videos)"
             }
 
-        # Get the last metric date
+        # Advance the demo universe: move the anchor forward by `days` and
+        # fill the new dates for EVERY activated video, so no video lags the
+        # anchor (single windowing rule, no per-video drift).
+        old_anchor = date.fromisoformat(get_demo_anchor_date(cursor))
+        new_anchor = old_anchor + timedelta(days=days)
+        set_demo_anchor_date(cursor, new_anchor.isoformat())
+
         cursor.execute('''
-            SELECT MAX(metric_date) as last_date FROM video_metrics WHERE video_id = ?
-        ''', (video_id,))
+            SELECT id, campaign_id FROM campaign_videos WHERE status = 'activated'
+        ''')
+        by_campaign: dict = {}
+        for row in cursor.fetchall():
+            by_campaign.setdefault(row["campaign_id"], []).append(row["id"])
 
-        row = cursor.fetchone()
-        if row and row["last_date"]:
-            last_date = date.fromisoformat(row["last_date"])
-            start_date = last_date + timedelta(days=1)
-        else:
-            start_date = date.today()
+        for cid, vids in by_campaign.items():
+            _insert_derived_metrics(
+                cursor, cid, vids, old_anchor + timedelta(days=1), new_anchor
+            )
 
-        # Generate new metrics
-        metrics_created = _generate_mock_video_metrics(
-            cursor=cursor,
-            video_id=video_id,
-            start_date=start_date,
-            days=days
+        # The response contract's count is for the requested video
+        cursor.execute(
+            "SELECT COUNT(*) AS n FROM video_metrics WHERE video_id = ? AND metric_date > ?",
+            (video_id, old_anchor.isoformat()),
         )
+        metrics_created = cursor.fetchone()["n"]
 
         return {
             "status": "success",
             "message": f"Generated {metrics_created} additional metric days",
             "video_id": video_id,
-            "start_date": start_date.isoformat(),
+            "start_date": (old_anchor + timedelta(days=1)).isoformat(),
             "days_generated": metrics_created
         }
 
@@ -644,17 +678,16 @@ def get_video_review_table(
         status_counts = {"generated": 0, "activated": 0, "paused": 0, "archived": 0}
 
         for row in rows:
-            # Get public URLs for viewing - check if video actually exists in GCS
+            # Public URLs (ws09 policy): only for files that actually exist
             video_url = None
             video_exists_in_storage = False
             if row["video_filename"]:
                 video_url = storage.get_video_public_url(row["video_filename"], check_exists=True)
                 video_exists_in_storage = video_url is not None
-                # If file doesn't exist, still provide URL for reference but mark it
-                if not video_exists_in_storage:
-                    video_url = storage.get_video_public_url(row["video_filename"], check_exists=False)
-            # Product image URL (not thumbnail)
-            product_image_url = storage.get_public_url(f"product-images/{row['product_image']}") if row["product_image"] else None
+            product_image_url = (
+                storage.get_product_image_public_url(row["product_image"])
+                if row["product_image"] else None
+            )
 
             # Map status to display text
             status_display = {
@@ -816,15 +849,12 @@ def get_video_details(video_id: int) -> dict:
                 "message": f"Video {video_id} not found"
             }
 
-        # Get public URLs - check if video actually exists in GCS
+        # Public URLs (ws09 policy): only for files that actually exist
         video_url = None
         video_exists_in_storage = False
         if row["video_filename"]:
             video_url = storage.get_video_public_url(row["video_filename"], check_exists=True)
             video_exists_in_storage = video_url is not None
-            # If file doesn't exist, still provide URL for reference
-            if not video_exists_in_storage:
-                video_url = storage.get_video_public_url(row["video_filename"], check_exists=False)
 
         thumbnail_url = None
         if row["thumbnail_path"]:
@@ -859,7 +889,7 @@ def get_video_details(video_id: int) -> dict:
                     "total_impressions": int(m["total_impressions"]),
                     "avg_dwell_seconds": round(m["avg_dwell"], 1),
                     "total_revenue": round(m["total_revenue"], 2),
-                    "rpi": round(m["total_revenue"] / m["total_impressions"], 4) if m["total_impressions"] > 0 else 0
+                    "rpi": compute_rpi(m["total_revenue"], m["total_impressions"])
                 }
 
         # Build view action based on whether video exists

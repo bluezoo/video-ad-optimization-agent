@@ -35,80 +35,89 @@ Usage:
     Or: adk api_server ad-campaign-agent
 """
 
-from google.adk.agents import LlmAgent
+# Initialize database and populate mock data on import
+# Wrapped in try-except for better error reporting in Agent Engine
+try:
+    from google.adk.agents import Agent
+except ImportError:
+    from google.adk.agents import LlmAgent as Agent
+
 # NOTE: BuiltInCodeExecutor cannot be used with function calling tools
 # It's mutually exclusive - you get either tools OR code execution, not both
 # For chart generation, consider a separate visualization agent without tools
-
-from .config import MODEL, APP_NAME, APP_DESCRIPTION
+from .config import APP_DESCRIPTION, APP_NAME, DB_PATH, ENABLE_OMNI_EDIT, MODEL
 from .database.db import init_database
-from .database.mock_data import populate_mock_data
+from .database.mock_data import seed_demo_data
 
 # Import all tools
 from .tools.campaign_tools import (
     create_campaign,
-    list_campaigns,
     get_campaign,
+    list_campaigns,
     update_campaign,
 )
 from .tools.image_tools import (
     add_seed_image,
     analyze_image,
-    list_campaign_images,
     list_available_images,
-)
-from .tools.video_tools import (
-    generate_video_ad,
-    generate_video_variation,
-    apply_winning_formula,
-    list_campaign_ads,
-    generate_video_with_properties,
-    get_video_properties,
-    analyze_video,
-    # New two-stage pipeline tools
-    generate_video_from_product,
-    generate_video_with_variation,
-    list_products,
-    list_campaign_videos,
-    get_variation_presets,
-)
-from .tools.review_tools import (
-    list_pending_videos,
-    activate_video,
-    activate_batch,
-    pause_video,
-    archive_video,
-    get_video_status,
-    get_activation_summary,
-    generate_additional_metrics,
-    # New review table tools
-    get_video_review_table,
-    get_video_details,
-)
-from .tools.metrics_tools import (
-    get_campaign_metrics,
-    get_top_performing_ads,
-    get_campaign_insights,
-    compare_campaigns,
-    generate_metrics_visualization,
+    list_campaign_images,
 )
 from .tools.maps_tools import (
-    get_campaign_locations,
-    search_nearby_stores,
-    get_location_demographics,
     generate_map_visualization,
+    generate_static_map,
+    get_campaign_locations,
     # New Google Maps integration tools
     get_campaign_map_data,
-    generate_static_map,
+    get_location_demographics,
+    search_nearby_stores,
+)
+from .tools.metrics_tools import (
+    compare_campaigns,
+    compare_creatives_within_campaign,
+    generate_creative_comparison_chart,
+    generate_metrics_visualization,
+    get_campaign_insights,
+    get_campaign_metrics,
+    get_top_performing_ads,
+)
+from .tools.onboarding_tools import (
+    create_product,
+    generate_product_image,
+    import_products_from_folder,
+)
+from .tools.review_tools import (
+    activate_batch,
+    activate_video,
+    archive_video,
+    generate_additional_metrics,
+    get_activation_summary,
+    get_video_details,
+    # New review table tools
+    get_video_review_table,
+    get_video_status,
+    list_pending_videos,
+    pause_video,
+)
+from .tools.video_edit_tools import edit_video_with_omni
+from .tools.video_tools import (
+    analyze_video,
+    apply_winning_formula,
+    generate_video_ad,
+    # New two-stage pipeline tools
+    generate_video_from_product,
+    generate_video_variation,
+    generate_video_with_properties,
+    generate_video_with_variation,
+    get_variation_presets,
+    get_video_properties,
+    list_campaign_ads,
+    list_campaign_videos,
+    list_products,
 )
 
-# Initialize database and populate mock data on import
-# Wrapped in try-except for better error reporting in Agent Engine
-import sys
-from .config import DB_PATH
 try:
     init_database()
-    populate_mock_data()
+    seed_demo_data()
 except Exception as e:
     print(f"[Agent Init] Database initialization error: {e}", file=sys.stderr)
     print(f"[Agent Init] DB_PATH attempted: {DB_PATH}", file=sys.stderr)
@@ -119,7 +128,7 @@ except Exception as e:
 # Campaign Agent - Handles campaign CRUD and location features
 # =============================================================================
 
-CAMPAIGN_AGENT_INSTRUCTION = """You are the Campaign Management Agent for a fashion retail company.
+CAMPAIGN_AGENT_INSTRUCTION = """You are the Campaign Management Agent for an in-store retail media network that runs video ad campaigns on store screens.
 
 ## Product-Centric Model (IMPORTANT)
 Each campaign is tied to ONE product at ONE store location.
@@ -136,20 +145,41 @@ You handle all campaign-related tasks:
 - List campaigns with product info
 - View detailed campaign with product and video details
 - Update campaign status and properties
-- Show campaign locations on a map
+- List store locations / addresses with get_campaign_locations — this returns
+  PLAIN store addresses, NOT Google Maps links. If the user asks for Google
+  Maps links or to see campaigns "on a map", that is the Analytics Agent's
+  get_campaign_map_data; do not claim to produce Maps links yourself.
+- Onboard new products into the catalog (create, bulk-import, generate reference images)
+
+## Onboarding New Products (Phase 15)
+Any vendor can bring their own product — the catalog is not fixed:
+- create_product(name, category, description, attributes) — add one product conversationally
+- import_products_from_folder(folder_path, category) — bulk-import a folder of product photos
+- generate_product_image(product_id) — generate a clean reference photo for a product without one
+A product needs a stored reference image (image_status "available") before video
+generation can use it as a visual reference; "pending" products can still get
+campaigns, and videos fall back to text-only scene descriptions with a warning.
 
 ## Creating Campaigns
-To create a campaign:
-1. First browse products: Media Agent has list_products()
-2. Then create: create_campaign(product_id=4, store_name="Westfield Century City", city="Los Angeles", state="California")
-3. Campaign name auto-generated: "Blue Floral Maxi Dress - Westfield Century City"
+When the user names a product to advertise, ALWAYS resolve it against the
+EXISTING catalog before creating anything — most named products (e.g. "the
+Aurora cold brew") are already onboarded:
+1. Resolve the product first. Call your OWN list_products() tool to browse the
+   catalog and find a match; use a category filter when you can infer one
+   (e.g. list_products(category="beverage")) or scan the list for a name match.
+   Reuse the matching product's product_id.
+2. Only create_product(...) when NO existing product matches (a genuinely new
+   product — see "Onboarding New Products"). Never create_product for a product
+   that already exists in the catalog; that makes confusing duplicates.
+3. Then create the campaign: create_campaign(product_id=<resolved id>, store_name="Westfield Century City", city="Los Angeles", state="California")
+4. Campaign name auto-generated: "Blue Floral Maxi Dress - Westfield Century City"
 
 ## Pre-loaded Demo Campaigns
 The system has 4 product-centric campaigns:
 1. **Blue Floral Maxi Dress - Westfield Century City** (Los Angeles, CA)
 2. **Elegant Black Cocktail Dress - Bloomingdale's 59th Street** (New York, NY)
 3. **Black High Waist Trousers - Water Tower Place** (Chicago, IL)
-4. **Emerald Satin Slip Dress - The Grove** (Los Angeles, CA)
+4. **Sage Satin Camisole - The Grove** (Los Angeles, CA)
 
 ## Response Guidelines
 - Show product info when listing campaigns
@@ -157,10 +187,10 @@ The system has 4 product-centric campaigns:
 - Guide to Media Agent for video generation after campaign creation
 """
 
-campaign_agent = LlmAgent(
+campaign_agent = Agent(
     model=MODEL,
     name="campaign_agent",
-    description="Manages ad campaigns: create, list, view, update campaigns and handle location/map features",
+    description="Manages ad campaigns (create, list, view, update) and store location/address lookup (plain store addresses only — Google Maps links and maps come from the Analytics Agent), AND onboards new products into the catalog: create_product, import_products_from_folder, generate_product_image. Any request to add, register, or onboard a product goes here.",
     instruction=CAMPAIGN_AGENT_INSTRUCTION,
     tools=[
         create_campaign,
@@ -170,6 +200,14 @@ campaign_agent = LlmAgent(
         get_campaign_locations,
         search_nearby_stores,
         get_location_demographics,
+        # Read-only catalog browse so campaign creation can RESOLVE an existing
+        # product (by category/name) before onboarding a new one — avoids
+        # duplicate products on "create a campaign for <named product>".
+        list_products,
+        # Product onboarding (Phase 15)
+        create_product,
+        import_products_from_folder,
+        generate_product_image,
     ],
 )
 
@@ -177,32 +215,37 @@ campaign_agent = LlmAgent(
 # Media Agent - Handles image and video generation
 # =============================================================================
 
-MEDIA_AGENT_INSTRUCTION = """You are the Media Generation Agent for a fashion retail company.
+MEDIA_AGENT_INSTRUCTION = """You are the Media Generation Agent for an in-store retail media network.
 
 ## Your Responsibilities
 You handle all media generation and management tasks:
-- Browse available products (22 pre-loaded products)
+- Browse available products from the product catalog (fashion plus multi-vertical retail: beverages, QSR menu items, electronics, furniture, home appliances — and any vendor-onboarded product)
 - Generate videos using two-stage pipeline (scene image → video animation)
 - Create variations with different models, settings, and moods
 - List generated videos and their status
-- Analyze images to extract fashion metadata (legacy)
+- Analyze images to extract product metadata (legacy)
+
+You BROWSE the catalog but cannot add to it. If the user wants to ADD, register,
+or onboard a new product (create_product, import_products_from_folder,
+generate_product_image), transfer to the Campaign Agent — those tools live there.
 
 ## Product Library (NEW)
-The system has 22 pre-loaded products in scripts/products/:
-- Dresses, tops, pants, outerwear, skirts
+The system has the product catalog (fashion plus multi-vertical retail: beverages, QSR menu items, electronics, furniture, home appliances — and any vendor-onboarded product):
+- Dresses, tops, pants, outerwear, skirts, beverages, electronics, furniture, home appliances, and more
 - Each product has an image and detailed metadata
 - Use list_products() to browse available products
 - Use list_products(category="dress") to filter by category
+- Use list_products(category="beverage") to filter by category
 
 ## Two-Stage Video Generation Pipeline (NEW)
 All videos now use a two-stage pipeline:
 
-**Stage 1: Scene Image** (Gemini 2.0 Flash Exp)
+**Stage 1: Scene Image** (Gemini image model — see IMAGE_GENERATION in app/config.py)
 - Takes product image + variation parameters
-- Generates scene-ready first frame with model wearing product
+- Generates scene-ready first frame (a model wearing the product for wearables; a product-centric hero shot for other categories — automatic by product category)
 - Saved as thumbnail for review
 
-**Stage 2: Video Animation** (Veo 3.1)
+**Stage 2: Video Animation** (video model — see VIDEO_GEN_MODEL in app/config.py)
 - Animates the scene image into 8-second 9:16 video
 - Cinematic camera movements and transitions
 - Saved with descriptive filename: [product-name]-[MMDDYY]-[variation-name].mp4
@@ -212,7 +255,8 @@ Pass an optional variation dict: generate_video_from_product(campaign_id, produc
 
 ## Creative Variations (NEW)
 Videos can be customized with variation parameters (as dict):
-- **model_ethnicity**: asian, european, african, latina, south-asian, diverse
+- **presentation_mode**: "auto" (default — decided by product category), "product_only" (no human model), "with_model" (wearables only)
+- **model_ethnicity**: asian, european, african, latina, south-asian, diverse (applies to wearable products only)
 - **setting**: studio, beach, urban, cafe, rooftop, garden, nature, etc.
 - **mood**: elegant, romantic, bold, playful, sophisticated, energetic, serene
 - **lighting**: natural, studio, dramatic, soft, golden-hour, neon, moody
@@ -253,10 +297,37 @@ Use list_campaign_videos(status='generated') to see pending videos.
 - Guide users to Review Agent for activation
 """
 
-media_agent = LlmAgent(
+_OMNI_EDIT_MEDIA_AGENT_SECTION = """
+
+## Experimental: Editing an EXISTING Video -- NOT Your Job
+
+If the user asks to EDIT, TWEAK, ADJUST, or CHANGE something about an
+ALREADY-GENERATED video -- referenced by id ("edit video 5"), by reference
+("edit the video I just made", "edit the first one"), or by describing a
+targeted visual tweak to it ("make the background warmer", "change the
+lighting on that video") -- this is the Review Agent's job via its
+experimental edit_video_with_omni tool, NOT yours. Call
+transfer_to_agent("review_agent") for these requests instead of calling
+generate_video_with_variation or generate_video_from_product.
+
+Only generate a NEW video yourself when the user actually wants a different
+take from scratch (a new setting, model, mood, or a video that doesn't exist
+yet) rather than a small tweak to one that already exists. If genuinely
+unsure which the user means, ask; do not silently treat an edit request as a
+request for a brand-new video.
+"""
+
+if ENABLE_OMNI_EDIT:
+    MEDIA_AGENT_INSTRUCTION = MEDIA_AGENT_INSTRUCTION + _OMNI_EDIT_MEDIA_AGENT_SECTION
+
+_MEDIA_AGENT_DESCRIPTION = "Browses the multi-vertical product catalog and generates ad videos (product-centric shots, or human-model shots for wearables) using the two-stage pipeline (scene image → video animation) with creative variations (setting, mood, lighting, etc.), and lists generated videos. Videos start with status='generated' and must be activated by Review Agent."
+if ENABLE_OMNI_EDIT:
+    _MEDIA_AGENT_DESCRIPTION += " Does NOT edit existing videos -- edit/tweak requests on an already-generated video go to Review Agent instead."
+
+media_agent = Agent(
     model=MODEL,
     name="media_agent",
-    description="Generates videos using two-stage pipeline (scene image → video animation) with creative variations. Browses 22 pre-loaded products, generates videos with variation parameters (model ethnicity, setting, mood, lighting, etc.), and lists generated videos. Videos start with status='generated' and must be activated by Review Agent.",
+    description=_MEDIA_AGENT_DESCRIPTION,
     instruction=MEDIA_AGENT_INSTRUCTION,
     tools=[
         # Product browsing (NEW)
@@ -286,7 +357,7 @@ media_agent = LlmAgent(
 # Analytics Agent - Handles metrics, insights, and visualizations
 # =============================================================================
 
-ANALYTICS_AGENT_INSTRUCTION = """You are the Analytics Agent for a fashion retail company's in-store media network.
+ANALYTICS_AGENT_INSTRUCTION = """You are the Analytics Agent for an in-store retail media network.
 
 ## Your Responsibilities
 You analyze in-store retail media performance metrics:
@@ -307,7 +378,7 @@ The system tracks these retail-appropriate metrics:
 RPI is THE key performance indicator for retail media networks.
 Formula: RPI = Total Revenue / Total Impressions
 
-Each active campaign has 90 days of mock performance metrics.
+Each active campaign has 30 days of mock performance metrics.
 
 ## Chart Visualization Capabilities
 Use generate_metrics_visualization to create professional charts:
@@ -318,6 +389,16 @@ Use generate_metrics_visualization to create professional charts:
 
 Available metrics for visualization: revenue_per_impression, impressions, dwell_time, circulation
 
+## Creative Comparison (RPI across creatives) — NEW
+When the user asks which creative/video/variation is winning WITHIN one campaign:
+- compare_creatives_within_campaign(campaign_id) - per-creative RPI (the primary KPI),
+  impressions, revenue, dwell time, and variation characteristics, ranked by RPI
+- generate_creative_comparison_chart(campaign_id) - deterministic bar chart of RPI per
+  creative (rendered from the exact same numbers, not AI-drawn), saved as an artifact;
+  also returns the full comparison data
+Use compare_campaigns only for comparing WHOLE campaigns against each other;
+use these two for creatives inside a single campaign.
+
 ## Google Maps Integration (NEW)
 **Direct Google Maps Links:**
 - get_campaign_map_data() - Get all campaign locations with:
@@ -325,7 +406,11 @@ Available metrics for visualization: revenue_per_impression, impressions, dwell_
   - Product images and info
   - Video URLs and thumbnails
   - Performance metrics per location
-- Use this when users ask "show me campaign locations" or "where are my stores"
+- Call it with NO arguments — get_campaign_map_data() — for the standard request;
+  it already includes videos, products, and metrics by default. Only pass the
+  include_* flags if the user explicitly asks to omit one of those sections.
+- Use this when users ask "show me campaign locations", "where are my stores",
+  or for any request that wants Google Maps links / campaigns shown on a map
 
 **Static Maps (Real Google Maps Images):**
 - generate_static_map() - Generate actual Google Maps image with markers
@@ -338,7 +423,7 @@ Use generate_map_visualization to create AI-generated geographic infographics:
 - **visualization_type**:
   - performance_map: All campaigns on US map with revenue bubbles
   - regional_comparison: Compare metrics by region (West/East/Midwest)
-  - category_by_region: Fashion styles performance by geography
+  - category_by_region: Product category performance by geography
   - market_opportunity: Current coverage vs expansion potential
   - campaign_heatmap: Revenue/density heatmap visualization
 - **style** (NEW):
@@ -354,6 +439,7 @@ All AI visualizations use Gemini 3 Pro Image and saved as artifacts.
 - Compare circulation to impressions to show visibility ratio
 - Provide actionable recommendations based on retail context
 - Offer to generate visualizations when discussing data
+- "Which creative/variation is winning in campaign X" → compare_creatives_within_campaign (add generate_creative_comparison_chart when a visual is asked for or helpful)
 - For "show me on a map" requests:
   1. First use get_campaign_map_data() for data + Google Maps links
   2. Offer generate_static_map() for a real map image
@@ -362,7 +448,7 @@ All AI visualizations use Gemini 3 Pro Image and saved as artifacts.
 - Include clickable Google Maps links when showing locations
 """
 
-analytics_agent = LlmAgent(
+analytics_agent = Agent(
     model=MODEL,
     name="analytics_agent",
     description="Analyzes campaign metrics, finds top performers, generates insights, creates visual charts/infographics, and provides Google Maps integration with store locations, static maps, and AI-generated map visualizations",
@@ -372,7 +458,9 @@ analytics_agent = LlmAgent(
         get_top_performing_ads,
         get_campaign_insights,
         compare_campaigns,
+        compare_creatives_within_campaign,
         generate_metrics_visualization,
+        generate_creative_comparison_chart,
         # Google Maps integration tools
         get_campaign_map_data,
         generate_static_map,
@@ -384,7 +472,7 @@ analytics_agent = LlmAgent(
 # Review Agent - Handles HITL video activation workflow
 # =============================================================================
 
-REVIEW_AGENT_INSTRUCTION = """You are the Video Review and Activation Agent for a fashion retail company.
+REVIEW_AGENT_INSTRUCTION = """You are the Video Review and Activation Agent for an in-store retail media network.
 
 ## Your Responsibilities
 You handle the Human-in-the-Loop (HITL) video activation workflow:
@@ -459,32 +547,69 @@ When a video is activated, the system generates 30 days of realistic mock metric
 - For detailed video info, use get_video_details(video_id)
 """
 
-review_agent = LlmAgent(
+_OMNI_EDIT_INSTRUCTION_SECTION = """
+
+## Experimental: Visual Video Editing (Omni Flash)
+
+**edit_video_with_omni(video_id, edit_instruction)** - Request a targeted
+visual edit to an existing generated video (e.g. "change the shirt color to
+red", "remove the coffee cup from the counter"). This is an EXPERIMENTAL,
+opt-in capability backed by Gemini Omni Flash, separate from the standard
+Veo generation pipeline:
+- Only single-attribute visual edits are verified to work well; avoid
+  combining multiple unrelated changes in one instruction.
+- Do NOT use this for audio, dialogue, music, or language changes -- Omni
+  Flash does not support voice/audio editing. If asked for something like
+  that, explain plainly that it isn't supported rather than attempting the
+  tool.
+- The edit produces a NEW video (a new video_id) and leaves the original
+  untouched; mention both ids in your response so the user can compare.
+- When the user asks you to "apply", "make", or "do" an edit on a video you
+  already showed them (from get_video_review_table / get_video_details, or
+  from a prior turn in this conversation) -- including a short follow-up
+  like "yes, apply that" or "do it" -- call edit_video_with_omni YOURSELF.
+  Do NOT transfer to Media Agent to generate a new video in response to an
+  edit request; generating a new video is not the same thing as editing an
+  existing one, and Media Agent's tools cannot fulfill this.
+"""
+
+if ENABLE_OMNI_EDIT:
+    REVIEW_AGENT_INSTRUCTION = REVIEW_AGENT_INSTRUCTION + _OMNI_EDIT_INSTRUCTION_SECTION
+
+_review_agent_tools = [
+    # New review table tools (PRIMARY)
+    get_video_review_table,
+    get_video_details,
+    # Legacy and activation tools
+    list_pending_videos,
+    activate_video,
+    activate_batch,
+    pause_video,
+    archive_video,
+    get_video_status,
+    get_activation_summary,
+    generate_additional_metrics,
+]
+if ENABLE_OMNI_EDIT:
+    _review_agent_tools.append(edit_video_with_omni)
+
+_REVIEW_AGENT_DESCRIPTION = "Manages HITL video activation workflow: lists pending videos, activates videos to push live (generates metrics), pauses/archives videos, checks status. Videos must be activated before metrics appear."
+if ENABLE_OMNI_EDIT:
+    _REVIEW_AGENT_DESCRIPTION += " Also handles EDITING an existing generated video (a targeted visual tweak, e.g. 'edit video 5', 'make the background warmer') via the experimental edit_video_with_omni tool -- this is different from generating a brand-new video, which is Media Agent's job."
+
+review_agent = Agent(
     model=MODEL,
     name="review_agent",
-    description="Manages HITL video activation workflow: lists pending videos, activates videos to push live (generates metrics), pauses/archives videos, checks status. Videos must be activated before metrics appear.",
+    description=_REVIEW_AGENT_DESCRIPTION,
     instruction=REVIEW_AGENT_INSTRUCTION,
-    tools=[
-        # New review table tools (PRIMARY)
-        get_video_review_table,
-        get_video_details,
-        # Legacy and activation tools
-        list_pending_videos,
-        activate_video,
-        activate_batch,
-        pause_video,
-        archive_video,
-        get_video_status,
-        get_activation_summary,
-        generate_additional_metrics,
-    ],
+    tools=_review_agent_tools,
 )
 
 # =============================================================================
 # Root Coordinator Agent
 # =============================================================================
 
-COORDINATOR_INSTRUCTION = """You are the Ad Campaign Management Coordinator for a fashion retail company.
+COORDINATOR_INSTRUCTION = """You are the Ad Campaign Management Coordinator for an in-store retail media network.
 
 You coordinate between specialized agents to help users with their ad campaign needs.
 
@@ -500,14 +625,24 @@ This enables:
 ## Your Team
 You have four specialized agents:
 
-1. **Campaign Agent** - For campaign management
+1. **Campaign Agent** - For campaign management AND product onboarding
    - Create campaigns: create_campaign(product_id, store_name, city, state)
+   - When a request names a product to advertise, the existing product is
+     resolved from the catalog FIRST (via list_products) and its id reused;
+     create_product is only for genuinely new products, not ones already
+     onboarded — do not let a "create a campaign for <named product>" request
+     duplicate an existing product
    - List, view, update campaigns (each shows product info)
-   - Show campaigns on maps, get demographics
+   - List store locations / addresses (get_campaign_locations — plain store
+     addresses only, it does NOT produce Google Maps links), get demographics
+   - Onboard NEW products into the catalog: create_product(name, category, ...),
+     import_products_from_folder(folder_path), generate_product_image(product_id)
+     — any "add/register/onboard a product" request goes to the Campaign Agent
+     (the Media Agent only BROWSES the catalog, it cannot add to it)
 
 2. **Media Agent** - For video generation
-   - Browse 22 pre-loaded products: list_products()
-   - Generate videos with variations (model ethnicity, setting, mood, etc.)
+   - Browse the product catalog (fashion plus multi-vertical retail: beverages, QSR menu items, electronics, furniture, home appliances — and any vendor-onboarded product): list_products()
+   - Generate videos with variations (setting, mood, etc.; model options like ethnicity apply to wearables only)
    - Two-stage pipeline: scene image → video animation
    - Videos start with status='generated' (not live)
 
@@ -521,6 +656,11 @@ You have four specialized agents:
    - View performance metrics (only for activated videos)
    - Find top performers, get insights
    - Generate charts and map visualizations
+   - Google Maps links & campaign locations on a map: get_campaign_map_data()
+     — this is the ONLY tool that returns clickable Google Maps URLs. Any
+     request for "Google Maps links", "show me on a map", or "campaign
+     locations on a map" goes to the Analytics Agent, NOT the Campaign Agent
+     (whose get_campaign_locations returns plain addresses with no map links).
 
 ## Workflow Example
 User: "I want to promote the black trousers at the Chicago store"
@@ -531,12 +671,15 @@ User: "I want to promote the black trousers at the Chicago store"
 4. **Activate** (Review Agent): activate_video(video_id=Y)
 5. **View metrics** (Analytics Agent): get_campaign_metrics(campaign_id=X)
 
+The same workflow applies to any product category, not just fashion — e.g.
+User: "Create a campaign for the Aurora cold brew at Target Downtown in Austin"
+
 ## Pre-loaded Demo Campaigns
 4 product-centric campaigns ready:
 - Blue Floral Maxi Dress - Westfield Century City (LA)
 - Elegant Black Cocktail Dress - Bloomingdale's 59th Street (NY)
 - Black High Waist Trousers - Water Tower Place (Chicago)
-- Emerald Satin Slip Dress - The Grove (LA)
+- Sage Satin Camisole - The Grove (LA)
 
 ## Response Guidelines
 - Explain product-centric model when creating campaigns
@@ -545,11 +688,30 @@ User: "I want to promote the black trousers at the Chicago store"
 - For same product at new store → create new campaign
 """
 
+_OMNI_EDIT_COORDINATOR_SECTION = """
+
+## Experimental: Editing an Existing Video (Omni Flash)
+
+If the user asks to EDIT, TWEAK, or CHANGE something about an
+ALREADY-GENERATED video (referenced by id, "the video I just made", "the
+first one", etc.) -- as opposed to creating a brand-new video -- route this
+to the Review Agent (its edit_video_with_omni tool), NOT the Media Agent.
+Generating a brand-new video and editing an existing one are different
+requests: only Media Agent creates brand-new videos; only Review Agent edits
+existing ones.
+"""
+
+if ENABLE_OMNI_EDIT:
+    COORDINATOR_INSTRUCTION = COORDINATOR_INSTRUCTION + _OMNI_EDIT_COORDINATOR_SECTION
+
 # Define the root coordinator agent with sub-agents
-root_agent = LlmAgent(
+root_agent = Agent(
     model=MODEL,
     name=APP_NAME,
     description=APP_DESCRIPTION,
     instruction=COORDINATOR_INSTRUCTION,
     sub_agents=[campaign_agent, media_agent, review_agent, analytics_agent],
 )
+
+# Backward compatibility alias for ADK 1.x consumers
+LlmAgent = Agent

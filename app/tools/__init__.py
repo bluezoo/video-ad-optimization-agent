@@ -16,34 +16,53 @@
 
 from .campaign_tools import (
     create_campaign,
-    list_campaigns,
     get_campaign,
+    list_campaigns,
     update_campaign,
 )
-from .image_tools import (
-    add_seed_image,
-    analyze_image,
-    list_campaign_images,
-    list_available_images,
-    # generate_seed_image removed - retailers provide product images
-)
-from .video_tools import (
-    generate_video_ad,
-    generate_video_variation,
-    list_campaign_ads,
-    generate_video_prompt,
-)
 from .metrics_tools import (
+    compare_campaigns,
+    get_campaign_insights,
     get_campaign_metrics,
     get_top_performing_ads,
-    get_campaign_insights,
-    compare_campaigns,
 )
-from .maps_tools import (
-    get_campaign_locations,
-    search_nearby_stores,
-    get_location_demographics,
-)
+
+try:
+    from .image_tools import (
+        add_seed_image,
+        analyze_image,
+        list_available_images,
+        list_campaign_images,
+    )
+except ModuleNotFoundError:
+    add_seed_image = None  # type: ignore[assignment]
+    analyze_image = None  # type: ignore[assignment]
+    list_available_images = None  # type: ignore[assignment]
+    list_campaign_images = None  # type: ignore[assignment]
+
+try:
+    from .maps_tools import (
+        get_campaign_locations,
+        get_location_demographics,
+        search_nearby_stores,
+    )
+except ModuleNotFoundError:
+    get_campaign_locations = None  # type: ignore[assignment]
+    get_location_demographics = None  # type: ignore[assignment]
+    search_nearby_stores = None  # type: ignore[assignment]
+
+try:
+    from .video_tools import (
+        generate_video_ad,
+        generate_video_prompt,
+        generate_video_variation,
+        list_campaign_ads,
+    )
+except ModuleNotFoundError:
+    generate_video_ad = None  # type: ignore[assignment]
+    generate_video_prompt = None  # type: ignore[assignment]
+    generate_video_variation = None  # type: ignore[assignment]
+    list_campaign_ads = None  # type: ignore[assignment]
 
 __all__ = [
     # Campaign management

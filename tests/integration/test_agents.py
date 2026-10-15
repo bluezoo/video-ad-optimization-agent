@@ -12,161 +12,75 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Integration tests for agents using ADK's AgentEvaluator.
+"""Live integration tests: 3-dimension eval scoring via the local harness.
 
-These tests use EvalSet JSON files to validate agent behavior with real LLM calls.
-Tests are marked with @pytest.mark.integration to allow selective execution.
+Each test runs its EvalSet through tests.integration.eval_harness —
+inference ONCE per case against the real agent (Task 4's conftest supplies
+the real Vertex env + isolated DB), then tools / trajectory / answer
+dimensions scored from live_eval_config.json. assert_eval_outcomes is the
+vacuity guard (Q19): zero or partial inference runs can never PASS.
 
-Run with: pytest tests/integration -v -m "not slow"
+All five eval sets were repaired in Phase 16 stage 4 to the real
+transfer_to_agent-wrapped trajectories (ws09 discovery) and owner-approved
+reference answers, so they run live and are expected to PASS — no xfail
+markers remain.
 """
-
-import os
-from pathlib import Path
 
 import pytest
 
-# Skip these tests if not configured for integration testing
+from tests.integration.eval_harness import (
+    assert_eval_outcomes,
+    get_eval_set_path,
+    run_eval_set,
+)
+
 pytestmark = pytest.mark.integration
-
-
-def get_eval_set_path(filename: str) -> str:
-    """Get the absolute path to an eval_set JSON file."""
-    return str(Path(__file__).parent / "eval_sets" / filename)
-
-
-def eval_sets_exist() -> bool:
-    """Check if eval_sets directory has JSON files."""
-    eval_dir = Path(__file__).parent / "eval_sets"
-    if not eval_dir.exists():
-        return False
-    json_files = list(eval_dir.glob("*.test.json"))
-    return len(json_files) > 0
-
-
-# Skip all tests if eval_sets don't exist
-if not eval_sets_exist():
-    pytestmark = [pytest.mark.integration, pytest.mark.skip(reason="No eval_sets found")]
 
 
 class TestCoordinatorAgentRouting:
     """Test that the coordinator routes queries to correct sub-agents."""
 
-    @pytest.mark.asyncio
     async def test_coordinator_routes_to_campaign_agent(self):
-        """Coordinator should route campaign queries to campaign_agent."""
-        try:
-            from google.adk.evaluation import AgentEvaluator
-
-            await AgentEvaluator.evaluate(
-                agent_module="app.agent",
-                eval_dataset_file_path_or_dir=get_eval_set_path("coordinator.test.json"),
-                num_runs=1,  # Single run for faster tests
-            )
-        except ImportError:
-            pytest.skip("google.adk.evaluation not available")
-        except Exception as e:
-            # Log the error but don't fail - integration tests may have config issues
-            pytest.xfail(f"Integration test failed (may need config): {e}")
+        """Coordinator should route queries to the right sub-agent + tool."""
+        outcomes = await run_eval_set(get_eval_set_path("coordinator.test.json"))
+        assert_eval_outcomes(outcomes, expect_cases=4)
 
 
 class TestCampaignAgent:
     """Test Campaign Agent tool execution."""
 
-    @pytest.mark.asyncio
     async def test_campaign_agent_tools(self):
         """Campaign agent should correctly execute campaign tools."""
-        try:
-            from google.adk.evaluation import AgentEvaluator
-
-            await AgentEvaluator.evaluate(
-                agent_module="app.agent",
-                eval_dataset_file_path_or_dir=get_eval_set_path("campaign_agent.test.json"),
-                num_runs=1,
-            )
-        except ImportError:
-            pytest.skip("google.adk.evaluation not available")
-        except Exception as e:
-            pytest.xfail(f"Integration test failed (may need config): {e}")
+        outcomes = await run_eval_set(
+            get_eval_set_path("campaign_agent.test.json")
+        )
+        assert_eval_outcomes(outcomes, expect_cases=5)
 
 
 class TestMediaAgent:
     """Test Media Agent tool execution."""
 
-    @pytest.mark.asyncio
     async def test_media_agent_tools(self):
         """Media agent should correctly execute media tools."""
-        try:
-            from google.adk.evaluation import AgentEvaluator
-
-            await AgentEvaluator.evaluate(
-                agent_module="app.agent",
-                eval_dataset_file_path_or_dir=get_eval_set_path("media_agent.test.json"),
-                num_runs=1,
-            )
-        except ImportError:
-            pytest.skip("google.adk.evaluation not available")
-        except Exception as e:
-            pytest.xfail(f"Integration test failed (may need config): {e}")
+        outcomes = await run_eval_set(get_eval_set_path("media_agent.test.json"))
+        assert_eval_outcomes(outcomes, expect_cases=5)
 
 
 class TestReviewAgent:
     """Test Review Agent tool execution."""
 
-    @pytest.mark.asyncio
     async def test_review_agent_tools(self):
         """Review agent should correctly execute review tools."""
-        try:
-            from google.adk.evaluation import AgentEvaluator
-
-            await AgentEvaluator.evaluate(
-                agent_module="app.agent",
-                eval_dataset_file_path_or_dir=get_eval_set_path("review_agent.test.json"),
-                num_runs=1,
-            )
-        except ImportError:
-            pytest.skip("google.adk.evaluation not available")
-        except Exception as e:
-            pytest.xfail(f"Integration test failed (may need config): {e}")
+        outcomes = await run_eval_set(get_eval_set_path("review_agent.test.json"))
+        assert_eval_outcomes(outcomes, expect_cases=3)
 
 
 class TestAnalyticsAgent:
     """Test Analytics Agent tool execution."""
 
-    @pytest.mark.asyncio
     async def test_analytics_agent_tools(self):
         """Analytics agent should correctly execute analytics tools."""
-        try:
-            from google.adk.evaluation import AgentEvaluator
-
-            await AgentEvaluator.evaluate(
-                agent_module="app.agent",
-                eval_dataset_file_path_or_dir=get_eval_set_path("analytics_agent.test.json"),
-                num_runs=1,
-            )
-        except ImportError:
-            pytest.skip("google.adk.evaluation not available")
-        except Exception as e:
-            pytest.xfail(f"Integration test failed (may need config): {e}")
-
-
-class TestAllEvalSets:
-    """Run all eval sets in the eval_sets directory."""
-
-    @pytest.mark.slow
-    @pytest.mark.asyncio
-    async def test_all_eval_sets_multi_run(self):
-        """Run all eval sets with multiple runs for variance testing."""
-        try:
-            from google.adk.evaluation import AgentEvaluator
-
-            eval_dir = Path(__file__).parent / "eval_sets"
-            for eval_file in eval_dir.glob("*.test.json"):
-                await AgentEvaluator.evaluate(
-                    agent_module="app.agent",
-                    eval_dataset_file_path_or_dir=str(eval_file),
-                    num_runs=2,  # Multiple runs for variance
-                )
-        except ImportError:
-            pytest.skip("google.adk.evaluation not available")
-        except Exception as e:
-            pytest.xfail(f"Integration test failed (may need config): {e}")
+        outcomes = await run_eval_set(
+            get_eval_set_path("analytics_agent.test.json")
+        )
+        assert_eval_outcomes(outcomes, expect_cases=4)

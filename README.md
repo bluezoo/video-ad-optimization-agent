@@ -73,5 +73,102 @@ To learn more about how to connect BlueZoo's audience measurement platform with 
 For additional background on this demonstration, see the [accompanying announcement](https://www.bluezoo.io/bluezoo-demonstrates-how-googles-latest-ai-technologies-can-improve-the-sales-performance-of-in-store-video-advertising/).
 
 ```bash
-cd video-ad-optimization-agent && make install && make dev
+# 1. Install dependencies
+make install
+
+# 2. Run the interactive ADK Agent Web UI (:8501)
+make dev
+
+# 3. Or run the REST API Gateway for Web Apps (:8000)
+make api
 ```
+
+---
+
+## Architecture & Multi-Agent System
+
+Built on **Google ADK 2.0** (`google-adk>=2.0.0`), the platform coordinates four specialized domain agents under a unified root coordinator (`app/agent.py`):
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Root Coordinator Agent                   │
+│             (Directs tasks to specialized agents)           │
+└──────────────┬──────────────┬──────────────┬────────────────┘
+               │              │              │
+       ┌───────┴──────┐ ┌─────┴───────┐ ┌────┴────────┐ ┌────────────────┐
+       │Campaign Agent│ │ Media Agent │ │Review Agent │ │Analytics Agent │
+       │- Catalog     │ │- Veo 3 /    │ │- HITL Queue │ │- BlueZoo RPI   │
+       │- Stores      │ │  Nano Banana│ │- Approvals  │ │- POS Revenue   │
+       │- Campaigns   │ │- Presets    │ │- Omni-Edit  │ │- Regional Maps │
+       └──────────────┘ └─────────────┘ └─────────────┘ └────────────────┘
+```
+
+1. **Campaign Agent**: Manages multi-category product onboarding, store locations, and campaign metadata.
+2. **Media Agent**: Generates candidate video creative via Google Veo 3 and product imagery via Nano Banana, supporting 15+ configurable parameters and creative presets.
+3. **Review Agent**: Provides human-in-the-loop (HITL) review queue management, batch activations/pauses, and targeted video tweaks via Omni-Edit.
+4. **Analytics Agent**: Computes BlueZoo audience metrics, POS revenue-per-impression (RPI), creative performance rankings, and geographic comparisons.
+
+---
+
+## 6-Step Poster Workflow Blueprint
+
+The end-to-end workflow matches the architectural poster blueprint ([`assets/use-case-poster.jpeg`](assets/use-case-poster.jpeg)):
+
+| Step | Focus | Responsible Agent | Key Capabilities & Endpoints |
+|---|---|---|---|
+| **1. Discover Your AI Team** | Catalog & Campaigns | `All Agents` | Inspect available agents, browse multi-category products, view campaigns (`/api/v1/discover`, `/api/v1/agents`, `/api/v1/campaigns`). |
+| **2. Generate Creative at Scale** | Video Synthesis | `Media Agent` | Configure 15+ creative parameters (subjects, setting, lighting, mood, audio, props) and generate video variants (`/api/v1/videos/options`, `/api/v1/videos/generate`). |
+| **3. You Stay in Control** | HITL Verification | `Review Agent` | Review candidate videos, approve/reject variants, and push live to digital displays (`/api/v1/review/table`, `/api/v1/videos/{id}/activate`). |
+| **4. Measure What Matters** | Attribution & Lift | `Analytics Agent` | Correlate BlueZoo sensor dwell/impressions with POS revenue to calculate RPI (`/api/v1/analytics/top-ads`, `/api/v1/analytics/campaigns/{id}/metrics`). |
+| **5. See the Big Picture** | Geographic Intelligence | `Analytics Agent` | Compare regional performance (e.g. West Coast vs. East Coast) and render store map visualizations (`/api/v1/maps/regions`, `/api/v1/maps/static`). |
+| **6. Scale What Works** | Creative Optimization | `Media Agent` | Extract winning creative attributes from top performers and apply them to subsequent campaign iterations (`/api/v1/optimization/winning-formula`). |
+
+---
+
+## REST API Gateway & Web Application Interface
+
+For integrating frontend web applications, content management systems (CMS), and custom dashboards, the repository provides a standalone **REST API Gateway** (`app/api_gateway.py`):
+
+```bash
+# Launch on http://localhost:8000 (override port with PORT=8080 make api)
+make api
+```
+
+- **Interactive Documentation**: `http://localhost:8000/docs` (Swagger UI via FastAPI)
+- **Zero-Dependency Fallback**: Automatically falls back to a built-in multi-threaded HTTP server with full CORS support if `fastapi`/`uvicorn` are absent.
+- **Dataset Explorer**: Paginated access and seed/reset controls for all 12 system datasets under `/api/v1/datasets`.
+- **Multi-Agent Natural Language Chat**: Real-time intent routing via `POST /api/v1/agents/chat`.
+
+---
+
+## Frontend UX Designer Specification (`object.js`)
+
+The gateway natively implements the frontend UX object specification defined in [`object.js`](object.js):
+
+- **Status & Approval Enums (`GET /api/v1/ux/enums`)**:
+  - `Status`: `0: NONE`, `1: GENERATING_ACTIVE`, `2: GENERATING_COMPLETE`, `3: GENERATING_FAILED`, `4: REVIEW_NEEDED`, `5: APPROVAL_UPDATED`, `6: TESTING_ACTIVE`, `7: TESTING_COMPLETE`, `8: TESTING_FAILED`
+  - `ApprovalStatus`: `0: NONE`, `1: APPROVED`, `2: REJECTED`
+- **UX Campaign Object (`UXCampaign`)**: Formatted 6-digit IDs (`"000001"`), nested status metadata, granular settings blocks (`overall`, `items`, `people`, `performance`, `setting`, `audio`, `format`, `testing`), and populated `videos` collections.
+- **UX Video Object (`UXVideo`)**: Formatted IDs, approval states, timestamps, impressions, revenue, test period dates, and rank.
+- **Dedicated UX Endpoints**:
+  - `GET /api/v1/ux/enums` & `GET /api/v1/ux/schema`
+  - `GET /api/v1/ux/campaigns` & `POST /api/v1/ux/campaigns`
+  - `GET /api/v1/ux/campaigns/{id}` & `PATCH /api/v1/ux/campaigns/{id}`
+  - `GET /api/v1/ux/videos` & `GET /api/v1/ux/videos/{id}`
+  - `POST /api/v1/ux/videos/{id}/approval` (1-click approve/reject)
+  - `?format=ux` query parameter available across standard `/api/v1/campaigns` and `/api/v1/videos` endpoints.
+
+---
+
+## Documentation Directory
+
+| Document | Purpose |
+|---|---|
+| [`UX_SERVER_SPEC.md`](UX_SERVER_SPEC.md) | Technical handover specification outlining the rough `server.py` router for UX designers. |
+| [`docs/API_GATEWAY.md`](docs/API_GATEWAY.md) | Comprehensive REST API Gateway specification, endpoint catalog, and UX integration guide. |
+| [`object.js`](object.js) | Frontend UX object model and status enumeration reference. |
+| [`docs/METRICS.md`](docs/METRICS.md) | Single source of truth for BlueZoo audience metrics, dwell times, and POS revenue attribution. |
+| [`SETUP_INSTRUCTIONS.md`](SETUP_INSTRUCTIONS.md) | Local environment setup, API keys, Vertex AI / AI Studio configurations, and DB seeding. |
+| [`DEMO_GUIDE.md`](DEMO_GUIDE.md) | Step-by-step walkthrough for customer presentations and live demonstrations. |
+| [`DEPLOYMENT.md`](DEPLOYMENT.md) | Cloud Run and Google Cloud Vertex AI Agent Engine deployment instructions. |
+| [`tests/README.md`](tests/README.md) | Testing architecture, test levels, markers, and verification suites. |

@@ -30,7 +30,6 @@ Mode Detection:
 
 import io
 import os
-from typing import Optional
 
 # Lazy GCS initialization to avoid import errors when running locally
 _gcs_client = None
@@ -137,7 +136,7 @@ def save_image(filename: str, data: bytes) -> str:
     Returns:
         Full path (local) or gs:// URL (GCS) of saved image.
     """
-    from .config import SELECTED_DIR, GCS_BUCKET
+    from .config import GCS_BUCKET, SELECTED_DIR
     if get_storage_mode() == "gcs":
         bucket = _get_bucket()
         blob = bucket.blob(f"seed-images/{filename}")
@@ -161,7 +160,7 @@ def get_image_path(filename: str) -> str:
     Returns:
         Full path (local) or gs:// URL (GCS).
     """
-    from .config import SELECTED_DIR, GCS_BUCKET
+    from .config import GCS_BUCKET, SELECTED_DIR
     if get_storage_mode() == "gcs":
         return f"gs://{GCS_BUCKET}/seed-images/{filename}"
     else:
@@ -169,60 +168,59 @@ def get_image_path(filename: str) -> str:
 
 
 # =============================================================================
-# Product Image Storage Functions (GCS only - no local fallback)
+# Product Image Storage Functions
 # =============================================================================
 
+def _product_image_content_type(filename: str) -> str:
+    return "image/jpeg" if filename.lower().endswith((".jpg", ".jpeg")) else "image/png"
+
+
 def product_image_exists(filename: str) -> bool:
-    """Check if a product image exists in GCS.
-
-    Product images are ALWAYS stored in GCS 'product-images/' folder.
-    No local fallback - GCS is the source of truth.
-
-    Args:
-        filename: Image filename (without path).
-
-    Returns:
-        True if the image exists, False otherwise.
-    """
-    bucket = _get_bucket()
-    if bucket is None:
-        raise RuntimeError("GCS_BUCKET not configured. Product images require GCS.")
-    blob = bucket.blob(f"product-images/{filename}")
-    return blob.exists()
+    """Check if a product image exists (GCS product-images/ or local dir)."""
+    from .config import PRODUCT_IMAGES_DIR
+    if get_storage_mode() == "gcs":
+        bucket = _get_bucket()
+        blob = bucket.blob(f"product-images/{filename}")
+        return blob.exists()
+    return os.path.exists(os.path.join(PRODUCT_IMAGES_DIR, filename))
 
 
 def read_product_image(filename: str) -> bytes:
-    """Read product image bytes from GCS.
+    """Read product image bytes from storage."""
+    from .config import PRODUCT_IMAGES_DIR
+    if get_storage_mode() == "gcs":
+        bucket = _get_bucket()
+        blob = bucket.blob(f"product-images/{filename}")
+        return blob.download_as_bytes()
+    with open(os.path.join(PRODUCT_IMAGES_DIR, filename), "rb") as f:
+        return f.read()
 
-    Product images are ALWAYS stored in GCS 'product-images/' folder.
-    No local fallback - GCS is the source of truth.
 
-    Args:
-        filename: Image filename (without path).
-
-    Returns:
-        Image data as bytes.
-    """
-    bucket = _get_bucket()
-    if bucket is None:
-        raise RuntimeError("GCS_BUCKET not configured. Product images require GCS.")
-    blob = bucket.blob(f"product-images/{filename}")
-    return blob.download_as_bytes()
+def save_product_image(filename: str, data: bytes) -> str:
+    """Save a product image, return the local path or gs:// URL."""
+    from .config import GCS_BUCKET, PRODUCT_IMAGES_DIR
+    if get_storage_mode() == "gcs":
+        bucket = _get_bucket()
+        blob = bucket.blob(f"product-images/{filename}")
+        blob.upload_from_file(
+            io.BytesIO(data),
+            content_type=_product_image_content_type(filename),
+            rewind=True,
+        )
+        return f"gs://{GCS_BUCKET}/product-images/{filename}"
+    os.makedirs(PRODUCT_IMAGES_DIR, exist_ok=True)
+    path = os.path.join(PRODUCT_IMAGES_DIR, filename)
+    with open(path, "wb") as f:
+        f.write(data)
+    return path
 
 
 def get_product_image_path(filename: str) -> str:
-    """Get the GCS URL for a product image.
-
-    Args:
-        filename: Image filename (without path).
-
-    Returns:
-        gs:// URL for the product image.
-    """
-    from .config import GCS_BUCKET
-    if not GCS_BUCKET:
-        raise RuntimeError("GCS_BUCKET not configured. Product images require GCS.")
-    return f"gs://{GCS_BUCKET}/product-images/{filename}"
+    """Get the full local path or gs:// URL for a product image."""
+    from .config import GCS_BUCKET, PRODUCT_IMAGES_DIR
+    if get_storage_mode() == "gcs":
+        return f"gs://{GCS_BUCKET}/product-images/{filename}"
+    return os.path.join(PRODUCT_IMAGES_DIR, filename)
 
 
 # =============================================================================
@@ -241,7 +239,7 @@ def save_video(filename: str, data: bytes) -> str:
     Returns:
         Full path (local) or gs:// URL (GCS) of saved video.
     """
-    from .config import GENERATED_DIR, GCS_BUCKET
+    from .config import GCS_BUCKET, GENERATED_DIR
     if get_storage_mode() == "gcs":
         bucket = _get_bucket()
         blob = bucket.blob(f"generated/{filename}")
@@ -268,7 +266,7 @@ def read_video(path_or_filename: str) -> bytes:
     Returns:
         Video data as bytes.
     """
-    from .config import GENERATED_DIR, GCS_BUCKET
+    from .config import GCS_BUCKET, GENERATED_DIR
     if get_storage_mode() == "gcs":
         bucket = _get_bucket()
         # Handle both gs:// URLs and bare filenames
@@ -318,7 +316,7 @@ def video_exists(path_or_filename: str) -> bool:
         True if the video exists, False otherwise.
         Returns False on any error (permission denied, network issues, etc.)
     """
-    from .config import GENERATED_DIR, GCS_BUCKET
+    from .config import GCS_BUCKET, GENERATED_DIR
     if get_storage_mode() == "gcs":
         try:
             bucket = _get_bucket()
@@ -352,7 +350,7 @@ def video_exists(path_or_filename: str) -> bool:
 # Public URL Functions (for public GCS bucket access)
 # =============================================================================
 
-def get_public_url(blob_path: str) -> Optional[str]:
+def get_public_url(blob_path: str) -> str | None:
     """Get a public URL for a GCS blob.
 
     Assumes the bucket has public read access configured.
@@ -370,7 +368,7 @@ def get_public_url(blob_path: str) -> Optional[str]:
     return f"https://storage.googleapis.com/{GCS_BUCKET}/{blob_path}"
 
 
-def get_video_public_url(filename: str, check_exists: bool = False) -> Optional[str]:
+def get_video_public_url(filename: str, check_exists: bool = False) -> str | None:
     """Get public URL for a generated video.
 
     Args:
@@ -385,13 +383,25 @@ def get_video_public_url(filename: str, check_exists: bool = False) -> Optional[
     return get_public_url(f"generated/{filename}")
 
 
-def get_thumbnail_public_url(filename: str) -> Optional[str]:
-    """Get public URL for a video thumbnail.
+def get_thumbnail_public_url(filename: str, check_exists: bool = True) -> str | None:
+    """Public URL for a video thumbnail (generated/ prefix), or None.
 
-    Args:
-        filename: Thumbnail filename (without path prefix)
-
-    Returns:
-        Public URL string or None if not in GCS mode
+    None when not in GCS mode, or (by default) when the file doesn't exist —
+    tool responses must never carry dead storage URLs (ws09 bar).
     """
+    if check_exists and not video_exists(filename):
+        return None
     return get_public_url(f"generated/{filename}")
+
+
+def get_product_image_public_url(filename: str, check_exists: bool = True) -> str | None:
+    """Public URL for a product image, or None.
+
+    None when not in GCS mode, or (by default) when the blob doesn't exist —
+    tool responses must never carry dead storage URLs (ws09 bar).
+    """
+    if get_storage_mode() != "gcs":
+        return None
+    if check_exists and not product_image_exists(filename):
+        return None
+    return get_public_url(f"product-images/{filename}")

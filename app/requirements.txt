@@ -6,7 +6,7 @@
 # =============================================================================
 
 # Google ADK for agent framework
-google-adk>=1.21.0
+google-adk>=2.0.0
 
 # Google Cloud AI Platform with Agent Engine support
 # Required for Agent Engine deployment, also works with Cloud Run
@@ -15,8 +15,15 @@ google-cloud-aiplatform[adk,agent_engines]>=1.111
 # Google Cloud Storage for asset persistence
 google-cloud-storage>=2.19.0
 
+# Demo-asset bundle download from Google Drive (scripts/demo_assets.py)
+gdown>=5.2.0
+
+# app/.env loading for standalone scripts (scripts/demo_assets.py); ADK
+# already depends on it, pinned here because scripts import it directly
+python-dotenv>=1.0.0
+
 # Google Gen AI SDK
-google-genai>=1.55.0
+google-genai>=2.14.0
 
 # =============================================================================
 # Feature Dependencies
@@ -30,6 +37,16 @@ Pillow>=10.2.0
 
 # Data validation
 pydantic>=2.11.7
+
+# Deterministic demo-data generation (app/demo_data/seed.py)
+numpy>=1.26.0
+
+# Deterministic chart rendering (app/tools/metrics_tools.py creative comparison)
+matplotlib>=3.8.0
+
+# UX API Gateway (app/api_gateway.py)
+fastapi>=0.115.0
+uvicorn>=0.30.0
 
 # =============================================================================
 # Testing Dependencies
@@ -46,3 +63,9 @@ pytest-cov>=4.1.0
 
 # Mock utilities
 pytest-mock>=3.12.0
+
+# =============================================================================
+# Lint/Format
+# =============================================================================
+
+ruff>=0.8.0

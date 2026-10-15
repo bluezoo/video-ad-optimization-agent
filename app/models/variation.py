@@ -21,7 +21,8 @@ mood, camera work, and visual style.
 Using Pydantic BaseModel for ADK compatibility with automatic function calling.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -40,12 +41,20 @@ class CreativeVariation(BaseModel):
     """
     name: str = Field(description="Unique variation identifier (e.g., 'asian-urban-confident')")
 
+    # Presentation mode
+    presentation_mode: str | None = Field(
+        default=None,
+        description="How the product is presented: None/'auto' (archetype registry decides "
+                    "by product category), 'with_model' (human model — wearable products only), "
+                    "'product_only' (product-centric shot, no human)"
+    )
+
     # Model characteristics
-    model_ethnicity: str = Field(
+    model_ethnicity: str | None = Field(
         default="diverse",
         description="Model ethnicity: asian, european, african, latina, middle-eastern, south-asian, diverse"
     )
-    model_description: str = Field(
+    model_description: str | None = Field(
         default="",
         description="Override for specific model description"
     )
@@ -95,13 +104,13 @@ class CreativeVariation(BaseModel):
     )
 
     # Props and Companions
-    props: List[str] = Field(
+    props: list[str] = Field(
         default_factory=list,
         description="Props: dog, cat, coffee, umbrella, flowers, sunglasses, bag"
     )
 
     # Model Activity
-    activity: str = Field(
+    activity: str | None = Field(
         default="walking",
         description="Activity: walking, standing, sitting, dancing, spinning, posing, running"
     )
@@ -122,19 +131,19 @@ class CreativeVariation(BaseModel):
         description="Color grading: warm, cool, neutral, vintage, high-contrast"
     )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return self.model_dump()
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "CreativeVariation":
+    def from_dict(cls, data: dict[str, Any]) -> "CreativeVariation":
         """Create a CreativeVariation from a dictionary."""
         return cls.model_validate(data)
 
     def get_summary(self) -> str:
         """Get a brief summary of the variation for display."""
         parts = [self.name]
-        if self.model_ethnicity != "diverse":
+        if (self.model_ethnicity or "diverse") != "diverse":
             parts.append(self.model_ethnicity)
         if self.setting != "studio":
             parts.append(self.setting)
@@ -282,7 +291,7 @@ PRESET_VARIATIONS = {
 }
 
 
-def get_preset_variations(preset_name: str) -> List[CreativeVariation]:
+def get_preset_variations(preset_name: str) -> list[CreativeVariation]:
     """Get a list of preset variations by name.
 
     Args:

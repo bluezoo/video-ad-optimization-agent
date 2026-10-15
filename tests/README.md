@@ -32,7 +32,8 @@ tests/
 │   ├── test_video_tools.py       # Media/video tools (8 tools)
 │   ├── test_review_tools.py      # HITL workflow (10 tools)
 │   ├── test_metrics_tools.py     # Analytics (8 tools)
-│   └── test_maps_tools.py        # Geographic tools (5 tools)
+│   ├── test_maps_tools.py        # Geographic tools (5 tools)
+│   └── test_api_gateway.py       # REST API Gateway & UX endpoints (24 tests)
 │
 ├── integration/             # Agent-level tests (uses LLM)
 │   ├── test_agents.py            # AgentEvaluator runner

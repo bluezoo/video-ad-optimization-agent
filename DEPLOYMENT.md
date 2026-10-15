@@ -22,6 +22,8 @@ adk --version       # ADK CLI (pip install google-adk)
 python3 --version   # Python 3.11+
 ```
 
+> **Agent Engine Python restriction:** Agent Engine supports Python **3.9–3.13 only** (not 3.14+). If your default `python3` is newer, `make deploy-ae-global` auto-selects `.venv-deploy` (Python 3.12) or falls back to `python3.12`/`python3.11` — see the `DEPLOY_PYTHON` logic in the Makefile. Cloud Run has no such restriction.
+
 ### GCP Authentication
 
 ```bash
@@ -338,6 +340,7 @@ gcloud ai reasoning-engines delete YOUR_AGENT_ID --region=us-central1
 |----------|-------------|
 | `GOOGLE_MAPS_API_KEY` | For static map generation |
 | `GOOGLE_CLOUD_LOCATION` | Vertex AI region (default: `global`) |
+| `APP_MODE` | `demo` (default) or `connected`; forwarded by both deploy scripts, inert until Phase 11/12 |
 
 ### Auto-Configured by Deploy Scripts
 
@@ -459,10 +462,10 @@ open "https://console.cloud.google.com/run/detail/us-central1/ad-campaign-agent/
 
 | Purpose | Model | Region Required |
 |---------|-------|-----------------|
-| Agent Reasoning | `gemini-3-flash-preview` | `global` |
-| Scene Image Generation | `gemini-3-pro-image-preview` | `global` |
-| Video Animation | `veo-3.1-generate-preview` | `global` |
-| Charts & Maps | `gemini-3-pro-image-preview` | `global` |
+| Agent Reasoning | `gemini-3.5-flash` (default; `AGENT_MODEL` env override) | `global` |
+| Scene Image Generation | `gemini-3-pro-image` (default; `IMAGE_GENERATION_MODEL` env override) | `global` |
+| Video Animation | `veo-3.1-generate-001` (default; `VIDEO_GEN_MODEL` env override) | `global` |
+| Charts & Maps | `gemini-3-pro-image` (default; `IMAGE_GENERATION_MODEL` env override) | `global` |
 
 > **Important:** All Gemini 3 models require `global` region. Use `make deploy-ae-global` for Agent Engine deployment.
 

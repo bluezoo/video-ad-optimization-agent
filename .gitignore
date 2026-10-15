@@ -1,0 +1,41 @@
+# Claude Code — local only, excluded from git
+.claude/
+
+# Local planning docs / notes — local only, excluded from git
+.docs/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.venv-deploy/
+*.egg-info/
+
+# Env files
+.env
+app/.env
+
+# Local databases
+campaigns.db
+app/campaigns.db
+
+# ADK artifacts
+app/.adk/
+
+# Test / coverage
+.pytest_cache/
+htmlcov/
+.coverage
+
+# OS
+.DS_Store
+.superpowers/
+
+# Local-first runtime asset dirs (Phase 15) — populated at runtime, never committed
+generated/
+selected/
+product-images/
+local_assets/
+
+# agents-cli eval traces/results (Phase 16 Task 15 — informational grading layer)
+artifacts/

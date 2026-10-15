@@ -24,9 +24,9 @@ Product-Centric Model:
     - Same product at different stores = different campaigns
 """
 
-import json
-from typing import Optional
+from ..config import CAMPAIGN_CATEGORIES
 from ..database.db import get_db_cursor, get_product
+from .metrics_shared import compute_rpi
 
 
 def create_campaign(
@@ -34,13 +34,23 @@ def create_campaign(
     store_name: str,
     city: str,
     state: str,
-    name: Optional[str] = None,
-    description: Optional[str] = None
+    name: str | None = None,
+    description: str | None = None,
+    category: str | None = None
 ) -> dict:
     """Create a new product-centric ad campaign.
 
     Each campaign is tied to one product at one store location.
     The campaign name is auto-generated from product and store if not provided.
+
+    The campaign category is a small controlled THEME taxonomy (see
+    config.CAMPAIGN_CATEGORIES / the CHECK constraint in app/database/db.py),
+    deliberately decoupled from the open-ended product category: pass
+    `category` explicitly (validated), or omit it — fashion product
+    categories map to suggested themes (dress→summer, top→essentials,
+    pants→professional, skirt→formal, outerwear→essentials) and anything
+    else defaults to the neutral "always-on" bucket (Phase 8 owner
+    decision — replaces the old silent "essentials" fallback).
 
     Args:
         product_id: The product ID from products table (use list_products to browse)
@@ -49,6 +59,7 @@ def create_campaign(
         state: US state (e.g., "California" or "CA")
         name: Optional custom campaign name. Auto-generated if not provided.
         description: Optional description. Auto-generated from product metadata if not provided.
+        category: Optional campaign theme, one of config.CAMPAIGN_CATEGORIES. Derived from the product when omitted.
 
     Returns:
         Dictionary with campaign details or error message
@@ -61,26 +72,44 @@ def create_campaign(
             "message": f"Product with ID {product_id} not found. Use list_products() to browse available products."
         }
 
-    # Map product category to campaign category
-    product_category = product.get("category", "").lower()
-    category_mapping = {
-        "dress": "summer",
-        "top": "essentials",
-        "pants": "professional",
-        "skirt": "formal",
-        "outerwear": "essentials"
-    }
-    category = category_mapping.get(product_category, "essentials")
+    # Resolve the campaign THEME category (decoupled from product category)
+    if category is not None:
+        category = category.strip().lower()
+        if category not in CAMPAIGN_CATEGORIES:
+            return {
+                "status": "error",
+                "message": (
+                    f"Invalid campaign category '{category}'. "
+                    f"Valid categories: {', '.join(CAMPAIGN_CATEGORIES)}."
+                ),
+            }
+    else:
+        product_category = (product.category or "").lower()
+        category_mapping = {
+            "dress": "summer",
+            "top": "essentials",
+            "pants": "professional",
+            "skirt": "formal",
+            "outerwear": "essentials"
+        }
+        category = category_mapping.get(product_category, "always-on")
 
     # Auto-generate campaign name if not provided
     if not name:
         # Format: "Product Name - Store Name"
-        product_name_title = product["name"].replace("-", " ").title()
+        product_name_title = product.name.replace("-", " ").title()
         name = f"{product_name_title} - {store_name}"
 
     # Auto-generate description if not provided
     if not description:
-        description = f"Campaign for {product.get('style', 'fashion item')} in {product.get('color', 'classic')} at {store_name}, {city}."
+        style = product.attributes.get("style")
+        color = product.attributes.get("color")
+        if style:
+            in_color = f" in {color}" if color else ""
+            description = f"Campaign for {style}{in_color} at {store_name}, {city}."
+        else:
+            product_title = product.name.replace("-", " ").title()
+            description = f"Campaign for {product_title} at {store_name}, {city}."
 
     with get_db_cursor() as cursor:
         cursor.execute('''
@@ -101,7 +130,7 @@ def create_campaign(
                 "name": row["name"],
                 "description": row["description"],
                 "product_id": row["product_id"],
-                "product_name": product["name"],
+                "product_name": product.name,
                 "store_name": row["store_name"],
                 "city": row["city"],
                 "state": row["state"],
@@ -117,7 +146,7 @@ def create_campaign(
         }
 
 
-def list_campaigns(status: Optional[str] = None, product_id: Optional[int] = None) -> dict:
+def list_campaigns(status: str | None = None, product_id: int | None = None) -> dict:
     """List all campaigns, optionally filtered by status or product.
 
     Args:
@@ -247,7 +276,7 @@ def get_campaign(campaign_id: int) -> dict:
         if metrics_row and metrics_row["total_impressions"]:
             total_impressions = int(metrics_row["total_impressions"])
             total_revenue = round(metrics_row["total_revenue"], 2)
-            rpi = round(total_revenue / total_impressions, 4) if total_impressions > 0 else 0
+            rpi = compute_rpi(total_revenue, total_impressions)
 
             metrics_summary = {
                 "period": "last_30_days",
@@ -294,9 +323,9 @@ def get_campaign(campaign_id: int) -> dict:
 
 def update_campaign(
     campaign_id: int,
-    name: Optional[str] = None,
-    description: Optional[str] = None,
-    status: Optional[str] = None
+    name: str | None = None,
+    description: str | None = None,
+    status: str | None = None
 ) -> dict:
     """Update campaign properties.
 

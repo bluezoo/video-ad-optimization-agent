@@ -243,7 +243,7 @@ fi
 
 # Environment variables are read from app/.env file automatically
 # The .env file contains:
-# - GOOGLE_CLOUD_LOCATION=global (for gemini-3-flash-preview)
+# - GOOGLE_CLOUD_LOCATION=global (for Gemini 3.x models)
 # - GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY=true (observability dashboard)
 # - OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true (prompt/response logging)
 # - GCS_BUCKET (asset storage)

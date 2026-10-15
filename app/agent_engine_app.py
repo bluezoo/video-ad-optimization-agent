@@ -38,7 +38,7 @@ from vertexai.agent_engines import AdkApp
 GEMINI_MODEL_LOCATION = os.environ.get("GEMINI_MODEL_LOCATION", "global")
 
 # Debug: Log at module import time
-print(f"[GlobalAdkApp] Module imported")
+print("[GlobalAdkApp] Module imported")
 print(f"[GlobalAdkApp] GEMINI_MODEL_LOCATION = {GEMINI_MODEL_LOCATION}")
 print(f"[GlobalAdkApp] GOOGLE_CLOUD_LOCATION (at import) = {os.environ.get('GOOGLE_CLOUD_LOCATION', 'NOT SET')}")
 print(f"[GlobalAdkApp] GOOGLE_GENAI_USE_VERTEXAI (at import) = {os.environ.get('GOOGLE_GENAI_USE_VERTEXAI', 'NOT SET')}")
@@ -62,7 +62,7 @@ class GlobalAdkApp(AdkApp):
 
     def set_up(self) -> None:
         """Initialize the app and restore critical env vars for Gemini 3 and Vertex AI."""
-        print(f"[GlobalAdkApp.set_up] Starting set_up...")
+        print("[GlobalAdkApp.set_up] Starting set_up...")
         print(f"[GlobalAdkApp.set_up] GOOGLE_CLOUD_LOCATION (before vertexai.init) = {os.environ.get('GOOGLE_CLOUD_LOCATION', 'NOT SET')}")
         print(f"[GlobalAdkApp.set_up] GOOGLE_GENAI_USE_VERTEXAI (before vertexai.init) = {os.environ.get('GOOGLE_GENAI_USE_VERTEXAI', 'NOT SET')}")
 
@@ -84,4 +84,4 @@ class GlobalAdkApp(AdkApp):
         os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "TRUE"
         print(f"[GlobalAdkApp.set_up] GOOGLE_GENAI_USE_VERTEXAI (forced) = {os.environ.get('GOOGLE_GENAI_USE_VERTEXAI', 'NOT SET')}")
 
-        print(f"[GlobalAdkApp.set_up] set_up complete!")
+        print("[GlobalAdkApp.set_up] set_up complete!")

@@ -16,12 +16,16 @@
 
 import sqlite3
 from contextlib import contextmanager
-from ..config import DB_PATH
+from datetime import UTC, datetime
+
+from .. import config
+from ..models.product import Product
 
 
 def get_connection() -> sqlite3.Connection:
     """Get a database connection with row factory enabled."""
-    conn = sqlite3.connect(DB_PATH)
+    # Resolve at call time so tests can patch app.config.DB_PATH (see tests/conftest.py)
+    conn = sqlite3.connect(config.DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -53,6 +57,8 @@ def init_database() -> None:
     - campaign_ads: Generated video ads (legacy alias)
     - video_metrics: Daily performance metrics (only for activated videos)
     - campaign_metrics: Daily performance metrics (legacy alias)
+    - video_attribution: Playout attribution windows (Phase 10, open = active_to IS NULL)
+    - demo_meta: Key-value store for demo-mode state (anchor date)
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -67,7 +73,7 @@ def init_database() -> None:
             store_name TEXT,
             city TEXT NOT NULL,
             state TEXT NOT NULL,
-            category TEXT CHECK(category IN ('summer', 'formal', 'professional', 'essentials', 'holiday')),
+            category TEXT CHECK(category IN ('summer', 'formal', 'professional', 'essentials', 'holiday', 'always-on')),
             status TEXT DEFAULT 'draft' CHECK(status IN ('draft', 'active', 'paused', 'completed')),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -129,8 +135,10 @@ def init_database() -> None:
             activated_by TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             generation_time_seconds INTEGER,
+            source_video_id INTEGER,
             FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
-            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
+            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL,
+            FOREIGN KEY (source_video_id) REFERENCES campaign_videos(id) ON DELETE SET NULL
         )
     ''')
 
@@ -147,6 +155,32 @@ def init_database() -> None:
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (video_id) REFERENCES campaign_videos(id) ON DELETE CASCADE,
             UNIQUE(video_id, metric_date)
+        )
+    ''')
+
+    # Playout-attribution windows (Phase 10): which video was live on which
+    # screen, from when to when. Open window = active_to IS NULL. Written by
+    # the HITL dual-write bridge (activate/pause/archive) and the seed-time
+    # bulk path; read by the ad-play join. Ported from the donor repo's
+    # video_attribution with store_id->screen_id, campaign_id->ad_campaign_id.
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS video_attribution (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            video_id INTEGER NOT NULL,
+            ad_campaign_id INTEGER NOT NULL,
+            screen_id INTEGER NOT NULL,
+            active_from TIMESTAMP NOT NULL,
+            active_to TIMESTAMP,
+            FOREIGN KEY (video_id) REFERENCES campaign_videos(id) ON DELETE CASCADE
+        )
+    ''')
+
+    # Key-value store for demo-mode state (e.g. the demo anchor date that
+    # fixes the deterministic generation window — see app/demo_data/).
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS demo_meta (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
         )
     ''')
 
@@ -208,6 +242,7 @@ def init_database() -> None:
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_campaign_videos_status ON campaign_videos(status)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_video_metrics_video ON video_metrics(video_id)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_video_metrics_date ON video_metrics(metric_date)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_video_attribution_video ON video_attribution(video_id)')
     # Legacy indexes
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_campaign_images_campaign ON campaign_images(campaign_id)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_campaign_ads_campaign ON campaign_ads(campaign_id)')
@@ -222,9 +257,6 @@ def init_database() -> None:
 
     # Create indexes for columns added by migrations
     create_migration_indexes()
-
-    # Populate products table
-    populate_products()
 
 
 def create_migration_indexes() -> None:
@@ -303,6 +335,19 @@ def run_migrations() -> None:
         conn.commit()
         print("[DB Migration] Retail media columns added successfully.")
 
+    # Migration N: Add source_video_id to campaign_videos (Phase 14c lineage)
+    cursor.execute("PRAGMA table_info(campaign_videos)")
+    video_columns = [column[1] for column in cursor.fetchall()]
+
+    if "source_video_id" not in video_columns:
+        print("[DB Migration] Adding source_video_id column to campaign_videos...")
+        cursor.execute(
+            "ALTER TABLE campaign_videos ADD COLUMN source_video_id INTEGER "
+            "REFERENCES campaign_videos(id) ON DELETE SET NULL"
+        )
+        conn.commit()
+        print("[DB Migration] source_video_id column added successfully.")
+
     conn.close()
 
 
@@ -312,6 +357,8 @@ def reset_database() -> None:
     cursor = conn.cursor()
 
     # Drop new tables
+    cursor.execute('DROP TABLE IF EXISTS demo_meta')
+    cursor.execute('DROP TABLE IF EXISTS video_attribution')
     cursor.execute('DROP TABLE IF EXISTS video_metrics')
     cursor.execute('DROP TABLE IF EXISTS campaign_videos')
     cursor.execute('DROP TABLE IF EXISTS campaign_products')
@@ -335,8 +382,9 @@ def populate_products() -> None:
     Products are loaded from products_data.py which contains metadata
     parsed from scripts/products/*.txt files.
     """
-    from .products_data import PRODUCTS
     import json
+
+    from .products_data import PRODUCTS
 
     conn = get_connection()
     cursor = conn.cursor()
@@ -372,14 +420,75 @@ def populate_products() -> None:
     print(f"[DB] Populated {len(PRODUCTS)} products")
 
 
-def get_product(product_id: int) -> dict:
-    """Get a product by ID.
+def insert_product(product: Product) -> Product:
+    """Insert a new product through the typed write path (Phase 8).
+
+    The db-layer substrate for self-service onboarding ("run MY product
+    through it"): Phase 15's agent tools (create_product / import /
+    generate_product_image) wrap this. The referenced image file does NOT
+    need to exist yet — image_filename is a reference resolved later by
+    vendor upload or image generation.
+
+    Returns:
+        The stored Product, re-read via get_product() so the caller sees
+        exactly what any later retrieval will see (id populated).
+
+    Raises:
+        sqlite3.IntegrityError: if a product with this name already exists.
+    """
+    row = product.to_row()
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            INSERT INTO products
+            (name, category, style, color, fabric, occasion, details,
+             image_filename, gcs_path, local_path, metadata)
+            VALUES (:name, :category, :style, :color, :fabric, :occasion,
+                    :details, :image_filename, :gcs_path, :local_path, :metadata)
+        ''', row)
+        product_id = cursor.lastrowid
+        conn.commit()
+    finally:
+        conn.close()
+    return get_product(product_id)
+
+
+def populate_retail_test_products() -> None:
+    """Seed the multi-vertical retail core test set (Phase 8).
+
+    Attributes-first products across five verticals proving the schema is
+    vertical-agnostic. Additive and idempotent (INSERT OR IGNORE on the
+    UNIQUE name); the fashion demo catalog is untouched. Writes go through
+    Product.to_row() — the same write path Phase 15's create_product uses.
+    """
+    from .retail_products_data import RETAIL_TEST_PRODUCTS
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        for entry in RETAIL_TEST_PRODUCTS:
+            row = Product(**entry).to_row()
+            cursor.execute('''
+                INSERT OR IGNORE INTO products
+                (name, category, style, color, fabric, occasion, details,
+                 image_filename, gcs_path, local_path, metadata)
+                VALUES (:name, :category, :style, :color, :fabric, :occasion,
+                        :details, :image_filename, :gcs_path, :local_path, :metadata)
+            ''', row)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_product(product_id: int) -> Product | None:
+    """Get a product by ID as a typed Product (metadata parsed into attributes).
 
     Args:
         product_id: The product ID
 
     Returns:
-        Product dictionary or None if not found
+        Product or None if not found
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -388,18 +497,18 @@ def get_product(product_id: int) -> dict:
     conn.close()
 
     if row:
-        return dict(row)
+        return Product.from_row(dict(row))
     return None
 
 
-def get_product_by_name(name: str) -> dict:
-    """Get a product by name.
+def get_product_by_name(name: str) -> Product | None:
+    """Get a product by name as a typed Product (metadata parsed into attributes).
 
     Args:
         name: The product name (e.g., 'emerald-satin-slip-dress')
 
     Returns:
-        Product dictionary or None if not found
+        Product or None if not found
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -408,18 +517,18 @@ def get_product_by_name(name: str) -> dict:
     conn.close()
 
     if row:
-        return dict(row)
+        return Product.from_row(dict(row))
     return None
 
 
-def list_products(category: str = None) -> list:
+def list_products(category: str = None) -> list[Product]:
     """List all products, optionally filtered by category.
 
     Args:
         category: Optional category filter
 
     Returns:
-        List of product dictionaries
+        List of typed Products
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -432,4 +541,36 @@ def list_products(category: str = None) -> list:
     rows = cursor.fetchall()
     conn.close()
 
-    return [dict(row) for row in rows]
+    return [Product.from_row(dict(row)) for row in rows]
+
+
+DEMO_ANCHOR_KEY = "demo_anchor_date"
+
+
+def get_demo_anchor_date(cursor) -> str:
+    """The demo anchor date (ISO), created as today's UTC date on first read.
+
+    All deterministic demo generation windows are anchored here (UTC day
+    buckets by convention), so seed-time and activation-time data share one
+    windowing rule."""
+    cursor.execute("SELECT value FROM demo_meta WHERE key = ?", (DEMO_ANCHOR_KEY,))
+    row = cursor.fetchone()
+    if row:
+        return row["value"]
+    today = datetime.now(UTC).date().isoformat()
+    cursor.execute(
+        "INSERT OR IGNORE INTO demo_meta (key, value) VALUES (?, ?)",
+        (DEMO_ANCHOR_KEY, today),
+    )
+    return today
+
+
+def set_demo_anchor_date(cursor, iso_date: str) -> None:
+    """Overwrite the demo anchor date (ISO string)."""
+    cursor.execute(
+        """
+        INSERT INTO demo_meta (key, value) VALUES (?, ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        """,
+        (DEMO_ANCHOR_KEY, iso_date),
+    )

@@ -1,7 +1,7 @@
 # Makefile for Ad Campaign Agent
 # Compatible with agent-starter-pack deployment
 
-.PHONY: install dev playground deploy deploy-ae deploy-ae-global clean help test test-unit test-integration test-e2e test-all test-coverage setup-ae-permissions
+.PHONY: install dev api playground deploy deploy-ae deploy-ae-global clean help test test-unit test-integration test-e2e test-all test-coverage setup-ae-permissions lint format demo-assets demo-assets-from-file demo-assets-build
 
 # ============================================================================
 # LOCAL DEVELOPMENT
@@ -23,12 +23,22 @@ install-uv:
 	uv venv .venv
 	uv pip install -r app/requirements.txt
 
-## Run agent locally with ADK web UI
-dev:
+## Run agent locally with ADK web UI (auto-installs demo assets first; skips
+## gracefully if DEMO_ASSETS_DRIVE_ID is unset or assets are already installed)
+dev: demo-assets
 	@if [ -d ".venv" ]; then \
 		.venv/bin/adk web --port 8501; \
 	else \
 		adk web --port 8501; \
+	fi
+
+## Run the REST API Gateway for the Web App UX (port 8000 by default; override with PORT=8000)
+PORT ?= 8000
+api: demo-assets
+	@if [ -d ".venv" ]; then \
+		.venv/bin/python -m app.api_gateway --port $(PORT); \
+	else \
+		python3 -m app.api_gateway --port $(PORT); \
 	fi
 
 ## Alias for dev
@@ -37,6 +47,42 @@ playground: dev
 ## Run with pip-installed adk (no venv)
 dev-global:
 	adk web --port 8501
+
+# ============================================================================
+# DEMO ASSETS (Phase 15 — local-first Drive bundle)
+# ============================================================================
+
+## Download + verify + install the demo asset bundle into the local asset dirs.
+## Needs DEMO_ASSETS_DRIVE_ID in the environment (or app/.env, exported); with
+## it unset this prints a graceful skip. Re-runs are no-ops (marker file).
+demo-assets:
+	@if [ -d ".venv" ]; then \
+		.venv/bin/python -m scripts.demo_assets install; \
+	else \
+		python -m scripts.demo_assets install; \
+	fi
+
+## Install the bundle from a local zip instead of Drive.
+## Usage: make demo-assets-from-file FILE=demo-assets.zip
+demo-assets-from-file:
+	@test -n "$(FILE)" || { echo "Usage: make demo-assets-from-file FILE=<bundle.zip>"; exit 1; }
+	@if [ -d ".venv" ]; then \
+		.venv/bin/python -m scripts.demo_assets install --from-file "$(FILE)"; \
+	else \
+		python -m scripts.demo_assets install --from-file "$(FILE)"; \
+	fi
+
+## Build the demo asset bundle zip from a source folder (owner publishing step;
+## upload the zip to Google Drive, then set DEMO_ASSETS_DRIVE_ID).
+## Usage: make demo-assets-build SRC=<folder> [OUT=demo-assets.zip]
+OUT ?= demo-assets.zip
+demo-assets-build:
+	@test -n "$(SRC)" || { echo "Usage: make demo-assets-build SRC=<source-folder> [OUT=demo-assets.zip]"; exit 1; }
+	@if [ -d ".venv" ]; then \
+		.venv/bin/python -m scripts.demo_assets build --source "$(SRC)" --out "$(OUT)"; \
+	else \
+		python -m scripts.demo_assets build --source "$(SRC)" --out "$(OUT)"; \
+	fi
 
 # ============================================================================
 # DEPLOYMENT
@@ -131,10 +177,10 @@ setup-ae-permissions:
 # TESTING
 # ============================================================================
 
-## Run all tests (unit + integration, skip slow)
-test: test-unit test-integration
+## Run fast tests (unit + e2e — seconds, zero LLM calls; the everyday loop)
+test: test-unit test-e2e
 	@echo ""
-	@echo "All tests passed!"
+	@echo "All fast tests passed!"
 
 ## Run unit tests only (fast, no LLM calls)
 test-unit:
@@ -145,7 +191,7 @@ test-unit:
 		pytest tests/unit -v --tb=short; \
 	fi
 
-## Run integration tests (with LLM, skip slow)
+## Run integration tests (with LLM, skip slow) — targeted subset of the live tier
 test-integration:
 	@echo "Running integration tests..."
 	@if [ -d ".venv" ]; then \
@@ -161,6 +207,44 @@ test-e2e:
 		.venv/bin/pytest tests/e2e -v --tb=short; \
 	else \
 		pytest tests/e2e -v --tb=short; \
+	fi
+
+## Run LIVE tier: routing evals + live media + judge (real Vertex APIs, costs money)
+test-live:
+	@echo "Running LIVE tier (real Vertex APIs — requires app/.env)..."
+	@test -f app/.env || { echo "ERROR: app/.env missing — the live tier needs real credentials (see SETUP_INSTRUCTIONS.md)"; exit 1; }
+	@if [ -d ".venv" ]; then \
+		.venv/bin/pytest tests/integration tests/live -v --tb=short; \
+	else \
+		pytest tests/integration tests/live -v --tb=short; \
+	fi
+
+## Run agents-cli grade/compare reporting layer over live eval traces (INFORMATIONAL — not a test gate)
+# Override EVAL_SET to point at a different tests/integration/eval_sets/*.test.json.
+# Override RECORD_JSON + set SKIP_RECORD=1 to grade an existing record_actuals.py
+# dump instead of re-running (real) inference.
+EVAL_SET ?= tests/integration/eval_sets/review_agent.test.json
+RECORD_JSON ?= artifacts/traces/record_$(notdir $(basename $(EVAL_SET))).json
+test-live-report:
+	@echo "Running agents-cli grade reporting layer (real Vertex APIs — requires app/.env + agents-cli on PATH)..."
+	@test -f app/.env || { echo "ERROR: app/.env missing — the live tier needs real credentials (see SETUP_INSTRUCTIONS.md)"; exit 1; }
+	@command -v agents-cli >/dev/null 2>&1 || { echo "ERROR: agents-cli not found on PATH (install: uv tool install google-agents-cli)"; exit 1; }
+	@if [ "$(SKIP_RECORD)" = "1" ] && [ -f "$(RECORD_JSON)" ]; then \
+		echo "Using existing record file: $(RECORD_JSON) (SKIP_RECORD=1)"; \
+	else \
+		echo "Recording actuals from $(EVAL_SET) -> $(RECORD_JSON)"; \
+		if [ -d ".venv" ]; then \
+			.venv/bin/python -m tests.integration.record_actuals $(EVAL_SET) $(RECORD_JSON) || \
+				echo "[test-live-report] recorder reported case failure(s) — grading whatever succeeded"; \
+		else \
+			python -m tests.integration.record_actuals $(EVAL_SET) $(RECORD_JSON) || \
+				echo "[test-live-report] recorder reported case failure(s) — grading whatever succeeded"; \
+		fi; \
+	fi
+	@if [ -d ".venv" ]; then \
+		.venv/bin/python scripts/eval_grade_report.py $(RECORD_JSON) --output artifacts/grade_results; \
+	else \
+		python scripts/eval_grade_report.py $(RECORD_JSON) --output artifacts/grade_results; \
 	fi
 
 ## Run all tests including slow (Veo) tests
@@ -184,6 +268,28 @@ test-coverage:
 	@echo "Coverage report generated: htmlcov/index.html"
 
 # ============================================================================
+# LINT/FORMAT
+# ============================================================================
+
+## Check code with ruff (lint only, no changes)
+lint:
+	@if [ -d ".venv" ]; then \
+		.venv/bin/ruff check app tests; \
+	else \
+		ruff check app tests; \
+	fi
+
+## Auto-fix lint issues and format code with ruff
+format:
+	@if [ -d ".venv" ]; then \
+		.venv/bin/ruff check --fix app tests; \
+		.venv/bin/ruff format app tests; \
+	else \
+		ruff check --fix app tests; \
+		ruff format app tests; \
+	fi
+
+# ============================================================================
 # UTILITIES
 # ============================================================================
 
@@ -194,14 +300,14 @@ clean:
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	@echo "Cleaned build artifacts"
 
-## Reset database to fresh demo state (4 campaigns, 22 products)
+## Reset database to fresh demo state (4 campaigns, 28 products with DEMO_DATASET=fashion)
 reset-db:
 	@echo "Resetting database to fresh demo state..."
 	rm -f campaigns.db
 	rm -f app/campaigns.db
-	@echo "Database deleted. Next 'make dev' will create fresh demo data:"
+	@echo "Database deleted. Next 'make dev' will create fresh demo data (DEMO_DATASET-dependent; default 'fashion'):"
 	@echo "  - 4 demo campaigns (LA, NYC, Chicago)"
-	@echo "  - 22 fashion products"
+	@echo "  - 28 products (22 fashion + 6 retail core)"
 	@echo "  - 1 activated video per campaign with 30 days of metrics"
 
 ## Show help
@@ -212,7 +318,15 @@ help:
 	@echo "  make install     - Install dependencies (creates .venv)"
 	@echo "  make install-uv  - Install dependencies with uv (faster)"
 	@echo "  make dev         - Run agent locally with ADK web UI (port 8501)"
+	@echo "  make api         - Run REST API Gateway for the Web App UX (port 8000)"
 	@echo "  make playground  - Alias for 'make dev'"
+	@echo ""
+	@echo "DEMO ASSETS (local-first mode):"
+	@echo "  make demo-assets           - Download + install the demo asset bundle"
+	@echo "                               (needs DEMO_ASSETS_DRIVE_ID; skips gracefully if unset;"
+	@echo "                               runs automatically before 'make dev')"
+	@echo "  make demo-assets-from-file FILE=bundle.zip - Install from a local zip"
+	@echo "  make demo-assets-build SRC=<folder> [OUT=demo-assets.zip] - Build the bundle (owner step)"
 	@echo ""
 	@echo "DEPLOYMENT:"
 	@echo "  make deploy             - Deploy to Cloud Run (with Web UI)"
@@ -233,12 +347,18 @@ help:
 	@echo "  make setup-ae-permissions - Grant GCS write access to Agent Engine"
 	@echo ""
 	@echo "TESTING:"
-	@echo "  make test           - Run unit + integration tests (default)"
+	@echo "  make test           - Run fast tier: unit + e2e (seconds, zero LLM calls; default)"
 	@echo "  make test-unit      - Run unit tests only (fast, no LLM)"
-	@echo "  make test-integration - Run integration tests (with LLM)"
 	@echo "  make test-e2e       - Run end-to-end workflow tests"
+	@echo "  make test-integration - Run integration tests (with LLM) — targeted subset of the live tier"
+	@echo "  make test-live      - Run LIVE tier: integration + tests/live (real Vertex APIs, needs app/.env, costs money)"
+	@echo "  make test-live-report - agents-cli grade reporting layer over live eval traces (INFORMATIONAL, not a gate)"
 	@echo "  make test-all       - Run ALL tests including slow Veo tests"
 	@echo "  make test-coverage  - Run tests with coverage report"
+	@echo ""
+	@echo "LINT/FORMAT:"
+	@echo "  make lint        - Check code with ruff (no changes)"
+	@echo "  make format      - Auto-fix lint issues and format with ruff"
 	@echo ""
 	@echo "UTILITIES:"
 	@echo "  make clean       - Clean build artifacts"
@@ -253,9 +373,10 @@ help:
 	@echo "  For Vertex AI (recommended):"
 	@echo "    echo 'GOOGLE_GENAI_USE_VERTEXAI=TRUE' >> app/.env"
 	@echo "    echo 'GOOGLE_CLOUD_PROJECT=your_project' >> app/.env"
-	@echo "    echo 'GCS_BUCKET=your_bucket' >> app/.env"
 	@echo ""
 	@echo "  For AI Studio:"
 	@echo "    echo 'GOOGLE_GENAI_USE_VERTEXAI=FALSE' >> app/.env"
 	@echo "    echo 'GOOGLE_API_KEY=your_key' >> app/.env"
-	@echo "    echo 'GCS_BUCKET=your_bucket' >> app/.env"
+	@echo ""
+	@echo "  GCS_BUCKET is OPTIONAL: leave it unset for local-first mode (assets on disk);"
+	@echo "  set it only to store generated assets in GCS (required for cloud deploys)."

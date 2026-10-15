@@ -37,7 +37,7 @@ set -e  # Exit on error
 # =============================================================================
 GOOGLE_CLOUD_PROJECT="kaggle-on-gcp"
 CLOUD_RUN_REGION="us-central1"  # Cloud Run deployment region
-VERTEX_AI_LOCATION="global"     # Vertex AI API location (for gemini-3-pro-preview)
+VERTEX_AI_LOCATION="global"     # Vertex AI API location (for Gemini 3.x models)
 GCS_BUCKET="kaggle-on-gcp-ad-campaign-assets"
 SERVICE_NAME="ad-campaign-agent"
 APP_NAME="ad_campaign_agent"
@@ -211,6 +211,7 @@ GCLOUD_ARGS="$GCLOUD_ARGS --set-env-vars=GCS_BUCKET=$GCS_BUCKET"
 GCLOUD_ARGS="$GCLOUD_ARGS --set-env-vars=GOOGLE_GENAI_USE_VERTEXAI=True"
 GCLOUD_ARGS="$GCLOUD_ARGS --set-env-vars=GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT"
 GCLOUD_ARGS="$GCLOUD_ARGS --set-env-vars=GOOGLE_CLOUD_LOCATION=$VERTEX_AI_LOCATION"
+GCLOUD_ARGS="$GCLOUD_ARGS --set-env-vars=APP_MODE=${APP_MODE:-demo}"
 
 # Google Maps API Key (optional, for location features)
 if [ -n "$MAPS_API_KEY" ]; then

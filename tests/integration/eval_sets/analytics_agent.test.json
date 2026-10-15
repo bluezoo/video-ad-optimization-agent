@@ -13,12 +13,13 @@
             "role": "user"
           },
           "final_response": {
-            "parts": [{"text": ""}],
+            "parts": [{"text": "Campaign 2 (Elegant Black Cocktail Dress - Bloomingdale's 59th Street), last 30 days: RPI $0.0461 (about $46.10 per 1,000 impressions), total revenue $2,103.43, total impressions 45,627."}],
             "role": "model"
           },
           "intermediate_data": {
             "tool_uses": [
-              {"name": "get_campaign_metrics", "args": {"campaign_id": 2}}
+              {"name": "transfer_to_agent", "args": {"agent_name": "analytics_agent"}},
+              {"name": "get_campaign_metrics", "args": {"campaign_id": 2, "days": 30}}
             ],
             "intermediate_responses": []
           }
@@ -36,12 +37,13 @@
             "role": "user"
           },
           "final_response": {
-            "parts": [{"text": ""}],
+            "parts": [{"text": "Here are the top 5 performing videos ranked by RPI. Each row shows the rank, video/product, campaign and location, variation traits, RPI, impressions, total revenue, and dwell time."}],
             "role": "model"
           },
           "intermediate_data": {
             "tool_uses": [
-              {"name": "get_top_performing_ads", "args": {}}
+              {"name": "transfer_to_agent", "args": {"agent_name": "analytics_agent"}},
+              {"name": "get_top_performing_ads", "args": {"metric": "revenue_per_impression", "limit": 5}}
             ],
             "intermediate_responses": []
           }
@@ -59,11 +61,12 @@
             "role": "user"
           },
           "final_response": {
-            "parts": [{"text": ""}],
+            "parts": [{"text": "Comparison of campaigns 1, 2, 3, and 4 ranked by RPI. Blue Floral Maxi Dress - Westfield Century City (campaign 1) is the best performer by RPI."}],
             "role": "model"
           },
           "intermediate_data": {
             "tool_uses": [
+              {"name": "transfer_to_agent", "args": {"agent_name": "analytics_agent"}},
               {"name": "compare_campaigns", "args": {"campaign_ids": [1, 2, 3, 4]}}
             ],
             "intermediate_responses": []
@@ -82,11 +85,12 @@
             "role": "user"
           },
           "final_response": {
-            "parts": [{"text": ""}],
+            "parts": [{"text": "Here are all 4 campaign locations, each with a clickable Google Maps link: Blue Floral Maxi Dress - Westfield Century City (Los Angeles, CA); Elegant Black Cocktail Dress - Bloomingdale's 59th Street (New York, NY); Black High Waist Trousers - Water Tower Place (Chicago, IL); Sage Satin Camisole - The Grove (Los Angeles, CA)."}],
             "role": "model"
           },
           "intermediate_data": {
             "tool_uses": [
+              {"name": "transfer_to_agent", "args": {"agent_name": "analytics_agent"}},
               {"name": "get_campaign_map_data", "args": {}}
             ],
             "intermediate_responses": []
